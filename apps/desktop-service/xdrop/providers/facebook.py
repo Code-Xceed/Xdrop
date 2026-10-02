@@ -8,5 +8,5 @@ class FacebookProvider(YtDlpBaseProvider):
     platform_name = "Facebook"
 
     def can_handle(self, url: str) -> bool:
-        pattern = r"(https?://)?(www\.|m\.|fb\.)?(facebook\.com/(watch|reel|.+/videos)|fb\.watch/)"
-        return bool(re.search(pattern, url, re.IGNORECASE))
+        pattern = r"(?:https?://)?(?:(?:www\.|m\.|fb\.)?facebook\.com/(?:watch/?\?|reel/|reels/|share/[rv]/|[^/]+/videos/)|fb\.watch/[a-zA-Z0-9_\-]+)"
+        return bool(re.search(pattern, url.strip(), re.IGNORECASE))

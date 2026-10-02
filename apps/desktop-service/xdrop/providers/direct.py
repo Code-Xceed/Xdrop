@@ -8,18 +8,29 @@ from xdrop.processor.organizer import sanitize_filename_py
 from xdrop.logger import app_logger, errors_logger
 
 DIRECT_EXTENSIONS = {
+    # Video
     ".mp4": ("video", "mp4"),
     ".mov": ("video", "mov"),
     ".mkv": ("video", "mkv"),
     ".webm": ("video", "webm"),
-    ".mp3": ("audio", "mp3"),
+    ".m4v": ("video", "m4v"),
+    ".avi": ("video", "avi"),
+    ".flv": ("video", "flv"),
+    # Audio
     ".wav": ("audio", "wav"),
-    ".aac": ("audio", "aac"),
+    ".mp3": ("audio", "mp3"),
     ".m4a": ("audio", "m4a"),
+    ".aac": ("audio", "aac"),
+    ".flac": ("audio", "flac"),
+    ".ogg": ("audio", "ogg"),
+    ".aiff": ("audio", "aiff"),
+    ".wma": ("audio", "wma"),
+    # Image
     ".jpg": ("image", "jpg"),
     ".jpeg": ("image", "jpeg"),
     ".png": ("image", "png"),
     ".webp": ("image", "webp"),
+    ".gif": ("image", "gif"),
 }
 
 class DirectMediaProvider(PlatformProvider):
@@ -50,15 +61,90 @@ class DirectMediaProvider(PlatformProvider):
         except Exception:
             pass
 
-        asset = MediaAssetModel(
-            id="direct_original",
-            media_type=media_type,
-            format=fmt,
-            quality_label="Original File",
-            filesize_approx=approx_size,
-            url=url,
-            is_default=True
-        )
+        assets = []
+        if media_type == "video":
+            assets.append(MediaAssetModel(
+                id="direct_original_video",
+                media_type="video",
+                format=fmt,
+                quality_label=f"Original Video ({fmt.upper()})",
+                filesize_approx=approx_size,
+                url=url,
+                is_default=True
+            ))
+            assets.append(MediaAssetModel(
+                id="direct_prores_mov",
+                media_type="video",
+                format="mov",
+                quality_label="ProRes 422 (MOV Master)",
+                filesize_approx=approx_size,
+                is_default=False
+            ))
+            assets.append(MediaAssetModel(
+                id="direct_audio_wav",
+                media_type="audio",
+                format="wav",
+                quality_label="Audio Only (Broadcast WAV 48kHz)",
+                is_default=False
+            ))
+            assets.append(MediaAssetModel(
+                id="direct_audio_mp3",
+                media_type="audio",
+                format="mp3",
+                quality_label="Audio Only (MP3 320kbps)",
+                is_default=False
+            ))
+            assets.append(MediaAssetModel(
+                id="direct_audio_aac",
+                media_type="audio",
+                format="m4a",
+                quality_label="Audio Only (AAC / M4A)",
+                is_default=False
+            ))
+        elif media_type == "audio":
+            assets.append(MediaAssetModel(
+                id="direct_original_audio",
+                media_type="audio",
+                format=fmt,
+                quality_label=f"Original Audio ({fmt.upper()})",
+                filesize_approx=approx_size,
+                url=url,
+                is_default=True
+            ))
+            if fmt != "wav":
+                assets.append(MediaAssetModel(
+                    id="direct_audio_wav",
+                    media_type="audio",
+                    format="wav",
+                    quality_label="Studio WAV (48kHz Uncompressed)",
+                    is_default=False
+                ))
+            if fmt != "mp3":
+                assets.append(MediaAssetModel(
+                    id="direct_audio_mp3",
+                    media_type="audio",
+                    format="mp3",
+                    quality_label="MP3 (320kbps High Quality)",
+                    is_default=False
+                ))
+            if fmt not in ("m4a", "aac"):
+                assets.append(MediaAssetModel(
+                    id="direct_audio_aac",
+                    media_type="audio",
+                    format="m4a",
+                    quality_label="AAC / M4A (320kbps)",
+                    is_default=False
+                ))
+        else: # image
+            assets.append(MediaAssetModel(
+                id="direct_image",
+                media_type="image",
+                format=fmt,
+                quality_label=f"Image ({fmt.upper()})",
+                filesize_approx=approx_size,
+                url=url,
+                is_default=True
+            ))
 
         return MediaInfoModel(
             url=url,
@@ -67,7 +153,7 @@ class DirectMediaProvider(PlatformProvider):
             title=title,
             source_id=clean_url,
             thumbnail_url=url if media_type == "image" else None,
-            assets=[asset]
+            assets=assets
         )
 
     def download(

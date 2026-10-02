@@ -8,5 +8,5 @@ class PinterestProvider(YtDlpBaseProvider):
     platform_name = "Pinterest"
 
     def can_handle(self, url: str) -> bool:
-        pattern = r"(https?://)?(www\.|pin\.)?pinterest\.(com|it|de|co\.uk|ca)/pin/"
-        return bool(re.search(pattern, url, re.IGNORECASE))
+        pattern = r"(?:https?://)?(?:(?:www\.)?pinterest\.(?:com|[a-z]{2,3}(?:\.[a-z]{2})?)/pin/|pin\.it/[a-zA-Z0-9]+)"
+        return bool(re.search(pattern, url.strip(), re.IGNORECASE))

@@ -8,5 +8,5 @@ class TikTokProvider(YtDlpBaseProvider):
     platform_name = "TikTok"
 
     def can_handle(self, url: str) -> bool:
-        pattern = r"(https?://)?(www\.|vm\.|vt\.)?tiktok\.com/"
-        return bool(re.search(pattern, url, re.IGNORECASE))
+        pattern = r"(?:https?://)?(?:(?:www\.|vm\.|vt\.|m\.)?tiktok\.com/)"
+        return bool(re.search(pattern, url.strip(), re.IGNORECASE))

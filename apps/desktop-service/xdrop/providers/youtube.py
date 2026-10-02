@@ -8,5 +8,5 @@ class YouTubeProvider(YtDlpBaseProvider):
     platform_name = "YouTube"
 
     def can_handle(self, url: str) -> bool:
-        pattern = r"(https?://)?(www\.|m\.)?(youtube\.com/(watch\?v=|shorts/|embed/)|youtu\.be/)"
-        return bool(re.search(pattern, url, re.IGNORECASE))
+        pattern = r"(?:https?://)?(?:(?:www\.|m\.|music\.)?youtube\.com/(?:watch\?|shorts/|embed/|live/|v/|clip/)|youtu\.be/)"
+        return bool(re.search(pattern, url.strip(), re.IGNORECASE))

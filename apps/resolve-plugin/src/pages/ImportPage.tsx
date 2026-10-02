@@ -40,7 +40,7 @@ export const SUPPORTED_PLATFORMS: PlatformDef[] = [
     name: 'YouTube',
     color: '#ff2a5f',
     textColor: '#ffffff',
-    regex: /(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/|live\/)|youtu\.be\/)/i,
+    regex: /(?:https?:\/\/)?(?:(?:www\.|m\.|music\.)?youtube\.com\/(?:watch\?|shorts\/|embed\/|live\/|v\/|clip\/)|youtu\.be\/)/i,
     placeholder: 'https://youtube.com/watch?v=...',
   },
   {
@@ -48,7 +48,7 @@ export const SUPPORTED_PLATFORMS: PlatformDef[] = [
     name: 'TikTok',
     color: '#00f2fe',
     textColor: '#000000',
-    regex: /(?:https?:\/\/)?(?:www\.|vm\.|vt\.)?tiktok\.com\//i,
+    regex: /(?:https?:\/\/)?(?:(?:www\.|vm\.|vt\.|m\.)?tiktok\.com\/)/i,
     placeholder: 'https://tiktok.com/@creator/video/...',
   },
   {
@@ -56,7 +56,7 @@ export const SUPPORTED_PLATFORMS: PlatformDef[] = [
     name: 'Instagram',
     color: '#ff2a8d',
     textColor: '#ffffff',
-    regex: /(?:https?:\/\/)?(?:www\.)?(?:instagram\.com|instagr\.am)\/(?:reel|p|tv|stories|share)\//i,
+    regex: /(?:https?:\/\/)?(?:(?:www\.|m\.)?instagram\.com|instagr\.am)\/(?:reel|reels|p|tv|stories|share)\//i,
     placeholder: 'https://instagram.com/reel/...',
   },
   {
@@ -64,7 +64,7 @@ export const SUPPORTED_PLATFORMS: PlatformDef[] = [
     name: 'X (Twitter)',
     color: '#f8fafc',
     textColor: '#000000',
-    regex: /(?:https?:\/\/)?(?:www\.)?(?:x\.com|twitter\.com|t\.co)\//i,
+    regex: /(?:https?:\/\/)?(?:(?:www\.|mobile\.)?(?:twitter\.com|x\.com)\/(?:[^/]+\/status\/\d+|i\/status\/\d+)|t\.co\/[a-zA-Z0-9]+)/i,
     placeholder: 'https://x.com/user/status/...',
   },
   {
@@ -72,7 +72,7 @@ export const SUPPORTED_PLATFORMS: PlatformDef[] = [
     name: 'Reddit',
     color: '#ff4500',
     textColor: '#ffffff',
-    regex: /(?:https?:\/\/)?(?:www\.|old\.)?(?:reddit\.com|v\.redd\.it|redd\.it)\//i,
+    regex: /(?:https?:\/\/)?(?:(?:www\.|old\.|new\.|m\.)?reddit\.com\/(?:r\/[^/]+\/(?:comments|s)\/|clip\/)|v\.redd\.it\/[a-zA-Z0-9]+|redd\.it\/[a-zA-Z0-9]+)/i,
     placeholder: 'https://reddit.com/r/videos/...',
   },
   {
@@ -80,7 +80,7 @@ export const SUPPORTED_PLATFORMS: PlatformDef[] = [
     name: 'Facebook',
     color: '#1877f2',
     textColor: '#ffffff',
-    regex: /(?:https?:\/\/)?(?:www\.|m\.)?(?:facebook\.com|fb\.watch|fb\.com)\//i,
+    regex: /(?:https?:\/\/)?(?:(?:www\.|m\.|fb\.)?facebook\.com\/(?:watch\/?\?|reel\/|reels\/|share\/[rv]\/|[^/]+\/videos\/)|fb\.watch\/[a-zA-Z0-9_\-]+)/i,
     placeholder: 'https://fb.watch/...',
   },
   {
@@ -88,7 +88,7 @@ export const SUPPORTED_PLATFORMS: PlatformDef[] = [
     name: 'Pinterest',
     color: '#e60023',
     textColor: '#ffffff',
-    regex: /(?:https?:\/\/)?(?:www\.)?(?:pinterest\.(?:com|[a-z]{2,3})|pin\.it)\//i,
+    regex: /(?:https?:\/\/)?(?:(?:www\.)?pinterest\.(?:com|[a-z]{2,3}(?:\.[a-z]{2})?)\/pin\/|pin\.it\/[a-zA-Z0-9]+)/i,
     placeholder: 'https://pin.it/...',
   },
   {
@@ -96,7 +96,7 @@ export const SUPPORTED_PLATFORMS: PlatformDef[] = [
     name: 'Vimeo',
     color: '#00b4d8',
     textColor: '#000000',
-    regex: /(?:https?:\/\/)?(?:www\.)?(?:vimeo\.com|player\.vimeo\.com)\//i,
+    regex: /(?:https?:\/\/)?(?:(?:www\.|player\.)?vimeo\.com\/(?:channels\/[^/]+\/|groups\/[^/]+\/videos\/|showcase\/[^/]+\/video\/|manage\/videos\/|video\/)?\d+)/i,
     placeholder: 'https://vimeo.com/...',
   },
   {
@@ -104,7 +104,7 @@ export const SUPPORTED_PLATFORMS: PlatformDef[] = [
     name: 'Direct Media',
     color: '#00ff88',
     textColor: '#000000',
-    regex: /\.(mp4|mov|webm|m4v|mkv|mp3|wav|m4a|aac|flac|ogg|jpg|jpeg|png|webp|gif)(\?.*)?$/i,
+    regex: /\.(mp4|mov|webm|m4v|mkv|avi|flv|mp3|wav|m4a|aac|flac|ogg|aiff|wma|jpg|jpeg|png|webp|gif)(\?.*)?$/i,
     placeholder: 'https://.../video.mp4',
   },
 ];

@@ -380,18 +380,19 @@ class DownloadQueueManager:
         })
 
         # Audio extraction if requested
-        if req.extract_audio_only or "audio" in req.asset_id.lower():
-            audio_out = Path(final_file).with_suffix(f".{req.format or 'wav'}")
-            if final_file != str(audio_out):
+        if req.extract_audio_only or "audio" in req.asset_id.lower() or req.media_type == "audio":
+            target_afmt = req.format or ("wav" if "wav" in req.asset_id.lower() else "mp3")
+            audio_out = Path(final_file).with_suffix(f".{target_afmt}")
+            if final_file != str(audio_out) or Path(final_file).suffix.lower() not in (".wav", ".mp3", ".m4a", ".aac", ".flac"):
                 success, audio_err = await loop.run_in_executor(
                     None,
-                    lambda: ffmpeg.extract_audio(final_file, str(audio_out), req.format or "wav")
+                    lambda: ffmpeg.extract_audio(final_file, str(audio_out), target_afmt)
                 )
-                if success:
+                if success and audio_out.exists():
                     final_file = str(audio_out)
 
         # Video format transcoding if requested (e.g. ProRes MOV or Universal MP4)
-        target_vfmt = req.transcode_video_format or (settings.preferred_video_format if settings.preferred_video_format != "original" else None)
+        target_vfmt = req.transcode_video_format or (req.format if req.format and req.format.lower() in ("mov", "mp4") else None) or (settings.preferred_video_format if settings.preferred_video_format != "original" else None)
         if target_vfmt and req.media_type == "video" and not req.extract_audio_only and not ("audio" in req.asset_id.lower()):
             current_ext = Path(final_file).suffix.lower().lstrip(".")
             if target_vfmt.lower() != current_ext:

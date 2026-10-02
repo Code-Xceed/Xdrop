@@ -99,34 +99,64 @@ class YtDlpBaseProvider(PlatformProvider):
         assets: List[MediaAssetModel] = []
         seen_qualities = set()
 
-        # 1. Best Combined / Standard video qualities
-        # Look for video formats with height info (1080, 720, 480, etc.)
-        for f in reversed(raw_formats):
+        # 1. Best Combined / Standard video qualities sorted descending by resolution
+        valid_video_formats = [
+            f for f in raw_formats
+            if f.get("vcodec", "none") != "none" and (f.get("height") or f.get("width"))
+        ]
+        valid_video_formats.sort(
+            key=lambda f: (f.get("height") or 0, f.get("width") or 0, f.get("fps") or 0),
+            reverse=True
+        )
+
+        for f in valid_video_formats:
             vcodec = f.get("vcodec", "none")
             acodec = f.get("acodec", "none")
-            height = f.get("height")
-            if vcodec != "none" and height and height >= 360:
-                q_label = f"{height}p"
-                fps = f.get("fps")
-                if fps and fps >= 50:
-                    q_label += f"{int(fps)}"
+            height = f.get("height") or 0
+            width = f.get("width") or 0
+            fps = f.get("fps")
 
-                if q_label not in seen_qualities:
-                    seen_qualities.add(q_label)
-                    assets.append(MediaAssetModel(
-                        id=f"video_{q_label}_{f.get('format_id')}",
-                        media_type="video",
-                        format=f.get("ext", "mp4"),
-                        quality_label=f"Video ({q_label})",
-                        resolution=f"{f.get('width', '')}x{height}",
-                        fps=int(fps) if fps else None,
-                        vcodec=vcodec,
-                        acodec=acodec if acodec != "none" else "aac",
-                        filesize_approx=f.get("filesize") or f.get("filesize_approx"),
-                        is_default=(height in (1080, 720) and "default_video" not in seen_qualities)
-                    ))
-                    if height in (1080, 720):
-                        seen_qualities.add("default_video")
+            eff_res = min(width, height) if (width > 0 and height > 0) else (height or width)
+            if eff_res < 360 and height < 360:
+                continue
+
+            fps_suffix = f"{int(fps)}" if fps and fps >= 50 else ""
+            if eff_res >= 2160 or height >= 2160:
+                tier = "4K Ultra HD"
+                res_key = f"2160p{fps_suffix}"
+            elif eff_res >= 1440 or height >= 1440:
+                tier = "2K Quad HD"
+                res_key = f"1440p{fps_suffix}"
+            elif eff_res >= 1080 or height >= 1080:
+                tier = "Full HD"
+                res_key = f"1080p{fps_suffix}"
+            elif eff_res >= 720 or height >= 720:
+                tier = "HD"
+                res_key = f"720p{fps_suffix}"
+            elif eff_res >= 480 or height >= 480:
+                tier = "SD"
+                res_key = f"480p{fps_suffix}"
+            else:
+                tier = "Basic"
+                res_key = f"360p{fps_suffix}"
+
+            if res_key not in seen_qualities:
+                seen_qualities.add(res_key)
+                is_default_candidate = (res_key.startswith("1080p") or res_key.startswith("720p")) and "default_video" not in seen_qualities
+                assets.append(MediaAssetModel(
+                    id=f"video_{res_key}_{f.get('format_id')}",
+                    media_type="video",
+                    format=f.get("ext", "mp4"),
+                    quality_label=f"{tier} ({height or eff_res}p{fps_suffix})",
+                    resolution=f"{width}x{height}" if width and height else None,
+                    fps=int(fps) if fps else None,
+                    vcodec=vcodec,
+                    acodec=acodec if acodec != "none" else "aac",
+                    filesize_approx=f.get("filesize") or f.get("filesize_approx"),
+                    is_default=is_default_candidate
+                ))
+                if is_default_candidate:
+                    seen_qualities.add("default_video")
 
         # Ensure at least one standard video asset if none above
         if not assets:
@@ -134,23 +164,41 @@ class YtDlpBaseProvider(PlatformProvider):
                 id="best_video",
                 media_type="video",
                 format="mp4",
-                quality_label="Best Available Video",
+                quality_label="Best Available Video (MP4)",
                 is_default=True
             ))
+        elif "default_video" not in seen_qualities and assets:
+            assets[0].is_default = True
 
-        # 2. Add Audio Extraction asset
+        # Master editing video (ProRes 422 MOV)
         assets.append(MediaAssetModel(
-            id="audio_best",
+            id="video_prores_mov",
+            media_type="video",
+            format="mov",
+            quality_label="ProRes 422 (MOV Master)",
+            is_default=False
+        ))
+
+        # 2. Comprehensive Audio Extraction formats
+        assets.append(MediaAssetModel(
+            id="audio_wav",
             media_type="audio",
             format="wav",
-            quality_label="Audio Only (High Quality WAV)",
+            quality_label="Audio Only (Broadcast WAV 48kHz)",
             is_default=False
         ))
         assets.append(MediaAssetModel(
             id="audio_mp3",
             media_type="audio",
             format="mp3",
-            quality_label="Audio Only (MP3)",
+            quality_label="Audio Only (MP3 320kbps)",
+            is_default=False
+        ))
+        assets.append(MediaAssetModel(
+            id="audio_aac",
+            media_type="audio",
+            format="m4a",
+            quality_label="Audio Only (AAC / M4A)",
             is_default=False
         ))
 
@@ -236,13 +284,22 @@ class YtDlpBaseProvider(PlatformProvider):
         })
 
         if is_audio:
-            fmt = "wav" if "wav" in asset_id.lower() or dest_path.suffix == ".wav" else "mp3"
+            if "wav" in asset_id.lower() or dest_path.suffix.lower() == ".wav":
+                fmt = "wav"
+                qual = "0"
+            elif "aac" in asset_id.lower() or "m4a" in asset_id.lower() or dest_path.suffix.lower() in (".aac", ".m4a"):
+                fmt = "m4a"
+                qual = "0"
+            else:
+                fmt = "mp3"
+                qual = "320"
+
             ydl_opts.update({
                 "format": "bestaudio/best",
                 "postprocessors": [{
                     "key": "FFmpegExtractAudio",
                     "preferredcodec": fmt,
-                    "preferredquality": "0",
+                    "preferredquality": qual,
                 }]
             })
         else:
@@ -251,7 +308,7 @@ class YtDlpBaseProvider(PlatformProvider):
             # in Adobe Premiere Pro and DaVinci Resolve, with fallback to best available.
             format_spec = "bestvideo[vcodec^=avc1]+bestaudio[acodec^=mp4a]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best"
             parts = asset_id.split("_", 2)
-            if len(parts) >= 3 and parts[2]:
+            if len(parts) >= 3 and parts[2] and not parts[2].startswith("mov"):
                 fmt_id = parts[2]
                 format_spec = f"{fmt_id}+bestaudio[acodec^=mp4a]/{fmt_id}+bestaudio/bestvideo+bestaudio/best"
             ydl_opts.update({

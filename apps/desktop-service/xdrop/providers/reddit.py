@@ -8,5 +8,5 @@ class RedditProvider(YtDlpBaseProvider):
     platform_name = "Reddit"
 
     def can_handle(self, url: str) -> bool:
-        pattern = r"(https?://)?(www\.|old\.|new\.)?(reddit\.com/r/[^/]+/comments/|v\.redd\.it/)"
-        return bool(re.search(pattern, url, re.IGNORECASE))
+        pattern = r"(?:https?://)?(?:(?:www\.|old\.|new\.|m\.)?reddit\.com/(?:r/[^/]+/(?:comments|s)/|clip/)|v\.redd\.it/[a-zA-Z0-9]+|redd\.it/[a-zA-Z0-9]+)"
+        return bool(re.search(pattern, url.strip(), re.IGNORECASE))

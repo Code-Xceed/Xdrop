@@ -8,5 +8,5 @@ class VimeoProvider(YtDlpBaseProvider):
     platform_name = "Vimeo"
 
     def can_handle(self, url: str) -> bool:
-        pattern = r"(https?://)?(www\.|player\.)?vimeo\.com/(\d+|video/\d+)"
-        return bool(re.search(pattern, url, re.IGNORECASE))
+        pattern = r"(?:https?://)?(?:(?:www\.|player\.)?vimeo\.com/(?:channels/[^/]+/|groups/[^/]+/videos/|showcase/[^/]+/video/|manage/videos/|video/)?\d+)"
+        return bool(re.search(pattern, url.strip(), re.IGNORECASE))
