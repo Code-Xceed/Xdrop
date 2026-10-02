@@ -376,6 +376,8 @@ class DownloadQueueManager:
                 "status": "processing",
                 "progress": 85.0,
                 "downloadedBytes": download_result.downloaded_bytes,
+                "speed": None,
+                "eta": None,
             }
         })
 
@@ -497,6 +499,8 @@ class DownloadQueueManager:
                     "status": "importing",
                     "progress": 95.0,
                     "downloadedBytes": download_result.downloaded_bytes,
+                    "speed": None,
+                    "eta": None,
                 }
             })
 
@@ -551,6 +555,19 @@ class DownloadQueueManager:
         )
 
         completed_job = get_download_by_id(job_id)
+        await self.broadcast_event("JOB_PROGRESS", {
+            "progress": {
+                "id": job_id,
+                "status": "completed",
+                "progress": 100.0,
+                "downloadedBytes": download_result.downloaded_bytes,
+                "speed": None,
+                "eta": None,
+                "resolveImported": resolve_imported,
+                "premiereImported": premiere_imported,
+                "aftereffectsImported": aftereffects_imported,
+            }
+        })
         await self.broadcast_event("JOB_COMPLETED", {
             "job": completed_job or {"id": job_id, "status": "completed"}
         })

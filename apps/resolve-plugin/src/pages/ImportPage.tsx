@@ -578,7 +578,48 @@ export const ImportPage: React.FC<ImportPageProps> = ({
           })}
         </div>
 
-        {/* 3. Error Alert Notification */}
+        {/* 3. Analyzing / Inspecting State Notification */}
+        {isAnalyzing && (
+          <div
+            style={{
+              marginTop: '10px',
+              padding: '12px 14px',
+              backgroundColor: 'var(--bg-tertiary)',
+              border: '1.5px solid #000000',
+              borderRadius: 'var(--radius-sm)',
+              boxShadow: '1.5px 1.5px 0px #000000',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+            }}
+          >
+            <div className="spin" style={{ color: 'var(--accent-primary)', fontSize: '18px', flexShrink: 0 }}>⟳</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '12px', fontWeight: 800, color: '#ffffff' }}>
+                Analyzing Media Streams & Quality Presets...
+              </div>
+              <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                Probing video codecs, audio sample rates, resolutions, and direct platform stream links
+              </div>
+            </div>
+            <span
+              style={{
+                fontSize: '9.5px',
+                fontWeight: 800,
+                color: 'var(--accent-primary)',
+                backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                border: '1px solid rgba(0, 255, 136, 0.3)',
+                padding: '2px 6px',
+                borderRadius: 'var(--radius-xs)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              FAST PROBE ACTIVE
+            </span>
+          </div>
+        )}
+
+        {/* 4. Error Alert Notification */}
         {analysisError && (
           <div
             style={{

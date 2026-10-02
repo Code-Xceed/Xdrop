@@ -361,37 +361,53 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                 {/* Status Indicator */}
                 <div style={{ flexShrink: 0 }}>
                   {job.status === 'downloading' && (
-                    <span className="badge badge-info" style={{ fontSize: '8.5px', padding: '1px 5px' }}>
+                    <span className="badge badge-info" style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px' }}>
                       <span className="spin">⟳</span> DOWNLOADING
                     </span>
                   )}
                   {job.status === 'processing' && (
-                    <span className="badge badge-warning" style={{ fontSize: '8.5px', padding: '1px 5px' }}>
-                      TRANSCODING
+                    <span className="badge badge-warning" style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px' }}>
+                      <span className="spin">⟳</span> OPTIMIZING NLE
                     </span>
                   )}
                   {job.status === 'importing' && (
-                    <span className="badge badge-info" style={{ fontSize: '8.5px', padding: '1px 5px' }}>
+                    <span className="badge badge-info" style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px' }}>
                       <span className="spin">⟳</span> IMPORTING
                     </span>
                   )}
                   {job.status === 'queued' && (
-                    <span className="badge badge-neutral" style={{ fontSize: '8.5px', padding: '1px 5px' }}>
+                    <span className="badge badge-neutral" style={{ fontSize: '8.5px', padding: '1px 6px' }}>
                       QUEUED
                     </span>
                   )}
                   {isCompleted && (
-                    <span className="badge badge-success" style={{ fontSize: '8.5px', padding: '1px 5px' }}>
-                      <CheckCircle2 size={10} strokeWidth={2.5} /> READY
+                    <span
+                      className="badge badge-success"
+                      style={{
+                        fontSize: '8.5px',
+                        padding: '1px 6px',
+                        gap: '3px',
+                        backgroundColor: isAutoImportedComplete ? 'rgba(34, 197, 94, 0.2)' : undefined,
+                        border: isAutoImportedComplete ? '1px solid var(--success)' : undefined,
+                      }}
+                    >
+                      <CheckCircle2 size={10} strokeWidth={2.5} />
+                      {isAutoImportedComplete
+                        ? targetEditor === 'premiere'
+                          ? 'IMPORTED TO PREMIERE'
+                          : targetEditor === 'aftereffects'
+                          ? 'IMPORTED TO AE'
+                          : 'IMPORTED TO RESOLVE'
+                        : 'READY'}
                     </span>
                   )}
                   {isFailed && (
-                    <span className="badge badge-danger" style={{ fontSize: '8.5px', padding: '1px 5px' }}>
+                    <span className="badge badge-danger" style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px' }}>
                       <AlertCircle size={10} strokeWidth={2.5} /> ERROR
                     </span>
                   )}
                   {isCancelled && (
-                    <span className="badge badge-neutral" style={{ fontSize: '8.5px', padding: '1px 5px' }}>
+                    <span className="badge badge-neutral" style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px' }}>
                       <XCircle size={10} strokeWidth={2.5} /> CANCELLED
                     </span>
                   )}
@@ -418,6 +434,8 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                       ? 'var(--success)'
                       : isFailed
                       ? 'var(--danger)'
+                      : job.status === 'processing'
+                      ? 'var(--color-resolve)'
                       : 'var(--accent-primary)',
                     transition: 'width 0.15s ease',
                   }}
@@ -444,7 +462,7 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  {isActive ? (
+                  {job.status === 'downloading' ? (
                     <span>
                       {safeProgress.toFixed(0)}%
                       {totalBytes > 0
@@ -453,10 +471,27 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                         ? ` • ${formatBytes(downloadedBytes)}`
                         : ''}
                       {job.speed ? ` • ${job.speed}` : ''}
-                      {job.eta ? ` • ${job.eta}` : ''}
+                      {job.eta ? ` • ETA: ${job.eta}` : ''}
                     </span>
+                  ) : job.status === 'processing' ? (
+                    <span style={{ color: 'var(--color-resolve)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <span className="spin" style={{ fontSize: '9px' }}>⟳</span>
+                      <span>Optimizing stream for NLE timeline playback & compatibility...</span>
+                    </span>
+                  ) : job.status === 'importing' ? (
+                    <span style={{ color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <span className="spin" style={{ fontSize: '9px' }}>⟳</span>
+                      <span>Importing media into {targetEditor === 'premiere' ? 'Premiere Pro' : targetEditor === 'aftereffects' ? 'After Effects' : 'DaVinci Resolve'}...</span>
+                    </span>
+                  ) : job.status === 'queued' ? (
+                    <span>Queued in line waiting for worker...</span>
                   ) : isCompleted ? (
                     <span style={{ color: 'var(--text-secondary)' }}>
+                      {isAutoImportedComplete ? (
+                        <span style={{ color: 'var(--success)', fontWeight: 700 }}>
+                          ✓ Available in Bin '{job.premiereBin || job.aftereffectsBin || (job as any).premiere_bin || (job as any).target_media_pool_bin || 'Xdrop'}' •{' '}
+                        </span>
+                      ) : null}
                       {formatStr} {job.qualityLabel ? `• ${job.qualityLabel}` : ''} • {formatBytes(downloadedBytes)}
                     </span>
                   ) : isFailed ? (

@@ -164,11 +164,15 @@ class DirectMediaProvider(PlatformProvider):
         progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None
     ) -> DownloadResult:
         try:
+            import time
             target_path = Path(output_template).resolve()
             target_path.parent.mkdir(parents=True, exist_ok=True)
             downloaded = 0
+            start_time = time.time()
+            last_cb_time = 0.0
 
-            with httpx.Client(timeout=60.0, follow_redirects=True) as client:
+            limits = httpx.Limits(max_keepalive_connections=5, max_connections=10)
+            with httpx.Client(timeout=60.0, follow_redirects=True, limits=limits) as client:
                 with client.stream("GET", url) as response:
                     if response.status_code != 200:
                         return DownloadResult(
@@ -179,22 +183,36 @@ class DirectMediaProvider(PlatformProvider):
                     total_bytes = int(response.headers.get("content-length", 0))
                     temp_file = target_path.with_suffix(f"{target_path.suffix}.tmp")
 
-                    with open(temp_file, "wb") as f:
-                        for chunk in response.iter_bytes(chunk_size=1024 * 128):
+                    # High-throughput 1MB buffer write loop
+                    with open(temp_file, "wb", buffering=1024 * 1024) as f:
+                        for chunk in response.iter_bytes(chunk_size=1024 * 1024):
                             if not chunk:
                                 continue
                             f.write(chunk)
                             downloaded += len(chunk)
+                            now = time.time()
 
-                            if progress_callback:
+                            # Compute real-time transfer speed & ETA
+                            elapsed = now - start_time
+                            speed_bps = (downloaded / elapsed) if elapsed > 0.1 else 0.0
+                            speed_str = f"{(speed_bps / (1024 * 1024)):.1f} MB/s" if speed_bps > 0 else None
+
+                            eta_str = None
+                            if total_bytes > downloaded and speed_bps > 0:
+                                rem_sec = int((total_bytes - downloaded) / speed_bps)
+                                eta_str = f"{rem_sec // 60:02d}:{rem_sec % 60:02d}"
+
+                            # Throttle callbacks to at most once per 200ms to preserve peak network I/O
+                            if progress_callback and (now - last_cb_time >= 0.2 or downloaded >= total_bytes):
+                                last_cb_time = now
                                 percent = (downloaded / total_bytes * 100.0) if total_bytes > 0 else 50.0
                                 progress_callback({
                                     "status": "downloading",
                                     "progress": round(percent, 1),
                                     "downloaded_bytes": downloaded,
                                     "total_bytes": total_bytes if total_bytes > 0 else None,
-                                    "speed": None,
-                                    "eta": None
+                                    "speed": speed_str,
+                                    "eta": eta_str
                                 })
 
                     if temp_file.exists():

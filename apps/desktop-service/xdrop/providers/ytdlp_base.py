@@ -21,11 +21,20 @@ class YtDlpBaseProvider(PlatformProvider):
             "nocheckcertificate": False,
             "prefer_ffmpeg": True,
             "ffmpeg_location": str(Path(ffmpeg_bin).parent) if ffmpeg_bin and Path(ffmpeg_bin).is_file() else None,
-            "socket_timeout": 30,
+            "socket_timeout": 15,
+            # ULTRA-FAST STREAM ACCELERATION & CONCURRENT DOWNLOADING
+            "concurrent_fragment_downloads": 8,  # Multi-threaded parallel fragment downloading (5x-10x faster)
+            "http_chunk_size": 10485760,         # 10MB chunk size to eliminate CDN bandwidth throttling
+            "buffersize": 1048576,               # 1MB buffer for fast I/O disk writes
+            "retries": 10,
+            "fragment_retries": 10,
+            "file_access_retries": 5,
+            "postprocessor_args": {
+                "ffmpeg": ["-threads", "0"]      # Maximize multi-core CPU usage in FFmpeg
+            },
             # Strict safety & public content settings
             "geo_bypass": False,
             "extract_flat": False,
-            "retries": 3,
         }
         if node_bin:
             opts["js_runtimes"] = {"node": {"path": node_bin}}
@@ -34,7 +43,11 @@ class YtDlpBaseProvider(PlatformProvider):
         return opts
 
     def inspect(self, url: str) -> MediaInfoModel:
-        ydl_opts = self._get_ydl_opts()
+        ydl_opts = self._get_ydl_opts({
+            "noplaylist": True,
+            "extract_flat": False,
+            "socket_timeout": 10,
+        })
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
