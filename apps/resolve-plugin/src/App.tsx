@@ -15,8 +15,20 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 
 export const App: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<TabId>('import');
+  // Maintain all opened panels in memory so state, inputs, scroll & data are never lost
+  const [visitedTabs, setVisitedTabs] = useState<Set<TabId>>(() => new Set<TabId>(['import']));
   const [downloads, setDownloads] = useState<DownloadJob[]>([]);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const handleSelectTab = (tab: TabId) => {
+    setVisitedTabs((prev) => {
+      if (prev.has(tab)) return prev;
+      const next = new Set(prev);
+      next.add(tab);
+      return next;
+    });
+    setCurrentTab(tab);
+  };
 
   const showToast = (text: string, type: 'success' | 'error' | 'info' = 'info') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -107,10 +119,10 @@ export const App: React.FC = () => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
-      if (e.key === '1') setCurrentTab('import');
-      if (e.key === '2') setCurrentTab('queue');
-      if (e.key === '3') setCurrentTab('library');
-      if (e.key === '4') setCurrentTab('settings');
+      if (e.key === '1') handleSelectTab('import');
+      if (e.key === '2') handleSelectTab('queue');
+      if (e.key === '3') handleSelectTab('library');
+      if (e.key === '4') handleSelectTab('settings');
     };
     window.addEventListener('keydown', handleGlobalKey);
 
@@ -119,6 +131,16 @@ export const App: React.FC = () => {
       window.removeEventListener('keydown', handleGlobalKey);
     };
   }, []);
+
+  // Ensure any programmatic tab changes are tracked in visitedTabs
+  useEffect(() => {
+    setVisitedTabs((prev) => {
+      if (prev.has(currentTab)) return prev;
+      const next = new Set(prev);
+      next.add(currentTab);
+      return next;
+    });
+  }, [currentTab]);
 
   const activeQueueCount = downloads.filter(
     (j) => j.status === 'downloading' || j.status === 'processing' || j.status === 'importing' || j.status === 'queued'
@@ -132,38 +154,107 @@ export const App: React.FC = () => {
 
           <Navigation
             currentTab={currentTab}
-            onSelectTab={setCurrentTab}
+            onSelectTab={handleSelectTab}
             activeQueueCount={activeQueueCount}
           />
 
           <ErrorBoundary>
-            <main style={{ flex: 1, overflowY: 'auto' }}>
-              {currentTab === 'import' && (
-                <ImportPage
-                  onJobStarted={() => {
-                    setCurrentTab('queue');
-                    refreshDownloads();
+            <main
+              style={{
+                flex: 1,
+                position: 'relative',
+                overflow: 'hidden',
+                minHeight: 0,
+                width: '100%',
+              }}
+            >
+              {/* 1. Import Panel: Preserves URL, analyzed metadata, thumbnails, custom selections */}
+              {visitedTabs.has('import') && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    overflowY: 'auto',
+                    visibility: currentTab === 'import' ? 'visible' : 'hidden',
+                    pointerEvents: currentTab === 'import' ? 'auto' : 'none',
+                    zIndex: currentTab === 'import' ? 1 : 0,
                   }}
-                  showToast={showToast}
-                />
+                >
+                  <ImportPage
+                    onJobStarted={() => {
+                      handleSelectTab('queue');
+                      refreshDownloads();
+                    }}
+                    showToast={showToast}
+                  />
+                </div>
               )}
 
-              {currentTab === 'queue' && (
-                <QueuePage
-                  downloads={downloads}
-                  onRefresh={refreshDownloads}
-                  showToast={showToast}
-                />
+              {/* 2. Queue Panel: Preserves filter tabs, scroll, per-job target editor choices */}
+              {visitedTabs.has('queue') && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    overflowY: 'auto',
+                    visibility: currentTab === 'queue' ? 'visible' : 'hidden',
+                    pointerEvents: currentTab === 'queue' ? 'auto' : 'none',
+                    zIndex: currentTab === 'queue' ? 1 : 0,
+                  }}
+                >
+                  <QueuePage
+                    downloads={downloads}
+                    onRefresh={refreshDownloads}
+                    showToast={showToast}
+                  />
+                </div>
               )}
 
-              {currentTab === 'library' && (
-                <LibraryPage
-                  showToast={showToast}
-                />
+              {/* 3. Library Panel: Preserves search query, platform filters, editor targets */}
+              {visitedTabs.has('library') && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    overflowY: 'auto',
+                    visibility: currentTab === 'library' ? 'visible' : 'hidden',
+                    pointerEvents: currentTab === 'library' ? 'auto' : 'none',
+                    zIndex: currentTab === 'library' ? 1 : 0,
+                  }}
+                >
+                  <LibraryPage
+                    showToast={showToast}
+                    isActive={currentTab === 'library'}
+                  />
+                </div>
               )}
 
-              {currentTab === 'settings' && (
-                <SettingsPage showToast={showToast} />
+              {/* 4. Settings Panel: Preserves edited inputs and configurations */}
+              {visitedTabs.has('settings') && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    overflowY: 'auto',
+                    visibility: currentTab === 'settings' ? 'visible' : 'hidden',
+                    pointerEvents: currentTab === 'settings' ? 'auto' : 'none',
+                    zIndex: currentTab === 'settings' ? 1 : 0,
+                  }}
+                >
+                  <SettingsPage showToast={showToast} />
+                </div>
               )}
             </main>
           </ErrorBoundary>

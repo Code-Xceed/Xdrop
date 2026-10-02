@@ -22,11 +22,12 @@ import {
 
 interface LibraryPageProps {
   showToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
+  isActive?: boolean;
 }
 
 type EditorTarget = 'resolve' | 'premiere' | 'aftereffects';
 
-export const LibraryPage: React.FC<LibraryPageProps> = ({ showToast }) => {
+export const LibraryPage: React.FC<LibraryPageProps> = ({ showToast, isActive }) => {
   const { activeEditor } = useEditorContext();
   const [items, setItems] = useState<LibraryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,8 +54,10 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ showToast }) => {
     }));
   };
 
-  const fetchAssets = async () => {
-    setIsLoading(true);
+  const fetchAssets = async (silent = false) => {
+    if (!silent && items.length === 0) {
+      setIsLoading(true);
+    }
     try {
       const data = await getLibrary({
         search: search || undefined,
@@ -70,8 +73,10 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ showToast }) => {
   };
 
   useEffect(() => {
-    fetchAssets();
-  }, [platformFilter, mediaTypeFilter]);
+    if (isActive !== false) {
+      fetchAssets(items.length > 0);
+    }
+  }, [isActive, platformFilter, mediaTypeFilter]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
