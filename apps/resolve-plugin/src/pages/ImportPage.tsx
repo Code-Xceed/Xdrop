@@ -18,6 +18,8 @@ import {
   ArrowRight,
   ShieldCheck,
   Radio,
+  SlidersHorizontal,
+  Zap,
 } from 'lucide-react';
 
 interface ImportPageProps {
@@ -159,6 +161,65 @@ export const ImportPage: React.FC<ImportPageProps> = ({
   const [userSelectedEditor, setUserSelectedEditor] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Quality mode: 'presets' vs 'custom'
+  const [qualityMode, setQualityMode] = useState<'presets' | 'custom'>('presets');
+  const [presetCategory, setPresetCategory] = useState<'all' | 'video' | 'audio' | 'image'>('all');
+
+  // Custom selection dropdown state
+  const [customMediaType, setCustomMediaType] = useState<'video' | 'audio' | 'image'>('video');
+  const [customQualityAssetId, setCustomQualityAssetId] = useState<string>('');
+  const [customFormat, setCustomFormat] = useState<string>('mp4');
+
+  // Categorized asset collections
+  const videoAssets = useMemo(() => {
+    return (mediaInfo?.assets || []).filter((a) => {
+      const mt = a.mediaType || (a as any).media_type || 'video';
+      return mt === 'video';
+    });
+  }, [mediaInfo]);
+
+  const audioAssets = useMemo(() => {
+    return (mediaInfo?.assets || []).filter((a) => {
+      const mt = a.mediaType || (a as any).media_type;
+      return mt === 'audio';
+    });
+  }, [mediaInfo]);
+
+  const imageAssets = useMemo(() => {
+    return (mediaInfo?.assets || []).filter((a) => {
+      const mt = a.mediaType || (a as any).media_type;
+      return mt === 'image';
+    });
+  }, [mediaInfo]);
+
+  const filteredPresetAssets = useMemo(() => {
+    const assets = mediaInfo?.assets || [];
+    if (presetCategory === 'all') return assets;
+    return assets.filter((a) => {
+      const mt = a.mediaType || (a as any).media_type;
+      return mt === presetCategory;
+    });
+  }, [mediaInfo, presetCategory]);
+
+  const handleCustomMediaTypeChange = (newType: 'video' | 'audio' | 'image') => {
+    setCustomMediaType(newType);
+    if (!mediaInfo) return;
+    const assets = mediaInfo.assets || [];
+    if (newType === 'video') {
+      const vid = assets.find((a) => (a.mediaType || (a as any).media_type) === 'video');
+      if (vid) setCustomQualityAssetId(vid.id);
+      setCustomFormat('mp4');
+    } else if (newType === 'audio') {
+      const aud = assets.find((a) => (a.mediaType || (a as any).media_type) === 'audio');
+      if (aud) setCustomQualityAssetId(aud.id);
+      setCustomFormat('wav');
+    } else {
+      const img = assets.find((a) => (a.mediaType || (a as any).media_type) === 'image');
+      if (img) setCustomQualityAssetId(img.id);
+      setCustomFormat('jpg');
+    }
+  };
+
   // Synchronize autoImportEditor with activeEditor if user hasn't manually selected one
   useEffect(() => {
     if (!userSelectedEditor && (activeEditor === 'premiere' || activeEditor === 'aftereffects' || activeEditor === 'resolve')) {
@@ -240,6 +301,10 @@ export const ImportPage: React.FC<ImportPageProps> = ({
       const defAsset = (info.assets || []).find((a) => a.isDefault || (a as any).is_default) || info.assets?.[0];
       if (defAsset) {
         setSelectedAssetId(defAsset.id);
+        const mType = ((defAsset.mediaType || (defAsset as any).media_type || 'video') as 'video' | 'audio' | 'image');
+        setCustomMediaType(mType);
+        setCustomQualityAssetId(defAsset.id);
+        setCustomFormat(defAsset.format || (mType === 'audio' ? 'wav' : 'mp4'));
       }
     } catch (err: any) {
       setAnalysisError(err.message || 'Failed to inspect media from this URL.');
@@ -257,22 +322,61 @@ export const ImportPage: React.FC<ImportPageProps> = ({
 
   const handleStartDownload = async (overrideEditor?: 'resolve' | 'premiere' | 'aftereffects') => {
     if (!mediaInfo) return;
-    const assets = mediaInfo.assets || [];
-    const asset = assets.find((a) => a.id === selectedAssetId) || assets[0];
-    if (!asset) return;
-
     const editorToUse = overrideEditor || (autoImport ? autoImportEditor : 'none');
-    const mType = asset.mediaType || (asset as any).media_type || 'video';
-    const qLabel = asset.qualityLabel || (asset as any).quality_label || (asset.format || 'MP4').toUpperCase();
+
+    let assetId = selectedAssetId;
+    let format = 'mp4';
+    let qualityLabel = 'Standard';
+    let mediaType = 'video';
+    let transcodeVfmt: string | undefined = undefined;
+    let transcodeAfmt: string | undefined = undefined;
+    let extractAudioOnly = false;
+
+    if (qualityMode === 'custom') {
+      mediaType = customMediaType;
+      format = customFormat;
+      extractAudioOnly = customMediaType === 'audio';
+
+      if (customMediaType === 'video') {
+        assetId = customQualityAssetId || 'best_video';
+        const matched = (mediaInfo.assets || []).find((a) => a.id === assetId);
+        qualityLabel = matched ? (matched.qualityLabel || (matched as any).quality_label || 'Custom Video') : 'Custom Video';
+        if (customFormat === 'mov') {
+          transcodeVfmt = 'mov';
+        } else if (customFormat === 'mp4') {
+          transcodeVfmt = 'mp4';
+        }
+      } else if (customMediaType === 'audio') {
+        assetId = customQualityAssetId || 'audio_wav';
+        qualityLabel = `Custom Audio (${customFormat.toUpperCase()})`;
+        transcodeAfmt = customFormat;
+      } else {
+        assetId = 'thumbnail_image';
+        qualityLabel = 'Custom Image';
+      }
+    } else {
+      const assets = mediaInfo.assets || [];
+      const asset = assets.find((a) => a.id === selectedAssetId) || assets[0];
+      if (!asset) return;
+
+      assetId = asset.id;
+      format = asset.format;
+      qualityLabel = asset.qualityLabel || (asset as any).quality_label || (asset.format || 'MP4').toUpperCase();
+      mediaType = asset.mediaType || (asset as any).media_type || 'video';
+      extractAudioOnly = mediaType === 'audio';
+      if (asset.format === 'mov' || asset.id.includes('prores')) {
+        transcodeVfmt = 'mov';
+      }
+    }
 
     setIsSubmitting(true);
     try {
       await createDownload({
         source_url: mediaInfo.url,
-        asset_id: asset.id,
-        format: asset.format,
-        quality_label: qLabel,
-        media_type: mType,
+        asset_id: assetId,
+        format: format,
+        quality_label: qualityLabel,
+        media_type: mediaType,
         title: mediaInfo.title,
         author: mediaInfo.author || undefined,
         target_editor: editorToUse,
@@ -282,7 +386,9 @@ export const ImportPage: React.FC<ImportPageProps> = ({
         auto_import_to_premiere: autoImport && editorToUse === 'premiere',
         target_aftereffects_bin: targetBin,
         auto_import_to_aftereffects: autoImport && editorToUse === 'aftereffects',
-        extract_audio_only: mType === 'audio',
+        transcode_video_format: transcodeVfmt,
+        transcode_audio_format: transcodeAfmt,
+        extract_audio_only: extractAudioOnly,
       });
 
       showToast(`Download started: ${mediaInfo.title}`, 'success');
@@ -625,102 +731,467 @@ export const ImportPage: React.FC<ImportPageProps> = ({
 
           <hr style={{ border: 'none', borderTop: '1px solid var(--border-subtle)' }} />
 
-          {/* Quality Grid (Responsive Tiles) */}
+          {/* Quality Mode Switcher & Selector */}
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)' }}>
-                SELECT QUALITY
-              </span>
-              <span style={{ fontSize: '10px', color: 'var(--success)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
-                <ShieldCheck size={11} strokeWidth={2.5} /> NLE Compatible (H.264 / AAC)
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '8px',
+                marginBottom: '10px',
+              }}
+            >
+              {/* Segmented Control: Presets vs Custom */}
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '2px',
+                  backgroundColor: 'var(--bg-tertiary)',
+                  borderRadius: 'var(--radius-xs)',
+                  border: '1.5px solid #000000',
+                  boxShadow: '1.5px 1.5px 0px #000000',
+                  gap: '2px',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setQualityMode('presets')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    padding: '4px 10px',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    borderRadius: 'var(--radius-xs)',
+                    border: 'none',
+                    backgroundColor: qualityMode === 'presets' ? 'var(--accent-primary)' : 'transparent',
+                    color: qualityMode === 'presets' ? '#000000' : 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    transition: 'all 0.1s ease',
+                  }}
+                >
+                  <Zap size={12} strokeWidth={2.5} />
+                  <span>Presets ({mediaInfo.assets?.length || 0})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQualityMode('custom');
+                    if (!customQualityAssetId && mediaInfo.assets && mediaInfo.assets.length > 0) {
+                      setCustomQualityAssetId(mediaInfo.assets[0].id);
+                    }
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    padding: '4px 10px',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    borderRadius: 'var(--radius-xs)',
+                    border: 'none',
+                    backgroundColor: qualityMode === 'custom' ? 'var(--accent-primary)' : 'transparent',
+                    color: qualityMode === 'custom' ? '#000000' : 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    transition: 'all 0.1s ease',
+                  }}
+                >
+                  <SlidersHorizontal size={12} strokeWidth={2.5} />
+                  <span>Custom Settings</span>
+                </button>
+              </div>
+
+              {/* Status / NLE Badge */}
+              <span
+                style={{
+                  fontSize: '10px',
+                  color: 'var(--success)',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                  padding: '3px 7px',
+                  borderRadius: 'var(--radius-xs)',
+                  border: '1px solid rgba(34, 197, 94, 0.3)',
+                }}
+              >
+                <ShieldCheck size={12} strokeWidth={2.5} /> NLE Compatible (H.264 / AAC / ProRes)
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(135px, 1fr))', gap: '6px' }}>
-              {(mediaInfo.assets || []).map((asset) => {
-                const isSelected = selectedAssetId === asset.id;
-                const mType = asset.mediaType || (asset as any).media_type || 'video';
-                const isVideo = mType === 'video';
-                const isAudio = mType === 'audio';
-                const isImage = mType === 'image';
-                const qLabel = asset.qualityLabel || (asset as any).quality_label || (asset.format ? asset.format.toUpperCase() : 'Best');
-                const fSize = asset.filesizeApprox ?? (asset as any).filesize_approx;
-                const fmtUpper = (asset.format || 'MP4').toUpperCase();
-                const isProRes = asset.id.includes('prores') || (asset.format === 'mov' && isVideo);
+            {/* TAB 1: PRESETS MODE */}
+            {qualityMode === 'presets' && (
+              <div>
+                {/* Category Filter Pills (All, Video, Audio, Image) */}
+                <div style={{ display: 'flex', gap: '5px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                  {[
+                    { id: 'all', label: 'All', count: mediaInfo.assets?.length || 0 },
+                    { id: 'video', label: 'Video', count: videoAssets.length },
+                    { id: 'audio', label: 'Audio Only', count: audioAssets.length },
+                    ...(imageAssets.length > 0
+                      ? [{ id: 'image', label: 'Artwork / Cover', count: imageAssets.length }]
+                      : []),
+                  ].map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setPresetCategory(cat.id as any)}
+                      style={{
+                        padding: '3px 8px',
+                        fontSize: '10px',
+                        fontWeight: presetCategory === cat.id ? 800 : 600,
+                        borderRadius: 'var(--radius-xs)',
+                        border: presetCategory === cat.id
+                          ? '1px solid var(--accent-primary)'
+                          : '1px solid var(--border-subtle)',
+                        backgroundColor: presetCategory === cat.id
+                          ? 'var(--accent-subtle)'
+                          : 'var(--bg-tertiary)',
+                        color: presetCategory === cat.id ? 'var(--accent-primary)' : 'var(--text-muted)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {cat.label} ({cat.count})
+                    </button>
+                  ))}
+                </div>
 
-                return (
+                {/* Preset Cards Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '6px' }}>
+                  {filteredPresetAssets.map((asset) => {
+                    const isSelected = selectedAssetId === asset.id;
+                    const mType = asset.mediaType || (asset as any).media_type || 'video';
+                    const isVideo = mType === 'video';
+                    const isAudio = mType === 'audio';
+                    const isImage = mType === 'image';
+                    const qLabel = asset.qualityLabel || (asset as any).quality_label || (asset.format ? asset.format.toUpperCase() : 'Best');
+                    const fSize = asset.filesizeApprox ?? (asset as any).filesize_approx;
+                    const fmtUpper = (asset.format || 'MP4').toUpperCase();
+                    const isProRes = asset.id.includes('prores') || (asset.format === 'mov' && isVideo);
+
+                    return (
+                      <div
+                        key={asset.id}
+                        onClick={() => setSelectedAssetId(asset.id)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 10px',
+                          borderRadius: 'var(--radius-sm)',
+                          border: isSelected
+                            ? '1.5px solid var(--accent-primary)'
+                            : '1.5px solid var(--border-subtle)',
+                          backgroundColor: isSelected
+                            ? 'var(--accent-subtle)'
+                            : 'var(--bg-tertiary)',
+                          boxShadow: isSelected
+                            ? '2px 2px 0px var(--accent-primary)'
+                            : 'none',
+                          cursor: 'pointer',
+                          transition: 'all 0.08s ease',
+                          minHeight: '44px',
+                        }}
+                      >
+                        <div style={{ color: isSelected ? 'var(--accent-primary)' : 'var(--text-muted)', flexShrink: 0 }}>
+                          {isVideo && (isProRes ? <Sparkles size={14} strokeWidth={2.5} /> : <Film size={14} strokeWidth={2.5} />)}
+                          {isAudio && <Music size={14} strokeWidth={2.5} />}
+                          {isImage && <ImageIcon size={14} strokeWidth={2.5} />}
+                        </div>
+
+                        <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                          <div
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: 800,
+                              color: isSelected ? '#ffffff' : 'var(--text-primary)',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              lineHeight: '1.3',
+                            }}
+                            title={qLabel}
+                          >
+                            {qLabel}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: '9.5px',
+                              color: isSelected ? 'var(--text-secondary)' : 'var(--text-muted)',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              marginTop: '1px',
+                            }}
+                          >
+                            <span style={{ fontWeight: 700 }}>{fmtUpper}</span>
+                            {asset.resolution ? ` • ${asset.resolution}` : ''}
+                            {fSize ? ` • ${formatBytes(fSize)}` : ''}
+                          </div>
+                        </div>
+
+                        {isSelected && (
+                          <CheckCircle
+                            size={13}
+                            strokeWidth={2.5}
+                            color="var(--accent-primary)"
+                            style={{ flexShrink: 0 }}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Switch to Custom Card */}
                   <div
-                    key={asset.id}
-                    onClick={() => setSelectedAssetId(asset.id)}
+                    onClick={() => {
+                      setQualityMode('custom');
+                      if (!customQualityAssetId && mediaInfo.assets && mediaInfo.assets.length > 0) {
+                        setCustomQualityAssetId(mediaInfo.assets[0].id);
+                      }
+                    }}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
                       gap: '8px',
                       padding: '8px 10px',
                       borderRadius: 'var(--radius-sm)',
-                      border: isSelected
-                        ? '1.5px solid var(--accent-primary)'
-                        : '1.5px solid var(--border-subtle)',
-                      backgroundColor: isSelected
-                        ? 'var(--accent-subtle)'
-                        : 'var(--bg-tertiary)',
-                      boxShadow: isSelected
-                        ? '2px 2px 0px var(--accent-primary)'
-                        : 'none',
+                      border: '1.5px dashed var(--border-subtle)',
+                      backgroundColor: 'transparent',
                       cursor: 'pointer',
                       transition: 'all 0.08s ease',
                       minHeight: '44px',
+                      opacity: 0.8,
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent-primary)';
+                      (e.currentTarget as HTMLElement).style.opacity = '1';
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-subtle)';
+                      (e.currentTarget as HTMLElement).style.opacity = '0.8';
                     }}
                   >
-                    <div style={{ color: isSelected ? 'var(--accent-primary)' : 'var(--text-muted)', flexShrink: 0 }}>
-                      {isVideo && (isProRes ? <Sparkles size={14} strokeWidth={2.5} /> : <Film size={14} strokeWidth={2.5} />)}
-                      {isAudio && <Music size={14} strokeWidth={2.5} />}
-                      {isImage && <ImageIcon size={14} strokeWidth={2.5} />}
-                    </div>
-
-                    <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-                      <div
-                        style={{
-                          fontSize: '11px',
-                          fontWeight: 800,
-                          color: isSelected ? '#ffffff' : 'var(--text-primary)',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          lineHeight: '1.3',
-                        }}
-                        title={qLabel}
-                      >
-                        {qLabel}
+                    <SlidersHorizontal size={14} strokeWidth={2} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                        + Custom Options...
                       </div>
-                      <div
-                        style={{
-                          fontSize: '9.5px',
-                          color: isSelected ? 'var(--text-secondary)' : 'var(--text-muted)',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          marginTop: '1px',
-                        }}
-                      >
-                        <span style={{ fontWeight: 700 }}>{fmtUpper}</span>
-                        {asset.resolution ? ` • ${asset.resolution}` : ''}
-                        {fSize ? ` • ${formatBytes(fSize)}` : ''}
+                      <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>
+                        Configure Type, Quality & Codec
                       </div>
                     </div>
-
-                    {isSelected && (
-                      <CheckCircle
-                        size={13}
-                        strokeWidth={2.5}
-                        color="var(--accent-primary)"
-                        style={{ flexShrink: 0 }}
-                      />
-                    )}
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: CUSTOM CONFIGURATION DROPDOWNS */}
+            {qualityMode === 'custom' && (
+              <div
+                style={{
+                  backgroundColor: 'var(--bg-tertiary)',
+                  border: '1.5px solid #000000',
+                  borderRadius: 'var(--radius-sm)',
+                  boxShadow: '2px 2px 0px #000000',
+                  padding: '12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                }}
+              >
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+                  {/* Dropdown 1: Media Type */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+                      1. Media Type
+                    </label>
+                    <select
+                      className="input"
+                      value={customMediaType}
+                      onChange={(e) => handleCustomMediaTypeChange(e.target.value as 'video' | 'audio' | 'image')}
+                      style={{
+                        height: '34px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        backgroundColor: 'var(--bg-secondary)',
+                        color: 'var(--text-primary)',
+                        border: '1.5px solid #000000',
+                        boxShadow: '1.5px 1.5px 0px #000000',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <option value="video">🎥 Video & Audio</option>
+                      <option value="audio">🎵 Audio Only (Stem / Score)</option>
+                      {imageAssets.length > 0 && <option value="image">🖼️ Artwork / Thumbnail</option>}
+                    </select>
+                  </div>
+
+                  {/* Dropdown 2: Stream Quality / Resolution */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+                      2. Stream Quality
+                    </label>
+                    <select
+                      className="input"
+                      value={customQualityAssetId}
+                      onChange={(e) => setCustomQualityAssetId(e.target.value)}
+                      style={{
+                        height: '34px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        backgroundColor: 'var(--bg-secondary)',
+                        color: 'var(--text-primary)',
+                        border: '1.5px solid #000000',
+                        boxShadow: '1.5px 1.5px 0px #000000',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {customMediaType === 'video' &&
+                        (videoAssets.length > 0 ? (
+                          videoAssets.map((asset) => {
+                            const qLabel = asset.qualityLabel || (asset as any).quality_label || asset.id;
+                            const res = asset.resolution ? ` (${asset.resolution})` : '';
+                            const fSize = asset.filesizeApprox ? ` • ${formatBytes(asset.filesizeApprox)}` : '';
+                            return (
+                              <option key={asset.id} value={asset.id}>
+                                {qLabel}{res}{fSize}
+                              </option>
+                            );
+                          })
+                        ) : (
+                          <>
+                            <option value="best_video">Best Quality Video</option>
+                            <option value="1080p">1080p Full HD</option>
+                            <option value="720p">720p HD</option>
+                          </>
+                        ))}
+
+                      {customMediaType === 'audio' &&
+                        (audioAssets.length > 0 ? (
+                          audioAssets.map((asset) => {
+                            const qLabel = asset.qualityLabel || (asset as any).quality_label || asset.id;
+                            const fSize = asset.filesizeApprox ? ` • ${formatBytes(asset.filesizeApprox)}` : '';
+                            return (
+                              <option key={asset.id} value={asset.id}>
+                                {qLabel}{fSize}
+                              </option>
+                            );
+                          })
+                        ) : (
+                          <>
+                            <option value="audio_wav">Broadcast WAV (48kHz Uncompressed)</option>
+                            <option value="audio_mp3_320">MP3 (320kbps High Quality)</option>
+                            <option value="audio_aac">AAC / M4A (320kbps Audio)</option>
+                          </>
+                        ))}
+
+                      {customMediaType === 'image' &&
+                        (imageAssets.length > 0 ? (
+                          imageAssets.map((asset) => {
+                            const qLabel = asset.qualityLabel || (asset as any).quality_label || asset.id;
+                            const res = asset.resolution ? ` (${asset.resolution})` : '';
+                            return (
+                              <option key={asset.id} value={asset.id}>
+                                {qLabel}{res}
+                              </option>
+                            );
+                          })
+                        ) : (
+                          <option value="thumbnail_image">Full Resolution Cover Artwork</option>
+                        ))}
+                    </select>
+                  </div>
+
+                  {/* Dropdown 3: Target Output Codec / Format */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+                      3. Output Format / Codec
+                    </label>
+                    <select
+                      className="input"
+                      value={customFormat}
+                      onChange={(e) => setCustomFormat(e.target.value)}
+                      style={{
+                        height: '34px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        backgroundColor: 'var(--bg-secondary)',
+                        color: 'var(--text-primary)',
+                        border: '1.5px solid #000000',
+                        boxShadow: '1.5px 1.5px 0px #000000',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {customMediaType === 'video' && (
+                        <>
+                          <option value="mp4">MP4 (H.264 / AAC) — Universal NLE</option>
+                          <option value="mov">MOV (Apple ProRes 422) — Post-Master</option>
+                          <option value="webm">WebM (VP9 / Opus) — Original Stream</option>
+                        </>
+                      )}
+
+                      {customMediaType === 'audio' && (
+                        <>
+                          <option value="wav">WAV (48kHz PCM) — Studio Standard</option>
+                          <option value="mp3">MP3 (320kbps CBR) — High Quality</option>
+                          <option value="m4a">M4A / AAC (320kbps) — Native Streaming</option>
+                          <option value="flac">FLAC — Lossless Audio</option>
+                        </>
+                      )}
+
+                      {customMediaType === 'image' && (
+                        <>
+                          <option value="jpg">JPG — Standard Photo</option>
+                          <option value="png">PNG — Lossless RGB</option>
+                          <option value="webp">WebP — Web Format</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Pipeline Summary & Preview Info */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '8px',
+                    padding: '8px 10px',
+                    borderRadius: 'var(--radius-xs)',
+                    backgroundColor: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-subtle)',
+                    fontSize: '10.5px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontWeight: 800, color: 'var(--accent-primary)' }}>Active Pipeline:</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>
+                      {customMediaType === 'video' && customFormat === 'mov'
+                        ? 'FFmpeg ProRes 422 Master Transcoder'
+                        : customMediaType === 'audio' && customFormat === 'wav'
+                        ? 'FFmpeg 48kHz PCM Audio Extractor'
+                        : customMediaType === 'audio' && customFormat === 'mp3'
+                        ? 'FFmpeg LAME 320kbps MP3 Encoder'
+                        : 'Direct NLE-Optimized Stream Remux'}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--success)', fontWeight: 700 }}>
+                    <CheckCircle size={11} strokeWidth={2.5} />
+                    <span>Instant NLE Import Ready ({customFormat.toUpperCase()})</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <hr style={{ border: 'none', borderTop: '1px solid var(--border-subtle)' }} />
@@ -803,7 +1274,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                     : 'btn btn-primary btn-lg'
                 }
                 onClick={() => handleStartDownload()}
-                disabled={isSubmitting || !selectedAsset}
+                disabled={isSubmitting || (qualityMode === 'presets' && !selectedAsset)}
                 style={{ flex: 1, padding: '8px 14px', fontSize: '12px' }}
               >
                 {autoImport ? (
@@ -819,14 +1290,14 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                 )}
                 <span>
                   {autoImport
-                    ? `Auto-import to ${
+                    ? `Auto-import ${qualityMode === 'custom' ? `Custom ${customFormat.toUpperCase()} ` : ''}to ${
                         autoImportEditor === 'resolve'
                           ? 'DaVinci Resolve'
                           : autoImportEditor === 'premiere'
                           ? 'Premiere Pro'
                           : 'After Effects'
                       }`
-                    : 'Download Asset Only'}
+                    : `Download ${qualityMode === 'custom' ? `Custom ${customFormat.toUpperCase()}` : 'Asset Only'}`}
                 </span>
                 <ArrowRight size={13} strokeWidth={2.5} />
               </button>

@@ -184,21 +184,21 @@ class YtDlpBaseProvider(PlatformProvider):
             id="audio_wav",
             media_type="audio",
             format="wav",
-            quality_label="Audio Only (Broadcast WAV 48kHz)",
+            quality_label="Broadcast WAV (48kHz)",
             is_default=False
         ))
         assets.append(MediaAssetModel(
             id="audio_mp3",
             media_type="audio",
             format="mp3",
-            quality_label="Audio Only (MP3 320kbps)",
+            quality_label="MP3 (320kbps)",
             is_default=False
         ))
         assets.append(MediaAssetModel(
             id="audio_aac",
             media_type="audio",
             format="m4a",
-            quality_label="Audio Only (AAC / M4A)",
+            quality_label="AAC / M4A (320kbps)",
             is_default=False
         ))
 
@@ -208,7 +208,7 @@ class YtDlpBaseProvider(PlatformProvider):
                 id="thumbnail_image",
                 media_type="image",
                 format="jpg",
-                quality_label="High-Res Thumbnail",
+                quality_label="Thumbnail Image (JPG)",
                 url=info.get("thumbnail"),
                 is_default=False
             ))

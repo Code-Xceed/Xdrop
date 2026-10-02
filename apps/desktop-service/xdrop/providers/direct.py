@@ -76,7 +76,7 @@ class DirectMediaProvider(PlatformProvider):
                 id="direct_prores_mov",
                 media_type="video",
                 format="mov",
-                quality_label="ProRes 422 (MOV Master)",
+                quality_label="ProRes 422 Master",
                 filesize_approx=approx_size,
                 is_default=False
             ))
@@ -84,21 +84,21 @@ class DirectMediaProvider(PlatformProvider):
                 id="direct_audio_wav",
                 media_type="audio",
                 format="wav",
-                quality_label="Audio Only (Broadcast WAV 48kHz)",
+                quality_label="Broadcast WAV (48kHz)",
                 is_default=False
             ))
             assets.append(MediaAssetModel(
                 id="direct_audio_mp3",
                 media_type="audio",
                 format="mp3",
-                quality_label="Audio Only (MP3 320kbps)",
+                quality_label="MP3 (320kbps)",
                 is_default=False
             ))
             assets.append(MediaAssetModel(
                 id="direct_audio_aac",
                 media_type="audio",
                 format="m4a",
-                quality_label="Audio Only (AAC / M4A)",
+                quality_label="AAC / M4A (320kbps)",
                 is_default=False
             ))
         elif media_type == "audio":
