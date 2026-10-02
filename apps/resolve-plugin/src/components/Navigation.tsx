@@ -1,8 +1,8 @@
 import React from 'react';
-import { ArrowDownToLine, ListTree, FolderArchive, Settings } from 'lucide-react';
+import { ArrowDownToLine, ListTree, Settings } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
-export type TabId = 'import' | 'queue' | 'library' | 'settings';
+export type TabId = 'import' | 'queue' | 'settings';
 
 interface NavigationProps {
   currentTab: TabId;
@@ -28,11 +28,6 @@ export const Navigation: React.FC<NavigationProps> = ({
       label: 'Queue',
       icon: <ListTree size={14} strokeWidth={2.5} />,
       badge: activeQueueCount > 0 ? activeQueueCount : undefined,
-    },
-    {
-      id: 'library',
-      label: 'Library',
-      icon: <FolderArchive size={14} strokeWidth={2.5} />,
     },
     {
       id: 'settings',

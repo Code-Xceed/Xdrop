@@ -8,7 +8,6 @@ import { Header } from './components/Header';
 import { Navigation, TabId } from './components/Navigation';
 import { ImportPage } from './pages/ImportPage';
 import { QueuePage } from './pages/QueuePage';
-import { LibraryPage } from './pages/LibraryPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -114,15 +113,14 @@ export const App: React.FC = () => {
       }
     });
 
-    // Keyboard shortcuts: 1, 2, 3, 4
+    // Keyboard shortcuts: 1, 2, 3
     const handleGlobalKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
       if (e.key === '1') handleSelectTab('import');
       if (e.key === '2') handleSelectTab('queue');
-      if (e.key === '3') handleSelectTab('library');
-      if (e.key === '4') handleSelectTab('settings');
+      if (e.key === '3') handleSelectTab('settings');
     };
     window.addEventListener('keydown', handleGlobalKey);
 
@@ -216,29 +214,7 @@ export const App: React.FC = () => {
                 </div>
               )}
 
-              {/* 3. Library Panel: Preserves search query, platform filters, editor targets */}
-              {visitedTabs.has('library') && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    overflowY: 'auto',
-                    visibility: currentTab === 'library' ? 'visible' : 'hidden',
-                    pointerEvents: currentTab === 'library' ? 'auto' : 'none',
-                    zIndex: currentTab === 'library' ? 1 : 0,
-                  }}
-                >
-                  <LibraryPage
-                    showToast={showToast}
-                    isActive={currentTab === 'library'}
-                  />
-                </div>
-              )}
-
-              {/* 4. Settings Panel: Preserves edited inputs and configurations */}
+              {/* 3. Settings Panel: Preserves edited inputs and configurations */}
               {visitedTabs.has('settings') && (
                 <div
                   style={{
