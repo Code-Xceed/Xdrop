@@ -66,6 +66,7 @@ class DirectMediaProvider(PlatformProvider):
             platform_name=self.platform_name,
             title=title,
             source_id=clean_url,
+            thumbnail_url=url if media_type == "image" else None,
             assets=[asset]
         )
 

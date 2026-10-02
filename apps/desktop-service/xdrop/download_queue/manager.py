@@ -89,6 +89,12 @@ class DownloadQueueManager:
         title = req.title or "Media Asset"
         now = datetime.now(timezone.utc).isoformat()
 
+        is_auto_import = bool(
+            req.auto_import_to_resolve or
+            req.auto_import_to_premiere or
+            req.auto_import_to_aftereffects
+        )
+
         job_data = {
             "id": job_id,
             "source_url": req.source_url,
@@ -110,6 +116,12 @@ class DownloadQueueManager:
             "error_message": None,
             "resolve_imported": False,
             "resolve_clip_name": None,
+            "premiere_imported": False,
+            "premiere_bin": None,
+            "aftereffects_imported": False,
+            "aftereffects_bin": None,
+            "target_editor": req.target_editor,
+            "auto_import": 1 if is_auto_import else 0,
             "created_at": now,
             "completed_at": None,
         }

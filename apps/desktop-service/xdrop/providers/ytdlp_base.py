@@ -45,6 +45,28 @@ class YtDlpBaseProvider(PlatformProvider):
                 uploader = info.get("uploader") or info.get("channel") or info.get("creator")
                 duration = info.get("duration")
                 thumb = info.get("thumbnail")
+
+                # If entry list present (e.g. carousels or playlists), inspect first entry
+                if "entries" in info and info.get("entries"):
+                    entries = list(info.get("entries") or [])
+                    if entries and entries[0]:
+                        first_entry = entries[0]
+                        if not thumb:
+                            thumb = first_entry.get("thumbnail")
+                        if not title or title == "Unknown Title":
+                            title = first_entry.get("title") or title
+                        if not duration:
+                            duration = first_entry.get("duration")
+
+                # If thumbnail still missing, check thumbnails list (last or highest resolution)
+                if not thumb and info.get("thumbnails"):
+                    thumbs = info.get("thumbnails")
+                    if isinstance(thumbs, list):
+                        for t in reversed(thumbs):
+                            if isinstance(t, dict) and t.get("url"):
+                                thumb = t["url"]
+                                break
+
                 source_id = info.get("id") or url
 
                 assets = self._extract_assets(info)

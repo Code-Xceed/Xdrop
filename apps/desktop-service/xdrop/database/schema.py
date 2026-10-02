@@ -30,6 +30,8 @@ CREATE TABLE IF NOT EXISTS downloads (
     premiere_bin TEXT,
     aftereffects_imported INTEGER DEFAULT 0,
     aftereffects_bin TEXT,
+    target_editor TEXT,
+    auto_import INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     completed_at TIMESTAMP
 );

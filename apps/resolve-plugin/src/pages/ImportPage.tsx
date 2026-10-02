@@ -1,9 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { MediaInfo } from '@xdrop/shared-types';
 import { analyzeUrl, createDownload } from '../services/api';
 import { extractUrlsFromText, formatBytes, formatDuration } from '@xdrop/utilities';
 import { useEditorContext } from '../context/EditorContext';
-import { useTheme } from '../context/ThemeContext';
 import {
   Search,
   Clipboard,
@@ -142,8 +141,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
   onJobStarted,
   showToast,
 }) => {
-  const { activeEditor, activeEditorName, isEditorConnected } = useEditorContext();
-  const { accentColor } = useTheme();
+  const { activeEditor } = useEditorContext();
 
   const [urlInput, setUrlInput] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -152,7 +150,47 @@ export const ImportPage: React.FC<ImportPageProps> = ({
   const [selectedAssetId, setSelectedAssetId] = useState<string>('');
   const [targetBin, setTargetBin] = useState('Xdrop');
   const [autoImport, setAutoImport] = useState(true);
+  const [autoImportEditor, setAutoImportEditor] = useState<'resolve' | 'premiere' | 'aftereffects'>(() => {
+    if (activeEditor === 'premiere' || activeEditor === 'aftereffects' || activeEditor === 'resolve') {
+      return activeEditor;
+    }
+    return 'resolve';
+  });
+  const [userSelectedEditor, setUserSelectedEditor] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Synchronize autoImportEditor with activeEditor if user hasn't manually selected one
+  useEffect(() => {
+    if (!userSelectedEditor && (activeEditor === 'premiere' || activeEditor === 'aftereffects' || activeEditor === 'resolve')) {
+      setAutoImportEditor(activeEditor);
+    }
+  }, [activeEditor, userSelectedEditor]);
+
+  // Thumbnail state with resilient proxy fallback
+  const [thumbSrc, setThumbSrc] = useState<string | null>(null);
+  const [thumbError, setThumbError] = useState(false);
+
+  useEffect(() => {
+    if (mediaInfo?.thumbnailUrl) {
+      setThumbSrc(mediaInfo.thumbnailUrl);
+      setThumbError(false);
+    } else {
+      setThumbSrc(null);
+      setThumbError(false);
+    }
+  }, [mediaInfo]);
+
+  const handleThumbError = () => {
+    if (!mediaInfo?.thumbnailUrl) return;
+    const proxyUrl = `/api/analyze/thumbnail-proxy?url=${encodeURIComponent(mediaInfo.thumbnailUrl)}`;
+    if (thumbSrc !== proxyUrl) {
+      // Retry via local proxy endpoint to bypass any CDN referer or CORS blocks
+      setThumbSrc(proxyUrl);
+    } else {
+      // Both direct and proxy failed
+      setThumbError(true);
+    }
+  };
 
   // Auto-detect platform dynamically as the user types or pastes
   const detectedPlatform = useMemo(() => {
@@ -221,7 +259,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
     const asset = assets.find((a) => a.id === selectedAssetId) || assets[0];
     if (!asset) return;
 
-    const editorToUse = overrideEditor || activeEditor;
+    const editorToUse = overrideEditor || (autoImport ? autoImportEditor : 'none');
 
     setIsSubmitting(true);
     try {
@@ -235,11 +273,11 @@ export const ImportPage: React.FC<ImportPageProps> = ({
         author: mediaInfo.author || undefined,
         target_editor: editorToUse,
         target_media_pool_bin: targetBin,
-        auto_import_to_resolve: editorToUse === 'resolve' ? autoImport : false,
+        auto_import_to_resolve: autoImport && editorToUse === 'resolve',
         target_premiere_bin: targetBin,
-        auto_import_to_premiere: editorToUse === 'premiere' ? autoImport : false,
+        auto_import_to_premiere: autoImport && editorToUse === 'premiere',
         target_aftereffects_bin: targetBin,
-        auto_import_to_aftereffects: editorToUse === 'aftereffects' ? autoImport : false,
+        auto_import_to_aftereffects: autoImport && editorToUse === 'aftereffects',
         extract_audio_only: asset.mediaType === 'audio',
       });
 
@@ -478,12 +516,12 @@ export const ImportPage: React.FC<ImportPageProps> = ({
         >
           {/* Media Header (Responsive Flex) */}
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-            {mediaInfo.thumbnailUrl ? (
+            {thumbSrc && !thumbError ? (
               <div
                 style={{
                   position: 'relative',
-                  width: '120px',
-                  height: '75px',
+                  width: '125px',
+                  height: '78px',
                   borderRadius: 'var(--radius-sm)',
                   overflow: 'hidden',
                   backgroundColor: '#000000',
@@ -493,9 +531,12 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                 }}
               >
                 <img
-                  src={mediaInfo.thumbnailUrl}
+                  src={thumbSrc}
                   alt={mediaInfo.title}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
+                  onError={handleThumbError}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                 />
                 {mediaInfo.duration && (
                   <div
@@ -519,19 +560,25 @@ export const ImportPage: React.FC<ImportPageProps> = ({
             ) : (
               <div
                 style={{
-                  width: '120px',
-                  height: '75px',
+                  width: '125px',
+                  height: '78px',
                   borderRadius: 'var(--radius-sm)',
                   backgroundColor: 'var(--bg-tertiary)',
                   border: '1.5px solid #000000',
+                  boxShadow: '2px 2px 0px #000000',
                   display: 'flex',
+                  flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: 'var(--text-muted)',
+                  gap: '4px',
                   flexShrink: 0,
                 }}
               >
-                <Film size={28} strokeWidth={2.5} />
+                <Film size={26} strokeWidth={2.5} />
+                <span style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-muted)' }}>
+                  {(mediaInfo.platform || 'MEDIA').toUpperCase()}
+                </span>
               </div>
             )}
 
@@ -647,7 +694,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
 
           {/* Destination & Action */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                 Bin:
               </span>
@@ -657,86 +704,96 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                 value={targetBin}
                 onChange={(e) => setTargetBin(e.target.value)}
                 placeholder="Xdrop"
-                style={{ height: '32px', fontSize: '11px', flex: 1 }}
+                style={{ height: '32px', fontSize: '11px', flex: '1 1 120px', minWidth: '100px' }}
               />
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                <input
-                  type="checkbox"
-                  checked={autoImport}
-                  onChange={(e) => setAutoImport(e.target.checked)}
-                  style={{ accentColor: accentColor }}
-                />
-                <span style={{ color: 'var(--text-secondary)' }}>Auto-import</span>
-              </label>
-            </div>
 
-            {/* Action Buttons: Primary + Quick Alternate Editor Imports */}
-            <div style={{ display: 'flex', gap: '6px', width: '100%', alignItems: 'center' }}>
-              {/* Secondary Alternate Buttons */}
-              <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-                {activeEditor !== 'resolve' && (
-                  <button
-                    type="button"
-                    onClick={() => handleStartDownload('resolve')}
-                    disabled={isSubmitting || !selectedAsset}
-                    className="btn btn-secondary btn-sm"
-                    style={{ padding: '4px 7px', fontSize: '10px' }}
-                    title="Import to DaVinci Resolve"
+              {/* Auto-import Checkbox + Software Selection Dropdown */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  <input
+                    type="checkbox"
+                    checked={autoImport}
+                    onChange={(e) => setAutoImport(e.target.checked)}
+                    style={{ width: '15px', height: '15px', accentColor: 'var(--accent-primary)', cursor: 'pointer' }}
+                  />
+                  <span style={{ color: '#ffffff' }}>Auto-import</span>
+                </label>
+
+                {autoImport && (
+                  <select
+                    className="input"
+                    value={autoImportEditor}
+                    onChange={(e) => {
+                      setAutoImportEditor(e.target.value as 'resolve' | 'premiere' | 'aftereffects');
+                      setUserSelectedEditor(true);
+                    }}
+                    style={{
+                      height: '32px',
+                      padding: '2px 8px',
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      borderRadius: 'var(--radius-xs)',
+                      border: '1.5px solid #000000',
+                      backgroundColor: 'var(--bg-tertiary)',
+                      color:
+                        autoImportEditor === 'resolve'
+                          ? 'var(--color-resolve)'
+                          : autoImportEditor === 'premiere'
+                          ? 'var(--color-premiere)'
+                          : 'var(--color-ae)',
+                      boxShadow: '1.5px 1.5px 0px #000000',
+                      cursor: 'pointer',
+                      width: 'auto',
+                      minWidth: '135px',
+                    }}
+                    title="Select software to automatically import media into after download"
                   >
-                    To Resolve
-                  </button>
-                )}
-                {activeEditor !== 'premiere' && (
-                  <button
-                    type="button"
-                    onClick={() => handleStartDownload('premiere')}
-                    disabled={isSubmitting || !selectedAsset}
-                    className="btn btn-secondary btn-sm"
-                    style={{ padding: '4px 7px', fontSize: '10px' }}
-                    title="Import to Adobe Premiere Pro"
-                  >
-                    To Premiere
-                  </button>
-                )}
-                {activeEditor !== 'aftereffects' && (
-                  <button
-                    type="button"
-                    onClick={() => handleStartDownload('aftereffects')}
-                    disabled={isSubmitting || !selectedAsset}
-                    className="btn btn-secondary btn-sm"
-                    style={{ padding: '4px 7px', fontSize: '10px' }}
-                    title="Import to Adobe After Effects"
-                  >
-                    To AE
-                  </button>
+                    <option value="resolve">DaVinci Resolve</option>
+                    <option value="premiere">Premiere Pro</option>
+                    <option value="aftereffects">After Effects</option>
+                  </select>
                 )}
               </div>
+            </div>
 
-              {/* Primary Download CTA Button matching active editor theme */}
+            {/* Action Buttons: Primary Download CTA Button */}
+            <div style={{ display: 'flex', gap: '6px', width: '100%', alignItems: 'center' }}>
               <button
                 type="button"
                 className={
-                  activeEditor === 'aftereffects'
-                    ? 'btn btn-ae btn-lg'
-                    : activeEditor === 'premiere'
-                    ? 'btn btn-premiere btn-lg'
-                    : 'btn btn-resolve btn-lg'
+                  autoImport
+                    ? autoImportEditor === 'aftereffects'
+                      ? 'btn btn-ae btn-lg'
+                      : autoImportEditor === 'premiere'
+                      ? 'btn btn-premiere btn-lg'
+                      : 'btn btn-resolve btn-lg'
+                    : 'btn btn-primary btn-lg'
                 }
                 onClick={() => handleStartDownload()}
                 disabled={isSubmitting || !selectedAsset}
                 style={{ flex: 1, padding: '8px 14px', fontSize: '12px' }}
               >
-                {activeEditor === 'aftereffects' ? (
-                  <Sparkles size={14} strokeWidth={2.5} />
-                ) : activeEditor === 'premiere' ? (
-                  <Layers size={14} strokeWidth={2.5} />
+                {autoImport ? (
+                  autoImportEditor === 'aftereffects' ? (
+                    <Sparkles size={14} strokeWidth={2.5} />
+                  ) : autoImportEditor === 'premiere' ? (
+                    <Layers size={14} strokeWidth={2.5} />
+                  ) : (
+                    <Film size={14} strokeWidth={2.5} />
+                  )
                 ) : (
                   <Download size={14} strokeWidth={2.5} />
                 )}
                 <span>
-                  {autoImport && isEditorConnected
-                    ? `Import to ${activeEditorName}`
-                    : 'Download Asset'}
+                  {autoImport
+                    ? `Auto-import to ${
+                        autoImportEditor === 'resolve'
+                          ? 'DaVinci Resolve'
+                          : autoImportEditor === 'premiere'
+                          ? 'Premiere Pro'
+                          : 'After Effects'
+                      }`
+                    : 'Download Asset Only'}
                 </span>
                 <ArrowRight size={13} strokeWidth={2.5} />
               </button>

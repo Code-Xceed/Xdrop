@@ -99,6 +99,7 @@ export interface DownloadJob {
   aftereffectsImported?: boolean;
   aftereffectsBin?: string;
   targetEditor?: SupportedEditor;
+  autoImport?: boolean;
   importedEditor?: SupportedEditor;
   importedClipName?: string;
   createdAt: string;

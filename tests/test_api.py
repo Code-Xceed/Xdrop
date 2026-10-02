@@ -60,3 +60,28 @@ def test_api_batch_analyze():
     assert data["detected"][0]["platform"] == "youtube"
     assert data["detected"][1]["platform"] == "instagram"
     assert data["detected"][2]["platform"] == "direct"
+
+def test_api_thumbnail_proxy_invalid_url():
+    client = TestClient(app)
+    resp = client.get("/api/analyze/thumbnail-proxy?url=ftp://bad.com/img.jpg")
+    assert resp.status_code == 400
+
+def test_api_create_download_with_auto_import_options():
+    client = TestClient(app)
+    payload = {
+        "source_url": "https://example.com/sample.mp4",
+        "asset_id": "direct_original",
+        "format": "mp4",
+        "quality_label": "Original File",
+        "media_type": "video",
+        "title": "Sample Auto Import Asset",
+        "target_editor": "premiere",
+        "auto_import_to_premiere": True,
+        "target_premiere_bin": "Xdrop",
+    }
+    resp = client.post("/api/downloads", json=payload)
+    assert resp.status_code == 201
+    job = resp.json()
+    assert job["target_editor"] == "premiere"
+    assert job["auto_import"] == 1
+

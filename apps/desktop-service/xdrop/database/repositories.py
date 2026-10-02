@@ -40,9 +40,9 @@ def insert_download(job_data: Dict[str, Any]) -> None:
                 quality_label, asset_id, status, progress, speed, eta, downloaded_bytes,
                 total_bytes, output_file_path, thumbnail_path, error_message,
                 resolve_imported, resolve_clip_name, premiere_imported, premiere_bin,
-                aftereffects_imported, aftereffects_bin,
+                aftereffects_imported, aftereffects_bin, target_editor, auto_import,
                 created_at, completed_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 job_data["id"],
@@ -69,6 +69,8 @@ def insert_download(job_data: Dict[str, Any]) -> None:
                 job_data.get("premiere_bin"),
                 1 if job_data.get("aftereffects_imported") else 0,
                 job_data.get("aftereffects_bin"),
+                job_data.get("target_editor"),
+                1 if job_data.get("auto_import") else 0,
                 job_data.get("created_at", datetime.now(timezone.utc).isoformat()),
                 job_data.get("completed_at"),
             ),
@@ -180,6 +182,7 @@ def _format_download_row(r: Any) -> Dict[str, Any]:
     d["premiereBin"] = d.get("premiere_bin")
     d["aftereffectsBin"] = d.get("aftereffects_bin")
     d["targetEditor"] = d.get("target_editor")
+    d["autoImport"] = bool(d.get("auto_import", 0))
     d["createdAt"] = d.get("created_at") or ""
     d["completedAt"] = d.get("completed_at")
     d["progress"] = float(d.get("progress", 0.0) or 0.0)

@@ -71,6 +71,14 @@ def init_db() -> None:
                 conn.execute("ALTER TABLE assets ADD COLUMN aftereffects_imported INTEGER DEFAULT 0;")
             except Exception:
                 pass
+            try:
+                conn.execute("ALTER TABLE downloads ADD COLUMN target_editor TEXT;")
+            except Exception:
+                pass
+            try:
+                conn.execute("ALTER TABLE downloads ADD COLUMN auto_import INTEGER DEFAULT 0;")
+            except Exception:
+                pass
         app_logger.info("Database initialized successfully.")
     except Exception as e:
         errors_logger.critical(f"Failed to initialize database: {e}", exc_info=True)

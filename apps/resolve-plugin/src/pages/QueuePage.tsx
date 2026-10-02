@@ -283,6 +283,17 @@ export const QueuePage: React.FC<QueuePageProps> = ({
           const errorMsg = job.errorMessage || (job as any).error_message || 'Download failed.';
           const formatStr = (job.format || 'MP4').toUpperCase();
 
+          const wasAutoImportRequested = Boolean(job.autoImport ?? (job as any).auto_import);
+          const targetEditor = (job.targetEditor ?? (job as any).target_editor) as EditorTarget | undefined;
+
+          // Determine if this item was automatically imported into its targeted software
+          const isAutoImportedComplete = isCompleted && wasAutoImportRequested && (
+            (targetEditor === 'resolve' && isResolveImported) ||
+            (targetEditor === 'premiere' && isPremiereImported) ||
+            (targetEditor === 'aftereffects' && isAfterEffectsImported) ||
+            (!targetEditor && (isResolveImported || isPremiereImported || isAfterEffectsImported))
+          );
+
           const currentTarget = getSelectedEditorForJob(job);
           const isCurrentlyImporting = importingId === job.id;
 
@@ -491,7 +502,7 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                 </div>
               </div>
 
-              {/* Row 4: COMPLETED IMPORT FLOW (Dropdown Selector + Action Button) */}
+              {/* Row 4: COMPLETED IMPORT FLOW (Auto-imported badge OR Manual Import Selector) */}
               {isCompleted && (
                 <div
                   style={{
@@ -505,115 +516,151 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                     flexWrap: 'wrap',
                   }}
                 >
-                  {/* Left: Already-Imported Status Badges */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
-                    {isResolveImported && (
+                  {isAutoImportedComplete ? (
+                    /* Auto-imported mode: Display completed badge without import dropdown or button */
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <span
-                        className="badge badge-resolve"
-                        style={{ fontSize: '8.5px', padding: '1px 5px' }}
-                        title="Imported into DaVinci Resolve"
+                        className={
+                          targetEditor === 'aftereffects' || isAfterEffectsImported
+                            ? 'badge badge-ae'
+                            : targetEditor === 'premiere' || isPremiereImported
+                            ? 'badge badge-premiere'
+                            : 'badge badge-resolve'
+                        }
+                        style={{
+                          fontSize: '9.5px',
+                          padding: '3px 8px',
+                          fontWeight: 800,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                        title="Media was automatically imported into project workspace upon download completion."
                       >
-                        <Check size={9} strokeWidth={3} /> Resolve
+                        <Check size={11} strokeWidth={3} />
+                        Auto-imported to {
+                          targetEditor === 'aftereffects' || isAfterEffectsImported
+                            ? 'After Effects'
+                            : targetEditor === 'premiere' || isPremiereImported
+                            ? 'Premiere Pro'
+                            : 'DaVinci Resolve'
+                        }
                       </span>
-                    )}
-                    {isPremiereImported && (
-                      <span
-                        className="badge badge-premiere"
-                        style={{ fontSize: '8.5px', padding: '1px 5px' }}
-                        title="Imported into Adobe Premiere Pro"
-                      >
-                        <Check size={9} strokeWidth={3} /> Premiere
-                      </span>
-                    )}
-                    {isAfterEffectsImported && (
-                      <span
-                        className="badge badge-ae"
-                        style={{ fontSize: '8.5px', padding: '1px 5px' }}
-                        title="Imported into Adobe After Effects"
-                      >
-                        <Check size={9} strokeWidth={3} /> AE
-                      </span>
-                    )}
-                    {!isResolveImported && !isPremiereImported && !isAfterEffectsImported && (
-                      <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                        Choose target editor:
-                      </span>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    /* Manual import mode (or deferred auto-import): Show dropdown selector + nearby Import button */
+                    <>
+                      {/* Left: Already-Imported Status Badges */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                        {isResolveImported && (
+                          <span
+                            className="badge badge-resolve"
+                            style={{ fontSize: '8.5px', padding: '1px 5px' }}
+                            title="Imported into DaVinci Resolve"
+                          >
+                            <Check size={9} strokeWidth={3} /> Resolve
+                          </span>
+                        )}
+                        {isPremiereImported && (
+                          <span
+                            className="badge badge-premiere"
+                            style={{ fontSize: '8.5px', padding: '1px 5px' }}
+                            title="Imported into Adobe Premiere Pro"
+                          >
+                            <Check size={9} strokeWidth={3} /> Premiere
+                          </span>
+                        )}
+                        {isAfterEffectsImported && (
+                          <span
+                            className="badge badge-ae"
+                            style={{ fontSize: '8.5px', padding: '1px 5px' }}
+                            title="Imported into Adobe After Effects"
+                          >
+                            <Check size={9} strokeWidth={3} /> AE
+                          </span>
+                        )}
+                        {!isResolveImported && !isPremiereImported && !isAfterEffectsImported && (
+                          <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                            Choose target editor:
+                          </span>
+                        )}
+                      </div>
 
-                  {/* Right: Software Selection Dropdown + Nearby Import Button */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                    <select
-                      className="input"
-                      value={currentTarget}
-                      onChange={(e) => handleEditorSelectionChange(job.id, e.target.value as EditorTarget)}
-                      style={{
-                        height: '28px',
-                        padding: '2px 8px',
-                        fontSize: '11px',
-                        fontWeight: 800,
-                        borderRadius: 'var(--radius-xs)',
-                        border: '1.5px solid #000000',
-                        backgroundColor: 'var(--bg-tertiary)',
-                        color:
-                          currentTarget === 'resolve'
-                            ? 'var(--color-resolve)'
-                            : currentTarget === 'premiere'
-                            ? 'var(--color-premiere)'
-                            : 'var(--color-ae)',
-                        boxShadow: '1.5px 1.5px 0px #000000',
-                        width: 'auto',
-                        minWidth: '135px',
-                        cursor: 'pointer',
-                      }}
-                      title="Select software for importing"
-                    >
-                      <option value="resolve">
-                        DaVinci Resolve {isResolveImported ? '✓' : ''}
-                      </option>
-                      <option value="premiere">
-                        Premiere Pro {isPremiereImported ? '✓' : ''}
-                      </option>
-                      <option value="aftereffects">
-                        After Effects {isAfterEffectsImported ? '✓' : ''}
-                      </option>
-                    </select>
+                      {/* Right: Software Selection Dropdown + Nearby Import Button */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <select
+                          className="input"
+                          value={currentTarget}
+                          onChange={(e) => handleEditorSelectionChange(job.id, e.target.value as EditorTarget)}
+                          style={{
+                            height: '28px',
+                            padding: '2px 8px',
+                            fontSize: '11px',
+                            fontWeight: 800,
+                            borderRadius: 'var(--radius-xs)',
+                            border: '1.5px solid #000000',
+                            backgroundColor: 'var(--bg-tertiary)',
+                            color:
+                              currentTarget === 'resolve'
+                                ? 'var(--color-resolve)'
+                                : currentTarget === 'premiere'
+                                ? 'var(--color-premiere)'
+                                : 'var(--color-ae)',
+                            boxShadow: '1.5px 1.5px 0px #000000',
+                            width: 'auto',
+                            minWidth: '135px',
+                            cursor: 'pointer',
+                          }}
+                          title="Select software for importing"
+                        >
+                          <option value="resolve">
+                            DaVinci Resolve {isResolveImported ? '✓' : ''}
+                          </option>
+                          <option value="premiere">
+                            Premiere Pro {isPremiereImported ? '✓' : ''}
+                          </option>
+                          <option value="aftereffects">
+                            After Effects {isAfterEffectsImported ? '✓' : ''}
+                          </option>
+                        </select>
 
-                    <button
-                      onClick={() => handleTriggerImport(job.id, currentTarget)}
-                      disabled={isCurrentlyImporting}
-                      className={
-                        currentTarget === 'aftereffects'
-                          ? 'btn btn-sm btn-ae'
-                          : currentTarget === 'premiere'
-                          ? 'btn btn-sm btn-premiere'
-                          : 'btn btn-sm btn-resolve'
-                      }
-                      style={{
-                        height: '28px',
-                        padding: '3px 10px',
-                        fontSize: '11px',
-                        fontWeight: 800,
-                        gap: '4px',
-                      }}
-                      title={`Import asset into ${
-                        currentTarget === 'resolve'
-                          ? 'DaVinci Resolve'
-                          : currentTarget === 'premiere'
-                          ? 'Adobe Premiere Pro'
-                          : 'Adobe After Effects'
-                      }`}
-                    >
-                      {isCurrentlyImporting ? (
-                        <span className="spin">⟳</span>
-                      ) : (
-                        <ArrowUpRight size={12} strokeWidth={2.5} />
-                      )}
-                      <span>
-                        {isAlreadyImportedInTarget ? 'Re-import' : 'Import'}
-                      </span>
-                    </button>
-                  </div>
+                        <button
+                          onClick={() => handleTriggerImport(job.id, currentTarget)}
+                          disabled={isCurrentlyImporting}
+                          className={
+                            currentTarget === 'aftereffects'
+                              ? 'btn btn-sm btn-ae'
+                              : currentTarget === 'premiere'
+                              ? 'btn btn-sm btn-premiere'
+                              : 'btn btn-sm btn-resolve'
+                          }
+                          style={{
+                            height: '28px',
+                            padding: '3px 10px',
+                            fontSize: '11px',
+                            fontWeight: 800,
+                            gap: '4px',
+                          }}
+                          title={`Import asset into ${
+                            currentTarget === 'resolve'
+                              ? 'DaVinci Resolve'
+                              : currentTarget === 'premiere'
+                              ? 'Adobe Premiere Pro'
+                              : 'Adobe After Effects'
+                          }`}
+                        >
+                          {isCurrentlyImporting ? (
+                            <span className="spin">⟳</span>
+                          ) : (
+                            <ArrowUpRight size={12} strokeWidth={2.5} />
+                          )}
+                          <span>
+                            {isAlreadyImportedInTarget ? 'Re-import' : 'Import'}
+                          </span>
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>

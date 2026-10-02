@@ -61,3 +61,33 @@ async def analyze_batch_urls(req: BatchAnalyzeRequest):
         })
 
     return {"detected": results, "total": len(results)}
+
+@router.get("/thumbnail-proxy")
+async def proxy_thumbnail(url: str):
+    """Proxies an external thumbnail image to bypass strict CDN Referer or CORS restrictions."""
+    url_clean = url.strip()
+    if not (url_clean.startswith("http://") or url_clean.startswith("https://")):
+        raise HTTPException(status_code=400, detail="Invalid thumbnail URL.")
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+        "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+    }
+    try:
+        import httpx
+        from fastapi.responses import Response
+        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+            resp = await client.get(url_clean, headers=headers)
+            if resp.status_code != 200:
+                raise HTTPException(status_code=resp.status_code, detail="Failed to fetch upstream thumbnail.")
+            content_type = resp.headers.get("content-type", "image/jpeg")
+            return Response(
+                content=resp.content,
+                media_type=content_type,
+                headers={"Cache-Control": "public, max-age=86400"}
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        app_logger.warning(f"Failed to proxy thumbnail {url_clean}: {e}")
+        raise HTTPException(status_code=502, detail=f"Proxy error: {str(e)}")
