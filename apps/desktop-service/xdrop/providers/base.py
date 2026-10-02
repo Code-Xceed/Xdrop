@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Optional, Callable
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
 
 class MediaAssetModel(BaseModel):
     id: str
@@ -15,6 +15,26 @@ class MediaAssetModel(BaseModel):
     url: Optional[str] = None
     is_default: bool = False
 
+    @computed_field
+    @property
+    def mediaType(self) -> str:
+        return self.media_type
+
+    @computed_field
+    @property
+    def qualityLabel(self) -> str:
+        return self.quality_label
+
+    @computed_field
+    @property
+    def filesizeApprox(self) -> Optional[int]:
+        return self.filesize_approx
+
+    @computed_field
+    @property
+    def isDefault(self) -> bool:
+        return self.is_default
+
 class MediaInfoModel(BaseModel):
     url: str
     platform: str
@@ -27,6 +47,26 @@ class MediaInfoModel(BaseModel):
     thumbnail_url: Optional[str] = None
     description: Optional[str] = None
     assets: List[MediaAssetModel] = []
+
+    @computed_field
+    @property
+    def platformName(self) -> str:
+        return self.platform_name
+
+    @computed_field
+    @property
+    def authorUrl(self) -> Optional[str]:
+        return self.author_url
+
+    @computed_field
+    @property
+    def sourceId(self) -> str:
+        return self.source_id
+
+    @computed_field
+    @property
+    def thumbnailUrl(self) -> Optional[str]:
+        return self.thumbnail_url
 
 class DownloadResult(BaseModel):
     success: bool

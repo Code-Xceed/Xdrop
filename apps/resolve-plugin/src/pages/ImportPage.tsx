@@ -171,8 +171,9 @@ export const ImportPage: React.FC<ImportPageProps> = ({
   const [thumbError, setThumbError] = useState(false);
 
   useEffect(() => {
-    if (mediaInfo?.thumbnailUrl) {
-      setThumbSrc(mediaInfo.thumbnailUrl);
+    const rawThumb = mediaInfo?.thumbnailUrl || (mediaInfo as any)?.thumbnail_url;
+    if (rawThumb) {
+      setThumbSrc(rawThumb);
       setThumbError(false);
     } else {
       setThumbSrc(null);
@@ -181,8 +182,9 @@ export const ImportPage: React.FC<ImportPageProps> = ({
   }, [mediaInfo]);
 
   const handleThumbError = () => {
-    if (!mediaInfo?.thumbnailUrl) return;
-    const proxyUrl = `/api/analyze/thumbnail-proxy?url=${encodeURIComponent(mediaInfo.thumbnailUrl)}`;
+    const rawThumb = mediaInfo?.thumbnailUrl || (mediaInfo as any)?.thumbnail_url;
+    if (!rawThumb) return;
+    const proxyUrl = `/api/analyze/thumbnail-proxy?url=${encodeURIComponent(rawThumb)}`;
     if (thumbSrc !== proxyUrl) {
       // Retry via local proxy endpoint to bypass any CDN referer or CORS blocks
       setThumbSrc(proxyUrl);
@@ -235,7 +237,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
     try {
       const info = await analyzeUrl(targetUrl);
       setMediaInfo(info);
-      const defAsset = info.assets?.find((a) => a.isDefault) || info.assets?.[0];
+      const defAsset = (info.assets || []).find((a) => a.isDefault || (a as any).is_default) || info.assets?.[0];
       if (defAsset) {
         setSelectedAssetId(defAsset.id);
       }
@@ -260,6 +262,8 @@ export const ImportPage: React.FC<ImportPageProps> = ({
     if (!asset) return;
 
     const editorToUse = overrideEditor || (autoImport ? autoImportEditor : 'none');
+    const mType = asset.mediaType || (asset as any).media_type || 'video';
+    const qLabel = asset.qualityLabel || (asset as any).quality_label || (asset.format || 'MP4').toUpperCase();
 
     setIsSubmitting(true);
     try {
@@ -267,8 +271,8 @@ export const ImportPage: React.FC<ImportPageProps> = ({
         source_url: mediaInfo.url,
         asset_id: asset.id,
         format: asset.format,
-        quality_label: asset.qualityLabel,
-        media_type: asset.mediaType,
+        quality_label: qLabel,
+        media_type: mType,
         title: mediaInfo.title,
         author: mediaInfo.author || undefined,
         target_editor: editorToUse,
@@ -278,7 +282,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
         auto_import_to_premiere: autoImport && editorToUse === 'premiere',
         target_aftereffects_bin: targetBin,
         auto_import_to_aftereffects: autoImport && editorToUse === 'aftereffects',
-        extract_audio_only: asset.mediaType === 'audio',
+        extract_audio_only: mType === 'audio',
       });
 
       showToast(`Download started: ${mediaInfo.title}`, 'success');
@@ -632,11 +636,17 @@ export const ImportPage: React.FC<ImportPageProps> = ({
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '6px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(135px, 1fr))', gap: '6px' }}>
               {(mediaInfo.assets || []).map((asset) => {
                 const isSelected = selectedAssetId === asset.id;
-                const isVideo = asset.mediaType === 'video';
-                const isAudio = asset.mediaType === 'audio';
+                const mType = asset.mediaType || (asset as any).media_type || 'video';
+                const isVideo = mType === 'video';
+                const isAudio = mType === 'audio';
+                const isImage = mType === 'image';
+                const qLabel = asset.qualityLabel || (asset as any).quality_label || (asset.format ? asset.format.toUpperCase() : 'Best');
+                const fSize = asset.filesizeApprox ?? (asset as any).filesize_approx;
+                const fmtUpper = (asset.format || 'MP4').toUpperCase();
+                const isProRes = asset.id.includes('prores') || (asset.format === 'mov' && isVideo);
 
                 return (
                   <div
@@ -659,21 +669,43 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                         : 'none',
                       cursor: 'pointer',
                       transition: 'all 0.08s ease',
+                      minHeight: '44px',
                     }}
                   >
-                    <div style={{ color: isSelected ? '#ffffff' : 'var(--text-muted)' }}>
-                      {isVideo && <Film size={14} strokeWidth={2.5} />}
+                    <div style={{ color: isSelected ? 'var(--accent-primary)' : 'var(--text-muted)', flexShrink: 0 }}>
+                      {isVideo && (isProRes ? <Sparkles size={14} strokeWidth={2.5} /> : <Film size={14} strokeWidth={2.5} />)}
                       {isAudio && <Music size={14} strokeWidth={2.5} />}
-                      {asset.mediaType === 'image' && <ImageIcon size={14} strokeWidth={2.5} />}
+                      {isImage && <ImageIcon size={14} strokeWidth={2.5} />}
                     </div>
 
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '11.5px', fontWeight: 800, color: isSelected ? '#ffffff' : 'var(--text-primary)' }}>
-                        {asset.qualityLabel}
+                    <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                      <div
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 800,
+                          color: isSelected ? '#ffffff' : 'var(--text-primary)',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          lineHeight: '1.3',
+                        }}
+                        title={qLabel}
+                      >
+                        {qLabel}
                       </div>
-                      <div style={{ fontSize: '9.5px', color: 'var(--text-muted)' }}>
-                        {(asset.format || 'MP4').toUpperCase()}
-                        {asset.filesizeApprox ? ` • ${formatBytes(asset.filesizeApprox)}` : ''}
+                      <div
+                        style={{
+                          fontSize: '9.5px',
+                          color: isSelected ? 'var(--text-secondary)' : 'var(--text-muted)',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          marginTop: '1px',
+                        }}
+                      >
+                        <span style={{ fontWeight: 700 }}>{fmtUpper}</span>
+                        {asset.resolution ? ` • ${asset.resolution}` : ''}
+                        {fSize ? ` • ${formatBytes(fSize)}` : ''}
                       </div>
                     </div>
 
@@ -682,6 +714,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                         size={13}
                         strokeWidth={2.5}
                         color="var(--accent-primary)"
+                        style={{ flexShrink: 0 }}
                       />
                     )}
                   </div>

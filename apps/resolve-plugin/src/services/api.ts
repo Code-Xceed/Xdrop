@@ -44,7 +44,32 @@ export async function analyzeUrl(url: string): Promise<MediaInfo> {
     const errorData = await resp.json().catch(() => ({}));
     throw new Error(errorData.detail || `Analysis failed with status ${resp.status}`);
   }
-  return resp.json();
+  const data = await resp.json();
+  return {
+    url: data.url,
+    platform: data.platform,
+    platformName: data.platformName || data.platform_name || data.platform,
+    title: data.title,
+    author: data.author,
+    authorUrl: data.authorUrl || data.author_url,
+    sourceId: data.sourceId || data.source_id,
+    duration: data.duration,
+    thumbnailUrl: data.thumbnailUrl || data.thumbnail_url,
+    description: data.description,
+    assets: (data.assets || []).map((a: any) => ({
+      id: a.id,
+      mediaType: a.mediaType || a.media_type || 'video',
+      format: a.format || 'mp4',
+      qualityLabel: a.qualityLabel || a.quality_label || (a.format ? a.format.toUpperCase() : 'Standard'),
+      resolution: a.resolution,
+      fps: a.fps,
+      vcodec: a.vcodec,
+      acodec: a.acodec,
+      filesizeApprox: a.filesizeApprox ?? a.filesize_approx,
+      url: a.url,
+      isDefault: Boolean(a.isDefault ?? a.is_default),
+    })),
+  };
 }
 
 export async function analyzeBatchUrls(urls: string[]): Promise<{ detected: Array<{ url: string; supported: boolean; platform: string; platformName: string }>; total: number }> {
