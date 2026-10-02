@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <title>Xdrop — Premiere Pro</title>
+    <script src="js/CSInterface.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #07080a;
+            color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 12px;
+        }
+        #app-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+        #offline-notice {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            padding: 24px;
+            background-color: #0b0c10;
+        }
+        .btn {
+            background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 18px;
+            margin-top: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 2px 12px rgba(14, 165, 233, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <iframe id="app-frame" src="http://127.0.0.1:8484?host=premiere"></iframe>
+
+    <div id="offline-notice">
+        <h3>Xdrop Desktop Service is Offline</h3>
+        <p style="color: #a1a1aa; margin-top: 8px;">
+            The local download engine (port 8484) needs to be running.
+        </p>
+        <button class="btn" onclick="retryConnection()">Retry Connection</button>
+    </div>
+
+    <script>
+        const csInterface = new CSInterface();
+        let currentHost = 'premiere';
+        try {
+            const env = csInterface.getHostEnvironment();
+            if (env && env.appId === 'AEFT') {
+                currentHost = 'aftereffects';
+                document.title = 'Xdrop — After Effects';
+            } else {
+                document.title = 'Xdrop — Premiere Pro';
+            }
+        } catch (_) {}
+
+        // Set initial frame src matching host
+        const appFrame = document.getElementById('app-frame');
+        if (appFrame) {
+            appFrame.src = "http://127.0.0.1:8484?host=" + currentHost;
+        }
+
+        let ws = null;
+
+        function checkHostProject(callback) {
+            if (currentHost === 'aftereffects') {
+                csInterface.evalScript('getAfterEffectsProjectInfo()', function(res) {
+                    try {
+                        const info = JSON.parse(res);
+                        fetch('http://127.0.0.1:8484/api/aftereffects/heartbeat', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(info)
+                        }).catch(function() {});
+                        if (callback) callback(info);
+                    } catch(e) {
+                        if (callback) callback({ isAvailable: false, error: e.toString() });
+                    }
+                });
+            } else {
+                csInterface.evalScript('getPremiereProjectInfo()', function(res) {
+                    try {
+                        const info = JSON.parse(res);
+                        fetch('http://127.0.0.1:8484/api/premiere/heartbeat', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(info)
+                        }).catch(function() {});
+                        if (callback) callback(info);
+                    } catch(e) {
+                        if (callback) callback({ isAvailable: false, error: e.toString() });
+                    }
+                });
+            }
+        }
+
+        // Periodic project info check
+        setInterval(function() {
+            checkHostProject(function(info) {
+                const frame = document.getElementById('app-frame');
+                if (frame && frame.contentWindow) {
+                    frame.contentWindow.postMessage({
+                        type: 'HOST_INFO',
+                        host: currentHost,
+                        projectInfo: info
+                    }, '*');
+                }
+            });
+        }, 8000);
+
+        function importToHost(filePath, binName) {
+            if (!filePath) return;
+            const escapedPath = filePath.replace(/\\/g, "\\\\");
+            if (currentHost === 'aftereffects') {
+                const script = `importMediaIntoAfterEffects("${escapedPath}", "${binName || 'Xdrop'}")`;
+                csInterface.evalScript(script, function(result) {
+                    console.log("[Xdrop CEP AE] Import response:", result);
+                });
+            } else {
+                const script = `importMediaIntoPremiere("${escapedPath}", "${binName || 'Xdrop'}")`;
+                csInterface.evalScript(script, function(result) {
+                    console.log("[Xdrop CEP Premiere] Import response:", result);
+                });
+            }
+        }
+
+        let pingTimer = null;
+
+        function startPing() {
+            if (pingTimer) clearInterval(pingTimer);
+            pingTimer = setInterval(function() {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    try {
+                        ws.send(JSON.stringify({ type: 'PING' }));
+                    } catch (_) {}
+                }
+            }, 15000);
+        }
+
+        function stopPing() {
+            if (pingTimer) {
+                clearInterval(pingTimer);
+                pingTimer = null;
+            }
+        }
+
+        function connectWebSocket() {
+            try {
+                if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+                    return;
+                }
+
+                ws = new WebSocket("ws://127.0.0.1:8484/ws");
+
+                ws.onopen = function() {
+                    console.log("[Xdrop CEP] Connected to Xdrop engine WebSocket. Host:", currentHost);
+                    startPing();
+                    document.getElementById('app-frame').style.display = 'block';
+                    document.getElementById('offline-notice').style.display = 'none';
+
+                    checkHostProject(function(info) {
+                        const frame = document.getElementById('app-frame');
+                        if (frame && frame.contentWindow) {
+                            frame.contentWindow.postMessage({
+                                type: 'HOST_INFO',
+                                host: currentHost,
+                                projectInfo: info
+                            }, '*');
+                        }
+                    });
+                };
+
+                ws.onmessage = function(event) {
+                    try {
+                        const msg = JSON.parse(event.data);
+                        if (msg.type === "PONG") return;
+                        if (msg.type === "PREMIERE_IMPORT_REQUEST" && currentHost === "premiere" && msg.payload) {
+                            const paths = msg.payload.filePaths || [];
+                            const targetBin = msg.payload.targetBin || "Xdrop";
+                            paths.forEach(function(p) {
+                                importToHost(p, targetBin);
+                            });
+                        } else if (msg.type === "AFTEREFFECTS_IMPORT_REQUEST" && currentHost === "aftereffects" && msg.payload) {
+                            const paths = msg.payload.filePaths || [];
+                            const targetBin = msg.payload.targetBin || "Xdrop";
+                            paths.forEach(function(p) {
+                                importToHost(p, targetBin);
+                            });
+                        }
+                    } catch(e) {
+                        console.error("[Xdrop CEP] Message error:", e);
+                    }
+                };
+
+                ws.onerror = function(err) {
+                    console.warn("[Xdrop CEP] WebSocket error, maintaining frame display:", err);
+                    stopPing();
+                };
+
+                ws.onclose = function() {
+                    stopPing();
+                    setTimeout(connectWebSocket, 3000);
+                };
+            } catch(e) {
+                console.warn("[Xdrop CEP] WebSocket connect exception:", e);
+                stopPing();
+                setTimeout(connectWebSocket, 3000);
+            }
+        }
+
+        window.addEventListener('message', function(event) {
+            if (event.data && (event.data.type === 'IMPORT_TO_PREMIERE' || event.data.type === 'IMPORT_TO_AFTEREFFECTS')) {
+                importToHost(event.data.filePath, event.data.binName);
+            } else if (event.data && event.data.type === 'REQUEST_HOST_INFO') {
+                checkHostProject(function(info) {
+                    if (event.source) {
+                        event.source.postMessage({
+                            type: 'HOST_INFO',
+                            host: currentHost,
+                            projectInfo: info
+                        }, '*');
+                    }
+                });
+            }
+        });
+
+        function retryConnection() {
+            document.getElementById('app-frame').src = "http://127.0.0.1:8484?host=" + currentHost + "&t=" + Date.now();
+            connectWebSocket();
+        }
+
+        // Initialize on load
+        window.onload = function() {
+            connectWebSocket();
+        };
+    </script>
+</body>
+</html>

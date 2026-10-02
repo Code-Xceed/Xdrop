@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@xdrop/shared-types": ["../../packages/shared-types/src/index.ts"],
+      "@xdrop/protocol": ["../../packages/protocol/src/index.ts"],
+      "@xdrop/utilities": ["../../packages/utilities/src/index.ts"],
+      "@resolvefetch/shared-types": ["../../packages/shared-types/src/index.ts"],
+      "@resolvefetch/protocol": ["../../packages/protocol/src/index.ts"],
+      "@resolvefetch/utilities": ["../../packages/utilities/src/index.ts"]
+    }
+  },
+  "include": ["src"]
+}

@@ -1,0 +1,33 @@
+# Node & Web
+node_modules/
+dist/
+dist-installer/
+.npm/
+.turbo/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+*.egg-info/
+.venv/
+venv/
+ENV/
+build/
+
+# Local databases and logs
+*.db
+*.db-wal
+*.db-shm
+logs/
+thumbnails/
+proxies/
+*.log
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,409 @@
+:root {
+  color-scheme: dark;
+
+  /* ==========================================================================
+     1. MINIMAL NEO-BRUTALIST STUDIO FOUNDATIONS (Deep Obsidian + Refined Grid)
+     ========================================================================== */
+  --bg-void: #08090d;
+  --bg-primary: #0e1017;
+  --bg-secondary: #131620;
+  --bg-tertiary: #181c2b;
+  --bg-elevated: #20263a;
+  --bg-hover: #283047;
+  --bg-active: #323b56;
+
+  /* Sharp 1.5px/2px Neo-Brutalist Outlines */
+  --border-subtle: #24293a;
+  --border-default: #353d54;
+  --border-strong: #4f5b7d;
+  --border-dark: #000000;
+
+  /* Typography */
+  --text-primary: #ffffff;
+  --text-secondary: #cbd5e1;
+  --text-muted: #7b8ba5;
+  --text-disabled: #4e5a70;
+
+  /* ==========================================================================
+     2. REFINED HYPER-PUNCHY ACCENTS (Black, Red & Blue)
+     ========================================================================== */
+  /* DaVinci Resolve Neo-Red */
+  --color-resolve: #ff2a5f;
+  --color-resolve-hover: #e01a4f;
+  --color-resolve-subtle: rgba(255, 42, 95, 0.16);
+  --color-resolve-border: #ff2a5f;
+  --color-resolve-shadow: 2.5px 2.5px 0px #ff2a5f;
+  --color-resolve-gradient: linear-gradient(135deg, #ff2a5f 0%, #d81141 100%);
+
+  /* Adobe Premiere Pro Neo-Blue */
+  --color-premiere: #00d2ff;
+  --color-premiere-hover: #00b4d8;
+  --color-premiere-subtle: rgba(0, 210, 255, 0.16);
+  --color-premiere-border: #00d2ff;
+  --color-premiere-shadow: 2.5px 2.5px 0px #00d2ff;
+  --color-premiere-gradient: linear-gradient(135deg, #00d2ff 0%, #0077b6 100%);
+
+  /* Adobe After Effects Neo-Purple */
+  --color-ae: #a855f7;
+  --color-ae-hover: #9333ea;
+  --color-ae-subtle: rgba(168, 85, 247, 0.16);
+  --color-ae-border: #a855f7;
+  --color-ae-shadow: 2.5px 2.5px 0px #a855f7;
+  --color-ae-gradient: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+  --color-ae-glow: rgba(168, 85, 247, 0.35);
+
+  /* Secondary Status */
+  --success: #00ff88;
+  --success-subtle: rgba(0, 255, 136, 0.15);
+  --warning: #ffd600;
+  --warning-subtle: rgba(255, 214, 0, 0.15);
+  --danger: #ff2a5f;
+  --danger-subtle: rgba(255, 42, 95, 0.15);
+
+  /* Geometry & Hard Shadows */
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  /* Refined Hard Drop Shadows */
+  --neo-shadow-xs: 1.5px 1.5px 0px #000000;
+  --neo-shadow-sm: 2px 2px 0px #000000;
+  --neo-shadow-md: 3px 3px 0px #000000;
+  --neo-shadow-card: 3px 3px 0px #000000;
+
+  /* Default Studio Accent (Consistent Electric Cyber Cyan) */
+  --accent-primary: var(--color-premiere);
+  --accent-hover: var(--color-premiere-hover);
+  --accent-subtle: var(--color-premiere-subtle);
+  --accent-border: var(--color-premiere-border);
+  --accent-shadow: var(--color-premiere-shadow);
+  --accent-gradient: var(--color-premiere-gradient);
+
+  scrollbar-color: #353d54 #0d0f16;
+  scrollbar-width: thin;
+}
+
+/* ==========================================================================
+   3. BASE RESET & TEXTURE
+   ========================================================================== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-void);
+  background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 16px 16px;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-x: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+input, textarea, select, button {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* Scrollbars */
+@supports not (scrollbar-color: auto) {
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--bg-void);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-default);
+    border: 1px solid #000;
+  }
+}
+
+/* ==========================================================================
+   4. COMPACT NEO-BRUTALIST BUTTONS
+   ========================================================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid #000000;
+  background: var(--bg-tertiary);
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: var(--neo-shadow-sm);
+  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease;
+  white-space: nowrap;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translate(-0.5px, -0.5px);
+  box-shadow: var(--neo-shadow-md);
+  background: var(--bg-hover);
+}
+
+.btn:active:not(:disabled) {
+  transform: translate(1.5px, 1.5px);
+  box-shadow: 0px 0px 0px transparent;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.btn-sm {
+  padding: 3px 8px;
+  font-size: 10.5px;
+  box-shadow: var(--neo-shadow-xs);
+}
+
+.btn-sm:active:not(:disabled) {
+  transform: translate(1px, 1px);
+  box-shadow: 0px 0px 0px transparent;
+}
+
+.btn-lg {
+  padding: 9px 18px;
+  font-size: 12.5px;
+  font-weight: 800;
+  box-shadow: var(--neo-shadow-md);
+}
+
+.btn-primary {
+  background: var(--accent-primary);
+  color: #000000;
+  border: 1.5px solid #000000;
+  box-shadow: var(--neo-shadow-sm);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  color: #000000;
+}
+
+.btn-resolve {
+  background: var(--color-resolve);
+  color: #ffffff;
+  border: 1.5px solid #000000;
+  box-shadow: 2px 2px 0px #000000;
+}
+
+.btn-resolve:hover:not(:disabled) {
+  background: var(--color-resolve-hover);
+  box-shadow: 3px 3px 0px #000000;
+}
+
+.btn-premiere {
+  background: var(--color-premiere);
+  color: #000000;
+  border: 1.5px solid #000000;
+  box-shadow: 2px 2px 0px #000000;
+}
+
+.btn-premiere:hover:not(:disabled) {
+  background: var(--color-premiere-hover);
+  box-shadow: 3px 3px 0px #000000;
+}
+
+.btn-ae {
+  background: var(--color-ae);
+  color: #ffffff;
+  border: 1.5px solid #000000;
+  box-shadow: 2px 2px 0px #000000;
+}
+
+.btn-ae:hover:not(:disabled) {
+  background: var(--color-ae-hover);
+  box-shadow: 3px 3px 0px #000000;
+}
+
+.btn-secondary {
+  background: var(--bg-secondary);
+  border: 1.5px solid var(--border-default);
+  color: var(--text-primary);
+  box-shadow: var(--neo-shadow-xs);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: #ffffff;
+  background: var(--bg-tertiary);
+  color: #ffffff;
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1.5px solid transparent;
+  box-shadow: none;
+  color: var(--text-secondary);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--bg-tertiary);
+  border-color: var(--border-subtle);
+  color: #ffffff;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-danger {
+  background: #ff2a5f;
+  color: #ffffff;
+  border: 1.5px solid #000000;
+  box-shadow: var(--neo-shadow-xs);
+}
+
+/* ==========================================================================
+   5. COMPACT NEO-BRUTALIST INPUTS
+   ========================================================================== */
+.input {
+  background: var(--bg-primary);
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  outline: none;
+  box-shadow: var(--neo-shadow-xs);
+  transition: all 0.08s ease;
+  width: 100%;
+}
+
+.input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 2px 2px 0px var(--accent-primary);
+  background: var(--bg-secondary);
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+}
+
+/* ==========================================================================
+   6. COMPACT PANELS & CARDS
+   ========================================================================== */
+.panel {
+  background: var(--bg-secondary);
+  border: 1.5px solid #000000;
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  box-shadow: var(--neo-shadow-card);
+}
+
+.card {
+  background: var(--bg-tertiary);
+  border: 1.5px solid #000000;
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  box-shadow: 2px 2px 0px #000000;
+  transition: all 0.1s ease;
+}
+
+.card:hover {
+  transform: translate(-0.5px, -0.5px);
+  box-shadow: 3px 3px 0px #000000;
+}
+
+/* ==========================================================================
+   7. CHUNKY COMPACT BADGES
+   ========================================================================== */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  font-size: 9.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: var(--radius-xs);
+  border: 1px solid #000000;
+  box-shadow: 1px 1px 0px #000000;
+  line-height: 1.2;
+}
+
+.badge-resolve {
+  background: var(--color-resolve);
+  color: #ffffff;
+}
+
+.badge-premiere {
+  background: var(--color-premiere);
+  color: #000000;
+}
+
+.badge-ae {
+  background: var(--color-ae);
+  color: #ffffff;
+}
+
+.badge-info {
+  background: #00d2ff;
+  color: #000000;
+}
+
+.badge-success {
+  background: var(--success);
+  color: #000000;
+}
+
+.badge-warning {
+  background: var(--warning);
+  color: #000000;
+}
+
+.badge-danger {
+  background: #ff2a5f;
+  color: #ffffff;
+}
+
+.badge-neutral {
+  background: var(--bg-elevated);
+  color: #ffffff;
+  border: 1px solid var(--border-strong);
+}
+
+/* ==========================================================================
+   8. RESPONSIVE HELPERS & UTILITIES
+   ========================================================================== */
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 480px) {
+  .hide-on-compact {
+    display: none !important;
+  }
+  .stack-on-compact {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .grid-on-compact {
+    grid-template-columns: 1fr !important;
+  }
+}
