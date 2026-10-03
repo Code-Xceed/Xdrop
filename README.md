@@ -74,36 +74,30 @@ Video editors constantly jump between browsers, ad-heavy downloader websites, do
 
 ---
 
-## 4. Quick Start (Automated 1-Click Setup)
+## 4. Quick Start (The Only File You Need)
 
-Xdrop includes an automated setup engine that scans your computer, auto-detects installed video editors (**DaVinci Resolve**, **Adobe Premiere Pro**, **Adobe After Effects**), tests GPU encoders, configures default folders, and installs all editor scripts and CEP panel extensions automatically.
+Xdrop includes a fully automated 1-click installer that sets up everything from scratch on any computer.
 
-### 🪟 Windows (Easiest)
-1. **Clone or Download** this repository:
-   ```cmd
-   git clone https://github.com/Code-Xceed/Xdrop.git
-   cd Xdrop
-   ```
-2. **Double-click `setup.bat`** (or execute `.\setup.ps1` in PowerShell).
-3. **Double-click `run.bat`** to start Xdrop!
+### 🪟 Windows Users (Single File Setup)
+1. Download or clone this repository.
+2. **Double-click `setup.bat`**.
 
-### 🍏 macOS / Linux
-1. **Clone or Download** this repository:
+That's it! `setup.bat` will:
+- ✅ Auto-install Python silently if it is not installed on your PC (no admin rights needed).
+- ✅ Auto-install all required libraries and dependencies.
+- ✅ Auto-detect and configure **FFmpeg** and GPU hardware acceleration.
+- ✅ Auto-detect and install extensions for **DaVinci Resolve**, **Adobe Premiere Pro**, and **Adobe After Effects**.
+- ✅ **Immediately launch Xdrop on your screen, 100% ready to work!**
+
+*(To launch Xdrop in the future, simply double-click `run.bat` or `setup.bat`)*
+
+### 🍏 macOS / Linux Users
+1. Download or clone this repository.
+2. Run:
    ```bash
-   git clone https://github.com/Code-Xceed/Xdrop.git
-   cd Xdrop
-   ```
-2. Run the automated installer:
-   ```bash
-   chmod +x setup.sh
    ./setup.sh
    ```
-3. Start Xdrop:
-   ```bash
-   python apps/desktop-service/xdrop/main.py --gui
-   ```
-
-*(Zero-Configuration: If Python is not installed, `setup.bat` automatically detects and installs it silently without requiring admin privileges! Node.js/npm is also **not required** for standard users — pre-compiled high-performance UI bundles are bundled directly with the repo!)*
+*(Automatically installs dependencies, configures editors, and launches Xdrop)*
 
 ---
 
@@ -125,14 +119,9 @@ Once setup is complete, Xdrop is directly integrated into your editing suites:
 
 ---
 
-## 6. One-Click Updates
+## 6. Keeping Up-to-Date
 
-Social platforms (YouTube, Instagram, TikTok, etc.) frequently change their video delivery algorithms. To keep extractors functioning without breaking:
-
-- **Windows**: Double-click `update.bat`
-- **macOS / Linux**: Run `./update.sh`
-
-This automatically pulls new features, upgrades extraction engines (`yt-dlp`), updates dependencies, and re-syncs all editor scripts.
+Social media platforms (YouTube, Instagram, TikTok, etc.) frequently update their video delivery formats. If downloads ever stop working or if you want the latest features, simply **run `setup.bat` again** (or `./setup.sh`). It automatically fetches updates, upgrades extractor engines, and launches.
 
 ---
 

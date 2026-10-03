@@ -117,17 +117,9 @@ if %ERRORLEVEL% NEQ 0 (
 
 echo.
 echo ========================================================================
-echo   Setup is complete! You can now launch Xdrop anytime by double-clicking
-echo   "run.bat" in this directory.
+echo   Setup Complete! Starting Xdrop now...
+echo   (You can also launch anytime by double-clicking "run.bat")
 echo ========================================================================
 echo.
-
-set /p LAUNCH="Would you like to start Xdrop right now? (Y/n): "
-if /i "%LAUNCH%"=="n" (
-    echo Goodbye!
-) else (
-    echo Starting Xdrop...
-    start "" run.bat
-)
-
+start "" run.bat
 exit /b 0

@@ -61,5 +61,5 @@ echo ""
 $PYTHON_BIN "$SCRIPT_DIR/scripts/setup.py"
 
 echo ""
-echo "Setup is complete!"
-echo "To start Xdrop, run: $PYTHON_BIN apps/desktop-service/xdrop/main.py --gui"
+echo "Setup is complete! Launching Xdrop..."
+exec $PYTHON_BIN apps/desktop-service/xdrop/main.py --gui
