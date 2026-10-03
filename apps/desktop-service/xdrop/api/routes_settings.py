@@ -78,6 +78,23 @@ def install_premiere_extension():
             shutil.copytree(src_dir, legacy_dest, dirs_exist_ok=True)
         except Exception:
             pass
+
+        # Write config.json for CEP auto-start
+        repo_root = cur.parents[4]
+        config_payload = {
+            "runBat": str(repo_root / "run.bat"),
+            "runSh": str(repo_root / "run.sh"),
+            "pythonExe": sys.executable,
+            "mainPy": str(cur.parents[1] / "main.py"),
+            "serviceUrl": "http://127.0.0.1:8484"
+        }
+        import json
+        with open(dest_dir / "config.json", "w", encoding="utf-8") as f:
+            json.dump(config_payload, f, indent=2)
+        if legacy_dest.exists():
+            with open(legacy_dest / "config.json", "w", encoding="utf-8") as f:
+                json.dump(config_payload, f, indent=2)
+
         return True, f"Installed Xdrop Adobe extension to {dest_dir}"
     except Exception as e:
         return False, f"Failed to install Adobe extension: {str(e)}"

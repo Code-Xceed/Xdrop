@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="dark">
-    <title>Xdrop — Premiere Pro</title>
+    <title>Xdrop</title>
     <script src="js/CSInterface.js"></script>
     <style>
         * {
@@ -25,17 +25,42 @@
             width: 100%;
             height: 100%;
             border: none;
-            display: block;
-        }
-        #offline-notice {
             display: none;
+        }
+        #status-container {
+            display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100%;
             text-align: center;
-            padding: 24px;
+            padding: 28px;
             background-color: #0b0c10;
+        }
+        .spinner {
+            width: 34px;
+            height: 34px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #0ea5e9;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 16px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #f1f5f9;
+            margin-bottom: 6px;
+        }
+        .subtitle {
+            font-size: 12px;
+            color: #94a3b8;
+            max-width: 280px;
+            line-height: 1.4;
+            margin-bottom: 14px;
         }
         .btn {
             background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
@@ -43,22 +68,29 @@
             border: none;
             border-radius: 6px;
             padding: 8px 18px;
-            margin-top: 14px;
+            font-size: 12px;
             font-weight: 600;
             cursor: pointer;
             box-shadow: 0 2px 12px rgba(14, 165, 233, 0.3);
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .btn:hover {
+            opacity: 0.92;
+            transform: translateY(-1px);
+        }
+        .btn:active {
+            transform: translateY(0);
         }
     </style>
 </head>
 <body>
-    <iframe id="app-frame" src="http://127.0.0.1:8484?host=premiere"></iframe>
+    <iframe id="app-frame" src=""></iframe>
 
-    <div id="offline-notice">
-        <h3>Xdrop Desktop Service is Offline</h3>
-        <p style="color: #a1a1aa; margin-top: 8px;">
-            The local download engine (port 8484) needs to be running.
-        </p>
-        <button class="btn" onclick="retryConnection()">Retry Connection</button>
+    <div id="status-container">
+        <div id="status-spinner" class="spinner"></div>
+        <div id="status-title" class="title">Connecting to Xdrop...</div>
+        <div id="status-desc" class="subtitle">Verifying background service connection...</div>
+        <button id="status-btn" class="btn" style="display: none;" onclick="manualRetry()">Start & Connect Engine</button>
     </div>
 
     <script>
@@ -74,13 +106,181 @@
             }
         } catch (_) {}
 
-        // Set initial frame src matching host
         const appFrame = document.getElementById('app-frame');
-        if (appFrame) {
-            appFrame.src = "http://127.0.0.1:8484?host=" + currentHost;
-        }
+        const statusContainer = document.getElementById('status-container');
+        const statusSpinner = document.getElementById('status-spinner');
+        const statusTitle = document.getElementById('status-title');
+        const statusDesc = document.getElementById('status-desc');
+        const statusBtn = document.getElementById('status-btn');
 
         let ws = null;
+        let isEngineOnline = false;
+        let isAutoStarting = false;
+
+        function setStatus(title, desc, showSpinner, showButton) {
+            statusContainer.style.display = 'flex';
+            appFrame.style.display = 'none';
+            statusTitle.textContent = title;
+            statusDesc.textContent = desc;
+            statusSpinner.style.display = showSpinner ? 'block' : 'none';
+            statusBtn.style.display = showButton ? 'inline-block' : 'none';
+        }
+
+        function showApp() {
+            statusContainer.style.display = 'none';
+            const targetUrl = "http://127.0.0.1:8484?host=" + currentHost;
+            if (appFrame.src !== targetUrl) {
+                appFrame.src = targetUrl;
+            }
+            appFrame.style.display = 'block';
+        }
+
+        function checkServiceHealth(callback) {
+            const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+            const timeoutId = controller ? setTimeout(function() { controller.abort(); }, 1500) : null;
+            const options = { method: 'GET', cache: 'no-store' };
+            if (controller) options.signal = controller.signal;
+
+            fetch('http://127.0.0.1:8484/api/health', options)
+                .then(function(res) {
+                    if (timeoutId) clearTimeout(timeoutId);
+                    callback(res.ok);
+                })
+                .catch(function() {
+                    if (timeoutId) clearTimeout(timeoutId);
+                    callback(false);
+                });
+        }
+
+        function tryAutoStartEngine() {
+            if (isAutoStarting) return;
+            isAutoStarting = true;
+
+            setStatus("Starting Xdrop Engine...", "Spawning background download service...", true, false);
+
+            let started = false;
+            try {
+                const req = (typeof window.require === 'function') ? window.require : (typeof require === 'function' ? require : null);
+                if (req) {
+                    const cp = req('child_process');
+                    const fs = req('fs');
+                    const path = req('path');
+
+                    let extDir = '';
+                    try {
+                        let pathname = window.location.pathname || '';
+                        if (window.process && window.process.platform === 'win32' && pathname.startsWith('/')) {
+                            pathname = pathname.substring(1);
+                        }
+                        extDir = path.dirname(decodeURIComponent(pathname));
+                    } catch (_) {}
+
+                    let config = null;
+                    const configPath = extDir ? path.join(extDir, 'config.json') : '';
+                    if (configPath && fs.existsSync(configPath)) {
+                        try {
+                            config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+                        } catch (_) {}
+                    }
+
+                    const isWin = (window.process && window.process.platform === 'win32') || navigator.platform.indexOf('Win') > -1;
+
+                    // 1. Launch via run.bat (Windows)
+                    if (isWin && config && config.runBat && fs.existsSync(config.runBat)) {
+                        console.log("[Xdrop CEP] Launching via runBat:", config.runBat);
+                        cp.spawn('cmd.exe', ['/c', config.runBat], {
+                            detached: true,
+                            stdio: 'ignore',
+                            windowsHide: true,
+                            cwd: path.dirname(config.runBat)
+                        }).unref();
+                        started = true;
+                    }
+                    // 2. Launch via run.sh (macOS / Linux)
+                    else if (!isWin && config && config.runSh && fs.existsSync(config.runSh)) {
+                        console.log("[Xdrop CEP] Launching via runSh:", config.runSh);
+                        cp.spawn('bash', [config.runSh], {
+                            detached: true,
+                            stdio: 'ignore',
+                            cwd: path.dirname(config.runSh)
+                        }).unref();
+                        started = true;
+                    }
+                    // 3. Launch via explicit Python executable & main.py
+                    else if (config && config.pythonExe && config.mainPy && fs.existsSync(config.pythonExe) && fs.existsSync(config.mainPy)) {
+                        console.log("[Xdrop CEP] Launching via Python executable:", config.pythonExe, config.mainPy);
+                        const flags = isWin ? { detached: true, stdio: 'ignore', windowsHide: true, cwd: path.dirname(config.mainPy) } : { detached: true, stdio: 'ignore', cwd: path.dirname(config.mainPy) };
+                        cp.spawn(config.pythonExe, [config.mainPy, '--gui'], flags).unref();
+                        started = true;
+                    }
+                    // 4. Fallback search for run.bat in repo structure
+                    else if (extDir) {
+                        const candidates = [
+                            path.resolve(extDir, '..', '..', 'run.bat'),
+                            path.resolve(extDir, '..', '..', '..', 'run.bat'),
+                            path.resolve(extDir, 'run.bat')
+                        ];
+                        for (let cand of candidates) {
+                            if (fs.existsSync(cand)) {
+                                console.log("[Xdrop CEP] Launching via fallback run.bat:", cand);
+                                cp.spawn('cmd.exe', ['/c', cand], {
+                                    detached: true,
+                                    stdio: 'ignore',
+                                    windowsHide: true,
+                                    cwd: path.dirname(cand)
+                                }).unref();
+                                started = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    // 5. Ultimate fallback: system python
+                    if (!started) {
+                        const pyCmd = isWin ? 'python' : 'python3';
+                        console.log("[Xdrop CEP] Launching via generic python command:", pyCmd);
+                        cp.spawn(pyCmd, ['-m', 'xdrop.main', '--gui'], {
+                            detached: true,
+                            stdio: 'ignore',
+                            windowsHide: true
+                        }).unref();
+                        started = true;
+                    }
+                }
+            } catch (err) {
+                console.warn("[Xdrop CEP] Auto-start spawn error:", err);
+            }
+
+            // Poll for service health up to 10 seconds (20 iterations * 500ms)
+            let attempts = 0;
+            const maxAttempts = 20;
+            const pollInterval = setInterval(function() {
+                attempts++;
+                checkServiceHealth(function(online) {
+                    if (online) {
+                        clearInterval(pollInterval);
+                        isAutoStarting = false;
+                        isEngineOnline = true;
+                        showApp();
+                        connectWebSocket();
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(pollInterval);
+                        isAutoStarting = false;
+                        setStatus(
+                            "Xdrop Service is Offline",
+                            "The local engine could not be started automatically. Ensure Python is installed and click below to retry.",
+                            false,
+                            true
+                        );
+                    }
+                });
+            }, 500);
+        }
+
+        function manualRetry() {
+            setStatus("Starting Xdrop Engine...", "Attempting connection...", true, false);
+            tryAutoStartEngine();
+        }
 
         function checkHostProject(callback) {
             if (currentHost === 'aftereffects') {
@@ -116,6 +316,7 @@
 
         // Periodic project info check
         setInterval(function() {
+            if (!isEngineOnline) return;
             checkHostProject(function(info) {
                 const frame = document.getElementById('app-frame');
                 if (frame && frame.contentWindow) {
@@ -174,9 +375,9 @@
 
                 ws.onopen = function() {
                     console.log("[Xdrop CEP] Connected to Xdrop engine WebSocket. Host:", currentHost);
+                    isEngineOnline = true;
+                    showApp();
                     startPing();
-                    document.getElementById('app-frame').style.display = 'block';
-                    document.getElementById('offline-notice').style.display = 'none';
 
                     checkHostProject(function(info) {
                         const frame = document.getElementById('app-frame');
@@ -213,18 +414,26 @@
                 };
 
                 ws.onerror = function(err) {
-                    console.warn("[Xdrop CEP] WebSocket error, maintaining frame display:", err);
+                    console.warn("[Xdrop CEP] WebSocket error:", err);
                     stopPing();
                 };
 
                 ws.onclose = function() {
                     stopPing();
-                    setTimeout(connectWebSocket, 3000);
+                    setTimeout(function() {
+                        checkServiceHealth(function(online) {
+                            if (online) {
+                                connectWebSocket();
+                            } else {
+                                isEngineOnline = false;
+                                setStatus("Reconnecting to Xdrop...", "Waiting for service to resume...", true, true);
+                            }
+                        });
+                    }, 3000);
                 };
             } catch(e) {
                 console.warn("[Xdrop CEP] WebSocket connect exception:", e);
                 stopPing();
-                setTimeout(connectWebSocket, 3000);
             }
         }
 
@@ -244,14 +453,17 @@
             }
         });
 
-        function retryConnection() {
-            document.getElementById('app-frame').src = "http://127.0.0.1:8484?host=" + currentHost + "&t=" + Date.now();
-            connectWebSocket();
-        }
-
-        // Initialize on load
+        // Initialize on window load: probe health; if offline, auto-start immediately
         window.onload = function() {
-            connectWebSocket();
+            checkServiceHealth(function(online) {
+                if (online) {
+                    isEngineOnline = true;
+                    showApp();
+                    connectWebSocket();
+                } else {
+                    tryAutoStartEngine();
+                }
+            });
         };
     </script>
 </body>

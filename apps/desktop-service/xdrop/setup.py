@@ -305,6 +305,22 @@ def detect_and_configure_editors() -> dict:
                     pass
             shutil.copytree(source_dir, legacy_dir, dirs_exist_ok=True)
 
+            # Write dynamic config.json for CEP panel auto-starting
+            config_payload = {
+                "runBat": str(ROOT_DIR / "run.bat"),
+                "runSh": str(ROOT_DIR / "run.sh"),
+                "pythonExe": sys.executable,
+                "mainPy": str(DESKTOP_SERVICE_DIR / "xdrop" / "main.py"),
+                "serviceUrl": "http://127.0.0.1:8484"
+            }
+            try:
+                with open(target_dir / "config.json", "w", encoding="utf-8") as f:
+                    json.dump(config_payload, f, indent=2)
+                with open(legacy_dir / "config.json", "w", encoding="utf-8") as f:
+                    json.dump(config_payload, f, indent=2)
+            except Exception:
+                pass
+
             # Enable CEP Developer Mode in Registry on Windows
             if platform.system() == "Windows":
                 for ver in ["9", "10", "11", "12", "13", "14", "15", "16"]:
@@ -372,26 +388,113 @@ def configure_user_settings(detected_editors: dict):
     print(f"      {GREEN}[+] Tailored Default Editor: {recommended_editor.upper()}{RESET}")
     print(f"      {GREEN}[+] Media Storage Location:  {default_download_dir}{RESET}")
 
-    # Generate 1-click launcher run.bat
-    if platform.system() == "Windows":
-        run_bat = ROOT_DIR / "run.bat"
-        run_bat_content = f"""@echo off
+    # Generate 1-click launchers run.bat & run.sh
+    run_bat = ROOT_DIR / "run.bat"
+    run_bat_content = f"""@echo off
+setlocal enabledelayedexpansion
 title Xdrop Desktop Service
 cd /d "%~dp0"
 echo Starting Xdrop Engine...
-if exist "{sys.executable}" (
-    "{sys.executable}" apps\\desktop-service\\xdrop\\main.py --gui
-) else (
-    python apps\\desktop-service\\xdrop\\main.py --gui
+
+set "PYTHON_EXE="
+
+if exist "%~dp0.venv\\Scripts\\python.exe" (
+    set "PYTHON_EXE=%~dp0.venv\\Scripts\\python.exe"
+    goto :RunService
 )
+
+if exist "{sys.executable}" (
+    set "PYTHON_EXE={sys.executable}"
+    goto :RunService
+)
+
+python -c "import sys" >nul 2>nul
+if %ERRORLEVEL% EQU 0 (
+    set "PYTHON_EXE=python"
+    goto :RunService
+)
+
+py -c "import sys" >nul 2>nul
+if %ERRORLEVEL% EQU 0 (
+    set "PYTHON_EXE=py"
+    goto :RunService
+)
+
+for %%P in (
+    "%LOCALAPPDATA%\\Programs\\Python\\Python314\\python.exe"
+    "%LOCALAPPDATA%\\Programs\\Python\\Python313\\python.exe"
+    "%LOCALAPPDATA%\\Programs\\Python\\Python312\\python.exe"
+    "%LOCALAPPDATA%\\Programs\\Python\\Python311\\python.exe"
+    "%LOCALAPPDATA%\\Programs\\Python\\Python310\\python.exe"
+    "%LOCALAPPDATA%\\Programs\\Python\\Python39\\python.exe"
+    "C:\\Program Files\\Python314\\python.exe"
+    "C:\\Program Files\\Python313\\python.exe"
+    "C:\\Program Files\\Python312\\python.exe"
+    "C:\\Program Files\\Python311\\python.exe"
+    "C:\\Program Files\\Python310\\python.exe"
+    "C:\\Program Files\\Python39\\python.exe"
+) do (
+    if exist %%P (
+        set "PYTHON_EXE=%%~P"
+        goto :RunService
+    )
+)
+
+echo.
+echo [!] Python not found on this computer.
+echo [*] Please run setup.bat first to configure Python.
+pause
+exit /b 1
+
+:RunService
+"%PYTHON_EXE%" apps\\desktop-service\\xdrop\\main.py --gui
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo Service stopped or encountered an error.
     pause
 )
 """
+    try:
         run_bat.write_text(run_bat_content, encoding="utf-8")
-        print(f"      {GREEN}[+] Created 1-Click Windows Launcher: run.bat{RESET}")
+        if platform.system() == "Windows":
+            print(f"      {GREEN}[+] Created 1-Click Windows Launcher: run.bat{RESET}")
+    except Exception:
+        pass
+
+    run_sh = ROOT_DIR / "run.sh"
+    run_sh_content = f"""#!/usr/bin/env bash
+# Xdrop — macOS / Linux Desktop Service Launcher
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${{BASH_SOURCE[0]}}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+PYTHON_BIN=""
+if [ -f "$SCRIPT_DIR/.venv/bin/python" ]; then
+    PYTHON_BIN="$SCRIPT_DIR/.venv/bin/python"
+elif [ -f "{sys.executable}" ]; then
+    PYTHON_BIN="{sys.executable}"
+elif command -v python3 &>/dev/null; then
+    PYTHON_BIN="python3"
+elif command -v python &>/dev/null; then
+    PYTHON_BIN="python"
+fi
+
+if [ -z "$PYTHON_BIN" ]; then
+    echo "[!] Python 3 not found. Please run ./setup.sh first."
+    exit 1
+fi
+
+echo "Starting Xdrop Engine..."
+exec "$PYTHON_BIN" apps/desktop-service/xdrop/main.py --gui
+"""
+    try:
+        run_sh.write_text(run_sh_content, encoding="utf-8")
+        if platform.system() != "Windows":
+            os.chmod(run_sh, 0o755)
+            print(f"      {GREEN}[+] Created 1-Click Launcher: run.sh{RESET}")
+    except Exception:
+        pass
 
 def print_completion_summary(detected_editors: dict):
     print("\n" + "=" * 72)
