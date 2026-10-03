@@ -17,21 +17,18 @@ export const Header: React.FC = () => {
     if (activeEditor === 'aftereffects') {
       return {
         label: 'After Effects',
-        color: 'var(--color-ae)',
-        icon: <Sparkles size={11} strokeWidth={2.5} />,
+        icon: <Sparkles size={11} strokeWidth={2} />,
       };
     }
     if (activeEditor === 'premiere') {
       return {
         label: 'Premiere Pro',
-        color: 'var(--color-premiere)',
-        icon: <Layers size={11} strokeWidth={2.5} />,
+        icon: <Layers size={11} strokeWidth={2} />,
       };
     }
     return {
       label: 'DaVinci Resolve',
-      color: 'var(--color-resolve)',
-      icon: <Film size={11} strokeWidth={2.5} />,
+      icon: <Film size={11} strokeWidth={2} />,
     };
   };
 
@@ -43,8 +40,8 @@ export const Header: React.FC = () => {
         display: 'flex',
         flexDirection: 'column',
         backgroundColor: 'var(--bg-primary)',
-        borderBottom: '1.5px solid #000000',
-        padding: '8px 12px',
+        borderBottom: '1px solid var(--border-default)',
+        padding: '7px 12px',
         gap: '4px',
         userSelect: 'none',
       }}
@@ -63,48 +60,46 @@ export const Header: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flexShrink: 0 }}>
           <div
             style={{
-              width: '24px',
-              height: '24px',
-              borderRadius: 'var(--radius-sm)',
+              width: '22px',
+              height: '22px',
+              borderRadius: 'var(--radius-xs)',
               background: 'var(--bg-tertiary)',
-              border: '1.5px solid #000000',
-              boxShadow: '1.5px 1.5px 0px #000000',
+              border: '1px solid var(--border-default)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'var(--accent-primary)',
+              color: 'var(--text-primary)',
               flexShrink: 0,
             }}
           >
-            <Sparkles size={13} strokeWidth={2.5} />
+            <Sparkles size={12} strokeWidth={2} />
           </div>
 
           <span
             style={{
-              fontSize: '13px',
-              fontWeight: 900,
-              letterSpacing: '-0.02em',
-              color: '#ffffff',
+              fontSize: '12px',
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              color: 'var(--text-primary)',
               whiteSpace: 'nowrap',
             }}
           >
             XDROP
           </span>
 
-          {/* Auto-detected Editor Status Pill */}
+          {/* Auto-detected Editor Status Pill (Monochromatic Minimalist) */}
           <div
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '4px',
+              gap: '5px',
               padding: '2px 7px',
               borderRadius: 'var(--radius-xs)',
-              border: '1px solid #000000',
+              border: '1px solid var(--border-default)',
               backgroundColor: 'var(--bg-secondary)',
-              boxShadow: '1px 1px 0px #000000',
               fontSize: '10px',
-              fontWeight: 800,
-              color: badge.color,
+              fontWeight: 500,
+              color: 'var(--text-secondary)',
             }}
             title={isEditorConnected ? `${activeEditorName} connected` : `${activeEditorName} waiting for connection`}
           >
@@ -113,11 +108,14 @@ export const Header: React.FC = () => {
                 width: '5px',
                 height: '5px',
                 borderRadius: '50%',
-                backgroundColor: isEditorConnected ? 'var(--success)' : 'var(--warning)',
+                backgroundColor: isEditorConnected ? 'var(--success)' : 'var(--text-muted)',
                 flexShrink: 0,
               }}
             />
-            <span>{badge.label}</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+              {badge.icon}
+              {badge.label}
+            </span>
           </div>
         </div>
 
@@ -126,26 +124,26 @@ export const Header: React.FC = () => {
           <button
             onClick={() => refreshEditorsStatus()}
             disabled={isRefreshing}
-            className="btn btn-sm"
+            className="btn btn-sm btn-ghost"
             style={{
-              padding: '4px 6px',
-              backgroundColor: 'var(--bg-secondary)',
-              border: '1.5px solid #000000',
-              boxShadow: '1.5px 1.5px 0px #000000',
+              padding: '3px 7px',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-xs)',
               display: 'flex',
               alignItems: 'center',
               gap: '4px',
-              fontSize: '10px',
+              fontSize: '10.5px',
+              color: 'var(--text-secondary)',
             }}
             title="Sync connection and project status"
           >
             <RefreshCw
               size={11}
-              strokeWidth={2.5}
+              strokeWidth={2}
               className={isRefreshing ? 'spin' : ''}
-              style={{ color: '#ffffff' }}
+              style={{ color: 'var(--text-muted)' }}
             />
-            <span style={{ color: 'var(--text-secondary)' }}>Sync</span>
+            <span>Sync</span>
           </button>
         </div>
       </div>
@@ -157,7 +155,7 @@ export const Header: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            fontSize: '10px',
+            fontSize: '9.5px',
             color: 'var(--text-muted)',
             padding: '0 2px',
             minWidth: 0,
@@ -165,9 +163,9 @@ export const Header: React.FC = () => {
         >
           <span
             style={{
-              color: 'var(--text-secondary)',
+              color: 'var(--text-muted)',
               fontFamily: 'var(--font-mono)',
-              fontSize: '9.5px',
+              fontSize: '9px',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',

@@ -2,93 +2,93 @@
   color-scheme: dark;
 
   /* ==========================================================================
-     1. MINIMAL NEO-BRUTALIST STUDIO FOUNDATIONS (Deep Obsidian + Refined Grid)
+     1. MONOCHROMATIC STUDIO FOUNDATIONS (Neutral Matte Obsidian & Charcoal)
+     Seamlessly matches DaVinci Resolve, Premiere Pro, After Effects & Final Cut Pro
      ========================================================================== */
-  --bg-void: #08090d;
-  --bg-primary: #0e1017;
-  --bg-secondary: #131620;
-  --bg-tertiary: #181c2b;
-  --bg-elevated: #20263a;
-  --bg-hover: #283047;
-  --bg-active: #323b56;
+  --bg-void: #090a0c;
+  --bg-primary: #101114;
+  --bg-secondary: #15171c;
+  --bg-tertiary: #1b1d23;
+  --bg-elevated: #22252d;
+  --bg-hover: #292d37;
+  --bg-active: #323743;
 
-  /* Sharp 1.5px/2px Neo-Brutalist Outlines */
-  --border-subtle: #24293a;
-  --border-default: #353d54;
-  --border-strong: #4f5b7d;
-  --border-dark: #000000;
+  /* Minimalist 1px Precision Borders */
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-default: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --border-focus: rgba(255, 255, 255, 0.35);
 
-  /* Typography */
-  --text-primary: #ffffff;
+  /* Clean High-Legibility Typography */
+  --text-primary: #f8fafc;
   --text-secondary: #cbd5e1;
-  --text-muted: #7b8ba5;
-  --text-disabled: #4e5a70;
+  --text-muted: #71717a;
+  --text-disabled: #4b5260;
 
   /* ==========================================================================
-     2. REFINED HYPER-PUNCHY ACCENTS (Black, Red & Blue)
+     2. MONOCHROMATIC HIGH-CONTRAST ACCENTS
      ========================================================================== */
-  /* DaVinci Resolve Neo-Red */
-  --color-resolve: #ff2a5f;
-  --color-resolve-hover: #e01a4f;
-  --color-resolve-subtle: rgba(255, 42, 95, 0.16);
-  --color-resolve-border: #ff2a5f;
-  --color-resolve-shadow: 2.5px 2.5px 0px #ff2a5f;
-  --color-resolve-gradient: linear-gradient(135deg, #ff2a5f 0%, #d81141 100%);
+  --accent-primary: #f4f4f5;
+  --accent-hover: #ffffff;
+  --accent-text: #090a0c;
+  --accent-subtle: rgba(255, 255, 255, 0.07);
+  --accent-border: rgba(255, 255, 255, 0.22);
+  --accent-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 
-  /* Adobe Premiere Pro Neo-Blue */
-  --color-premiere: #00d2ff;
-  --color-premiere-hover: #00b4d8;
-  --color-premiere-subtle: rgba(0, 210, 255, 0.16);
-  --color-premiere-border: #00d2ff;
-  --color-premiere-shadow: 2.5px 2.5px 0px #00d2ff;
-  --color-premiere-gradient: linear-gradient(135deg, #00d2ff 0%, #0077b6 100%);
+  /* Unified Professional Editor Color Palette (Clean Monochromatic Neutral) */
+  --color-resolve: #e4e4e7;
+  --color-resolve-hover: #ffffff;
+  --color-resolve-subtle: rgba(255, 255, 255, 0.08);
+  --color-resolve-border: rgba(255, 255, 255, 0.18);
+  --color-resolve-shadow: none;
 
-  /* Adobe After Effects Neo-Purple */
-  --color-ae: #a855f7;
-  --color-ae-hover: #9333ea;
-  --color-ae-subtle: rgba(168, 85, 247, 0.16);
-  --color-ae-border: #a855f7;
-  --color-ae-shadow: 2.5px 2.5px 0px #a855f7;
-  --color-ae-gradient: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
-  --color-ae-glow: rgba(168, 85, 247, 0.35);
+  --color-premiere: #e4e4e7;
+  --color-premiere-hover: #ffffff;
+  --color-premiere-subtle: rgba(255, 255, 255, 0.08);
+  --color-premiere-border: rgba(255, 255, 255, 0.18);
+  --color-premiere-shadow: none;
 
-  /* Secondary Status */
-  --success: #00ff88;
-  --success-subtle: rgba(0, 255, 136, 0.15);
-  --warning: #ffd600;
-  --warning-subtle: rgba(255, 214, 0, 0.15);
-  --danger: #ff2a5f;
-  --danger-subtle: rgba(255, 42, 95, 0.15);
+  --color-ae: #e4e4e7;
+  --color-ae-hover: #ffffff;
+  --color-ae-subtle: rgba(255, 255, 255, 0.08);
+  --color-ae-border: rgba(255, 255, 255, 0.18);
+  --color-ae-shadow: none;
 
-  /* Geometry & Hard Shadows */
-  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Subtle Status Colors */
+  --success: #22c55e;
+  --success-subtle: rgba(34, 197, 94, 0.12);
+  --warning: #eab308;
+  --warning-subtle: rgba(234, 179, 8, 0.12);
+  --danger: #ef4444;
+  --danger-subtle: rgba(239, 68, 68, 0.12);
+
+  /* Geometry & Radii */
+  --font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 
-  --radius-xs: 2px;
+  --radius-xs: 3px;
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
 
-  /* Refined Hard Drop Shadows */
-  --neo-shadow-xs: 1.5px 1.5px 0px #000000;
-  --neo-shadow-sm: 2px 2px 0px #000000;
-  --neo-shadow-md: 3px 3px 0px #000000;
-  --neo-shadow-card: 3px 3px 0px #000000;
+  /* Clean Minimalist Ambient Shadows */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.3);
 
-  /* Default Studio Accent (Consistent Electric Cyber Cyan) */
-  --accent-primary: var(--color-premiere);
-  --accent-hover: var(--color-premiere-hover);
-  --accent-subtle: var(--color-premiere-subtle);
-  --accent-border: var(--color-premiere-border);
-  --accent-shadow: var(--color-premiere-shadow);
-  --accent-gradient: var(--color-premiere-gradient);
+  /* Deprecated neo-shadow aliases mapped cleanly to subtle shadows */
+  --neo-shadow-xs: none;
+  --neo-shadow-sm: var(--shadow-xs);
+  --neo-shadow-md: var(--shadow-sm);
+  --neo-shadow-card: var(--shadow-card);
 
-  scrollbar-color: #353d54 #0d0f16;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
   scrollbar-width: thin;
 }
 
 /* ==========================================================================
-   3. BASE RESET & TEXTURE
+   3. BASE RESET & MINIMALIST STUDIO SURFACE
    ========================================================================== */
 * {
   box-sizing: border-box;
@@ -98,16 +98,15 @@
 
 body {
   background-color: var(--bg-void);
-  background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-  background-size: 16px 16px;
   color: var(--text-primary);
   font-family: var(--font-family);
   font-size: 12px;
-  line-height: 1.4;
+  line-height: 1.45;
   overflow-x: hidden;
   user-select: none;
   -webkit-user-select: none;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 input, textarea, select, button {
@@ -116,23 +115,24 @@ input, textarea, select, button {
   color: inherit;
 }
 
-/* Scrollbars */
-@supports not (scrollbar-color: auto) {
-  ::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
-  }
-  ::-webkit-scrollbar-track {
-    background: var(--bg-void);
-  }
-  ::-webkit-scrollbar-thumb {
-    background: var(--border-default);
-    border: 1px solid #000;
-  }
+/* Minimalist Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.26);
 }
 
 /* ==========================================================================
-   4. COMPACT NEO-BRUTALIST BUTTONS
+   4. MINIMALIST PROFESSIONAL BUTTONS
    ========================================================================== */
 .btn {
   display: inline-flex;
@@ -141,157 +141,142 @@ input, textarea, select, button {
   gap: 6px;
   padding: 6px 12px;
   font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   border-radius: var(--radius-sm);
-  border: 1.5px solid #000000;
+  border: 1px solid var(--border-default);
   background: var(--bg-tertiary);
-  color: #ffffff;
+  color: var(--text-primary);
   cursor: pointer;
-  box-shadow: var(--neo-shadow-sm);
-  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease;
+  box-shadow: var(--shadow-xs);
+  transition: all 0.12s ease;
   white-space: nowrap;
 }
 
 .btn:hover:not(:disabled) {
-  transform: translate(-0.5px, -0.5px);
-  box-shadow: var(--neo-shadow-md);
   background: var(--bg-hover);
+  border-color: var(--border-strong);
+  color: #ffffff;
 }
 
 .btn:active:not(:disabled) {
-  transform: translate(1.5px, 1.5px);
-  box-shadow: 0px 0px 0px transparent;
+  background: var(--bg-active);
+  transform: translateY(0.5px);
 }
 
 .btn:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: not-allowed;
   box-shadow: none;
-  transform: none;
 }
 
 .btn-sm {
   padding: 3px 8px;
   font-size: 10.5px;
-  box-shadow: var(--neo-shadow-xs);
-}
-
-.btn-sm:active:not(:disabled) {
-  transform: translate(1px, 1px);
-  box-shadow: 0px 0px 0px transparent;
+  font-weight: 500;
 }
 
 .btn-lg {
-  padding: 9px 18px;
+  padding: 8px 16px;
   font-size: 12.5px;
-  font-weight: 800;
-  box-shadow: var(--neo-shadow-md);
+  font-weight: 600;
 }
 
+/* High-Contrast Monochromatic Primary CTA */
 .btn-primary {
   background: var(--accent-primary);
-  color: #000000;
-  border: 1.5px solid #000000;
-  box-shadow: var(--neo-shadow-sm);
+  color: var(--accent-text);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  font-weight: 600;
 }
 
 .btn-primary:hover:not(:disabled) {
   background: var(--accent-hover);
   color: #000000;
+  border-color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
 }
 
-.btn-resolve {
-  background: var(--color-resolve);
-  color: #ffffff;
-  border: 1.5px solid #000000;
-  box-shadow: 2px 2px 0px #000000;
+.btn-primary:active:not(:disabled) {
+  background: #e4e4e7;
 }
 
-.btn-resolve:hover:not(:disabled) {
-  background: var(--color-resolve-hover);
-  box-shadow: 3px 3px 0px #000000;
-}
-
-.btn-premiere {
-  background: var(--color-premiere);
-  color: #000000;
-  border: 1.5px solid #000000;
-  box-shadow: 2px 2px 0px #000000;
-}
-
-.btn-premiere:hover:not(:disabled) {
-  background: var(--color-premiere-hover);
-  box-shadow: 3px 3px 0px #000000;
-}
-
+/* Editor-specific CTA aliases seamlessly mapped to sleek monochromatic studio style */
+.btn-resolve,
+.btn-premiere,
 .btn-ae {
-  background: var(--color-ae);
-  color: #ffffff;
-  border: 1.5px solid #000000;
-  box-shadow: 2px 2px 0px #000000;
+  background: var(--accent-primary);
+  color: var(--accent-text);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  font-weight: 600;
 }
 
+.btn-resolve:hover:not(:disabled),
+.btn-premiere:hover:not(:disabled),
 .btn-ae:hover:not(:disabled) {
-  background: var(--color-ae-hover);
-  box-shadow: 3px 3px 0px #000000;
+  background: var(--accent-hover);
+  color: #000000;
+  border-color: #ffffff;
 }
 
 .btn-secondary {
   background: var(--bg-secondary);
-  border: 1.5px solid var(--border-default);
-  color: var(--text-primary);
-  box-shadow: var(--neo-shadow-xs);
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  border-color: #ffffff;
   background: var(--bg-tertiary);
+  border-color: var(--border-strong);
   color: #ffffff;
 }
 
 .btn-ghost {
   background: transparent;
-  border: 1.5px solid transparent;
+  border: 1px solid transparent;
   box-shadow: none;
-  color: var(--text-secondary);
+  color: var(--text-muted);
 }
 
 .btn-ghost:hover:not(:disabled) {
-  background: var(--bg-tertiary);
+  background: var(--accent-subtle);
   border-color: var(--border-subtle);
   color: #ffffff;
-  transform: none;
-  box-shadow: none;
 }
 
 .btn-danger {
-  background: #ff2a5f;
-  color: #ffffff;
-  border: 1.5px solid #000000;
-  box-shadow: var(--neo-shadow-xs);
+  background: var(--danger-subtle);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.28);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.45);
+  color: #fca5a5;
 }
 
 /* ==========================================================================
-   5. COMPACT NEO-BRUTALIST INPUTS
+   5. MINIMALIST INPUTS & CONTROLS
    ========================================================================== */
 .input {
   background: var(--bg-primary);
-  border: 1.5px solid var(--border-default);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
   padding: 7px 10px;
   color: #ffffff;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 400;
   outline: none;
-  box-shadow: var(--neo-shadow-xs);
-  transition: all 0.08s ease;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
   width: 100%;
 }
 
 .input:focus {
-  border-color: var(--accent-primary);
-  box-shadow: 2px 2px 0px var(--accent-primary);
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12), inset 0 1px 2px rgba(0, 0, 0, 0.25);
   background: var(--bg-secondary);
 }
 
@@ -300,32 +285,32 @@ input, textarea, select, button {
 }
 
 /* ==========================================================================
-   6. COMPACT PANELS & CARDS
+   6. MINIMALIST PANELS & CARDS
    ========================================================================== */
 .panel {
   background: var(--bg-secondary);
-  border: 1.5px solid #000000;
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   padding: 12px 14px;
-  box-shadow: var(--neo-shadow-card);
+  box-shadow: var(--shadow-sm);
 }
 
 .card {
   background: var(--bg-tertiary);
-  border: 1.5px solid #000000;
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
-  box-shadow: 2px 2px 0px #000000;
-  transition: all 0.1s ease;
+  box-shadow: var(--shadow-xs);
+  transition: border-color 0.12s ease, background 0.12s ease;
 }
 
 .card:hover {
-  transform: translate(-0.5px, -0.5px);
-  box-shadow: 3px 3px 0px #000000;
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
 }
 
 /* ==========================================================================
-   7. CHUNKY COMPACT BADGES
+   7. REFINED MONOCHROMATIC BADGES
    ========================================================================== */
 .badge {
   display: inline-flex;
@@ -333,54 +318,52 @@ input, textarea, select, button {
   gap: 4px;
   padding: 2px 6px;
   font-size: 9.5px;
-  font-weight: 800;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   border-radius: var(--radius-xs);
-  border: 1px solid #000000;
-  box-shadow: 1px 1px 0px #000000;
+  border: 1px solid var(--border-default);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
   line-height: 1.2;
 }
 
-.badge-resolve {
-  background: var(--color-resolve);
-  color: #ffffff;
-}
-
-.badge-premiere {
-  background: var(--color-premiere);
-  color: #000000;
-}
-
+.badge-resolve,
+.badge-premiere,
 .badge-ae {
-  background: var(--color-ae);
-  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
 }
 
 .badge-info {
-  background: #00d2ff;
-  color: #000000;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #ffffff;
 }
 
 .badge-success {
-  background: var(--success);
-  color: #000000;
+  background: var(--success-subtle);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  color: #4ade80;
 }
 
 .badge-warning {
-  background: var(--warning);
-  color: #000000;
+  background: var(--warning-subtle);
+  border: 1px solid rgba(234, 179, 8, 0.25);
+  color: #facc15;
 }
 
 .badge-danger {
-  background: #ff2a5f;
-  color: #ffffff;
+  background: var(--danger-subtle);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #f87171;
 }
 
 .badge-neutral {
   background: var(--bg-elevated);
-  color: #ffffff;
   border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
 }
 
 /* ==========================================================================

@@ -42,27 +42,20 @@ export const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, onDismis
               alignItems: 'center',
               justifyContent: 'space-between',
               gap: '10px',
-              padding: '11px 16px',
-              backgroundColor: 'var(--bg-secondary)',
-              border: '2px solid #000000',
-              borderLeft: `5px solid ${
-                isSuccess
-                  ? 'var(--success)'
-                  : isError
-                  ? 'var(--danger)'
-                  : 'var(--accent-primary)'
-              }`,
+              padding: '10px 14px',
+              backgroundColor: 'var(--bg-elevated)',
+              border: '1px solid var(--border-strong)',
               borderRadius: 'var(--radius-sm)',
-              boxShadow: '3.5px 3.5px 0px #000000',
-              fontSize: '12px',
-              fontWeight: 700,
-              color: '#ffffff',
+              boxShadow: 'var(--shadow-md)',
+              fontSize: '11.5px',
+              fontWeight: 500,
+              color: 'var(--text-primary)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {isSuccess && <CheckCircle2 size={16} color="var(--success)" />}
-              {isError && <AlertCircle size={16} color="var(--danger)" />}
-              {!isSuccess && !isError && <Info size={16} color="var(--accent-primary)" />}
+              {isSuccess && <CheckCircle2 size={15} color="var(--success)" strokeWidth={2} />}
+              {isError && <AlertCircle size={15} color="var(--danger)" strokeWidth={2} />}
+              {!isSuccess && !isError && <Info size={15} color="var(--text-secondary)" strokeWidth={2} />}
               <span>{typeof toast.text === 'string' ? toast.text : String(toast.text || '')}</span>
             </div>
 
@@ -74,9 +67,12 @@ export const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, onDismis
                 color: 'var(--text-muted)',
                 cursor: 'pointer',
                 padding: '2px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              <X size={12} />
+              <X size={13} strokeWidth={2} />
             </button>
           </div>
         );

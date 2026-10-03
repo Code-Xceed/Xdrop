@@ -40,72 +40,72 @@ export const SUPPORTED_PLATFORMS: PlatformDef[] = [
   {
     id: 'youtube',
     name: 'YouTube',
-    color: '#ff2a5f',
-    textColor: '#ffffff',
+    color: '#f4f4f5',
+    textColor: '#090a0c',
     regex: /(?:https?:\/\/)?(?:(?:www\.|m\.|music\.)?youtube\.com\/(?:watch\?|shorts\/|embed\/|live\/|v\/|clip\/)|youtu\.be\/)/i,
     placeholder: 'https://youtube.com/watch?v=...',
   },
   {
     id: 'tiktok',
     name: 'TikTok',
-    color: '#00f2fe',
-    textColor: '#000000',
+    color: '#f4f4f5',
+    textColor: '#090a0c',
     regex: /(?:https?:\/\/)?(?:(?:www\.|vm\.|vt\.|m\.)?tiktok\.com\/)/i,
     placeholder: 'https://tiktok.com/@creator/video/...',
   },
   {
     id: 'instagram',
     name: 'Instagram',
-    color: '#ff2a8d',
-    textColor: '#ffffff',
+    color: '#f4f4f5',
+    textColor: '#090a0c',
     regex: /(?:https?:\/\/)?(?:(?:www\.|m\.)?instagram\.com|instagr\.am)\/(?:reel|reels|p|tv|stories|share)\//i,
     placeholder: 'https://instagram.com/reel/...',
   },
   {
     id: 'x',
     name: 'X (Twitter)',
-    color: '#f8fafc',
-    textColor: '#000000',
+    color: '#f4f4f5',
+    textColor: '#090a0c',
     regex: /(?:https?:\/\/)?(?:(?:www\.|mobile\.)?(?:twitter\.com|x\.com)\/(?:[^/]+\/status\/\d+|i\/status\/\d+)|t\.co\/[a-zA-Z0-9]+)/i,
     placeholder: 'https://x.com/user/status/...',
   },
   {
     id: 'reddit',
     name: 'Reddit',
-    color: '#ff4500',
-    textColor: '#ffffff',
+    color: '#f4f4f5',
+    textColor: '#090a0c',
     regex: /(?:https?:\/\/)?(?:(?:www\.|old\.|new\.|m\.)?reddit\.com\/(?:r\/[^/]+\/(?:comments|s)\/|clip\/)|v\.redd\.it\/[a-zA-Z0-9]+|redd\.it\/[a-zA-Z0-9]+)/i,
     placeholder: 'https://reddit.com/r/videos/...',
   },
   {
     id: 'facebook',
     name: 'Facebook',
-    color: '#1877f2',
-    textColor: '#ffffff',
+    color: '#f4f4f5',
+    textColor: '#090a0c',
     regex: /(?:https?:\/\/)?(?:(?:www\.|m\.|fb\.)?facebook\.com\/(?:watch\/?\?|reel\/|reels\/|share\/[rv]\/|[^/]+\/videos\/)|fb\.watch\/[a-zA-Z0-9_\-]+)/i,
     placeholder: 'https://fb.watch/...',
   },
   {
     id: 'pinterest',
     name: 'Pinterest',
-    color: '#e60023',
-    textColor: '#ffffff',
+    color: '#f4f4f5',
+    textColor: '#090a0c',
     regex: /(?:https?:\/\/)?(?:(?:www\.)?pinterest\.(?:com|[a-z]{2,3}(?:\.[a-z]{2})?)\/pin\/|pin\.it\/[a-zA-Z0-9]+)/i,
     placeholder: 'https://pin.it/...',
   },
   {
     id: 'vimeo',
     name: 'Vimeo',
-    color: '#00b4d8',
-    textColor: '#000000',
+    color: '#f4f4f5',
+    textColor: '#090a0c',
     regex: /(?:https?:\/\/)?(?:(?:www\.|player\.)?vimeo\.com\/(?:channels\/[^/]+\/|groups\/[^/]+\/videos\/|showcase\/[^/]+\/video\/|manage\/videos\/|video\/)?\d+)/i,
     placeholder: 'https://vimeo.com/...',
   },
   {
     id: 'direct',
     name: 'Direct Media',
-    color: '#00ff88',
-    textColor: '#000000',
+    color: '#f4f4f5',
+    textColor: '#090a0c',
     regex: /\.(mp4|mov|webm|m4v|mkv|avi|flv|mp3|wav|m4a|aac|flac|ogg|aiff|wma|jpg|jpeg|png|webp|gif)(\?.*)?$/i,
     placeholder: 'https://.../video.mp4',
   },
@@ -409,8 +409,8 @@ export const ImportPage: React.FC<ImportPageProps> = ({
         className="panel"
         style={{
           marginBottom: '12px',
-          border: '1.5px solid #000000',
-          boxShadow: 'var(--neo-shadow-card)',
+          border: '1px solid var(--border-default)',
+          boxShadow: 'var(--shadow-sm)',
           backgroundColor: 'var(--bg-secondary)',
           padding: '12px',
         }}
@@ -428,14 +428,12 @@ export const ImportPage: React.FC<ImportPageProps> = ({
               style={{
                 paddingLeft: '32px',
                 paddingRight: urlInput ? '56px' : '32px',
-                height: '38px',
-                fontSize: '12px',
-                fontWeight: 600,
+                height: '36px',
+                fontSize: '11.5px',
+                fontWeight: 500,
                 backgroundColor: 'var(--bg-primary)',
-                borderColor: detectedPlatform ? detectedPlatform.color : 'var(--border-default)',
-                boxShadow: detectedPlatform
-                  ? `1.5px 1.5px 0px ${detectedPlatform.color}`
-                  : 'var(--neo-shadow-xs)',
+                borderColor: detectedPlatform ? 'rgba(255, 255, 255, 0.35)' : 'var(--border-default)',
+                boxShadow: 'none',
               }}
             />
 
@@ -444,18 +442,18 @@ export const ImportPage: React.FC<ImportPageProps> = ({
               style={{
                 position: 'absolute',
                 left: '10px',
-                top: '11px',
+                top: '10px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: detectedPlatform ? detectedPlatform.color : 'var(--text-muted)',
+                color: detectedPlatform ? 'var(--text-primary)' : 'var(--text-muted)',
                 transition: 'color 0.15s ease',
               }}
             >
               {detectedPlatform ? (
-                <Radio size={15} strokeWidth={2.5} />
+                <Radio size={14} strokeWidth={2} />
               ) : (
-                <Search size={14} strokeWidth={2.5} />
+                <Search size={14} strokeWidth={2} />
               )}
             </div>
 
@@ -464,7 +462,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
               style={{
                 position: 'absolute',
                 right: '6px',
-                top: '7px',
+                top: '6px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '2px',
@@ -486,7 +484,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                   }}
                   title="Clear input"
                 >
-                  <X size={14} />
+                  <X size={13} />
                 </button>
               )}
 
@@ -505,7 +503,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                 }}
                 title="Paste from clipboard"
               >
-                <Clipboard size={14} />
+                <Clipboard size={13} />
               </button>
             </div>
           </div>
@@ -517,10 +515,10 @@ export const ImportPage: React.FC<ImportPageProps> = ({
             onClick={handleAnalyze}
             disabled={isAnalyzing || !urlInput.trim()}
             style={{
-              height: '38px',
+              height: '36px',
               padding: '0 14px',
-              fontSize: '12px',
-              fontWeight: 800,
+              fontSize: '11.5px',
+              fontWeight: 600,
               flexShrink: 0,
             }}
           >
@@ -531,7 +529,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
               </>
             ) : (
               <>
-                <Sparkles size={13} strokeWidth={2.5} />
+                <Sparkles size={12} strokeWidth={2} />
                 <span>Fetch</span>
               </>
             )}
@@ -543,7 +541,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '5px',
+            gap: '4px',
             marginTop: '10px',
             flexWrap: 'wrap',
           }}
@@ -557,14 +555,14 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                 onClick={() => handleSelectPlatformChip(plat)}
                 style={{
                   fontSize: '9.5px',
-                  fontWeight: 800,
+                  fontWeight: isMatched ? 600 : 500,
                   padding: '2px 7px',
                   borderRadius: 'var(--radius-xs)',
-                  border: isMatched ? '1.5px solid #000000' : '1px solid var(--border-subtle)',
-                  backgroundColor: isMatched ? plat.color : 'var(--bg-tertiary)',
-                  color: isMatched ? plat.textColor : 'var(--text-muted)',
-                  boxShadow: isMatched ? '1.5px 1.5px 0px #000000' : 'none',
-                  transform: isMatched ? 'translate(-0.5px, -0.5px)' : 'none',
+                  border: isMatched ? '1px solid rgba(255, 255, 255, 0.35)' : '1px solid var(--border-subtle)',
+                  backgroundColor: isMatched ? 'rgba(255, 255, 255, 0.12)' : 'var(--bg-tertiary)',
+                  color: isMatched ? '#ffffff' : 'var(--text-muted)',
+                  boxShadow: 'none',
+                  transform: 'none',
                   cursor: 'pointer',
                   transition: 'all 0.12s ease',
                   whiteSpace: 'nowrap',
@@ -585,17 +583,16 @@ export const ImportPage: React.FC<ImportPageProps> = ({
               marginTop: '10px',
               padding: '12px 14px',
               backgroundColor: 'var(--bg-tertiary)',
-              border: '1.5px solid #000000',
+              border: '1px solid var(--border-default)',
               borderRadius: 'var(--radius-sm)',
-              boxShadow: '1.5px 1.5px 0px #000000',
               display: 'flex',
               alignItems: 'center',
               gap: '12px',
             }}
           >
-            <div className="spin" style={{ color: 'var(--accent-primary)', fontSize: '18px', flexShrink: 0 }}>⟳</div>
+            <div className="spin" style={{ color: 'var(--text-secondary)', fontSize: '16px', flexShrink: 0 }}>⟳</div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '12px', fontWeight: 800, color: '#ffffff' }}>
+              <div style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
                 Analyzing Media Streams & Quality Presets...
               </div>
               <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>
@@ -604,17 +601,17 @@ export const ImportPage: React.FC<ImportPageProps> = ({
             </div>
             <span
               style={{
-                fontSize: '9.5px',
-                fontWeight: 800,
-                color: 'var(--accent-primary)',
-                backgroundColor: 'rgba(0, 255, 136, 0.1)',
-                border: '1px solid rgba(0, 255, 136, 0.3)',
+                fontSize: '9px',
+                fontWeight: 600,
+                color: '#ffffff',
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.18)',
                 padding: '2px 6px',
                 borderRadius: 'var(--radius-xs)',
                 whiteSpace: 'nowrap',
               }}
             >
-              FAST PROBE ACTIVE
+              PROBE ACTIVE
             </span>
           </div>
         )}
@@ -624,26 +621,25 @@ export const ImportPage: React.FC<ImportPageProps> = ({
           <div
             style={{
               marginTop: '10px',
-              padding: '8px 10px',
-              backgroundColor: 'var(--bg-tertiary)',
-              border: '1.5px solid var(--color-resolve)',
-              boxShadow: '2px 2px 0px var(--color-resolve)',
+              padding: '8px 12px',
+              backgroundColor: 'var(--danger-subtle)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: 'var(--radius-sm)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               gap: '8px',
               fontSize: '11px',
-              color: '#ffffff',
+              color: '#f87171',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <AlertTriangle size={14} strokeWidth={2.5} color="var(--color-resolve)" style={{ flexShrink: 0 }} />
+              <AlertTriangle size={14} strokeWidth={2} color="#f87171" style={{ flexShrink: 0 }} />
               <span>{analysisError}</span>
             </div>
             <button
               onClick={() => setAnalysisError(null)}
-              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+              style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: '2px' }}
             >
               <X size={12} />
             </button>
@@ -660,8 +656,8 @@ export const ImportPage: React.FC<ImportPageProps> = ({
             flexDirection: 'column',
             gap: '12px',
             backgroundColor: 'var(--bg-secondary)',
-            border: '1.5px solid #000000',
-            boxShadow: 'var(--neo-shadow-card)',
+            border: '1px solid var(--border-default)',
+            boxShadow: 'var(--shadow-sm)',
             padding: '14px',
           }}
         >
@@ -676,8 +672,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                   borderRadius: 'var(--radius-sm)',
                   overflow: 'hidden',
                   backgroundColor: '#000000',
-                  border: '1.5px solid #000000',
-                  boxShadow: '2px 2px 0px #000000',
+                  border: '1px solid var(--border-default)',
                   flexShrink: 0,
                 }}
               >
@@ -695,13 +690,12 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                       position: 'absolute',
                       bottom: '3px',
                       right: '3px',
-                      backgroundColor: 'rgba(0,0,0,0.85)',
+                      backgroundColor: 'rgba(0,0,0,0.8)',
                       color: '#ffffff',
-                      fontSize: '9.5px',
-                      fontWeight: 800,
+                      fontSize: '9px',
+                      fontWeight: 600,
                       padding: '1px 4px',
                       borderRadius: '2px',
-                      border: '1px solid #ffffff',
                     }}
                   >
                     {formatDuration(mediaInfo.duration)}
@@ -715,8 +709,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                   height: '78px',
                   borderRadius: 'var(--radius-sm)',
                   backgroundColor: 'var(--bg-tertiary)',
-                  border: '1.5px solid #000000',
-                  boxShadow: '2px 2px 0px #000000',
+                  border: '1px solid var(--border-default)',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
@@ -726,8 +719,8 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                   flexShrink: 0,
                 }}
               >
-                <Film size={26} strokeWidth={2.5} />
-                <span style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-muted)' }}>
+                <Film size={22} strokeWidth={2} />
+                <span style={{ fontSize: '9px', fontWeight: 600, color: 'var(--text-muted)' }}>
                   {(mediaInfo.platform || 'MEDIA').toUpperCase()}
                 </span>
               </div>
@@ -736,10 +729,11 @@ export const ImportPage: React.FC<ImportPageProps> = ({
             <div style={{ flex: 1, minWidth: '180px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
                 <span
-                  className="badge"
+                  className="badge badge-neutral"
                   style={{
-                    backgroundColor: detectedPlatform ? detectedPlatform.color : '#ffffff',
-                    color: detectedPlatform ? detectedPlatform.textColor : '#000000',
+                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                    color: '#ffffff',
+                    border: '1px solid rgba(255, 255, 255, 0.16)',
                   }}
                 >
                   {(mediaInfo.platformName || mediaInfo.platform || 'MEDIA').toUpperCase()}
@@ -792,8 +786,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                   padding: '2px',
                   backgroundColor: 'var(--bg-tertiary)',
                   borderRadius: 'var(--radius-xs)',
-                  border: '1.5px solid #000000',
-                  boxShadow: '1.5px 1.5px 0px #000000',
+                  border: '1px solid var(--border-default)',
                   gap: '2px',
                 }}
               >
@@ -806,16 +799,16 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                     gap: '5px',
                     padding: '4px 10px',
                     fontSize: '11px',
-                    fontWeight: 800,
+                    fontWeight: qualityMode === 'presets' ? 600 : 500,
                     borderRadius: 'var(--radius-xs)',
                     border: 'none',
                     backgroundColor: qualityMode === 'presets' ? 'var(--accent-primary)' : 'transparent',
-                    color: qualityMode === 'presets' ? '#000000' : 'var(--text-secondary)',
+                    color: qualityMode === 'presets' ? 'var(--accent-text)' : 'var(--text-muted)',
                     cursor: 'pointer',
                     transition: 'all 0.1s ease',
                   }}
                 >
-                  <Zap size={12} strokeWidth={2.5} />
+                  <Zap size={12} strokeWidth={2} />
                   <span>Presets ({mediaInfo.assets?.length || 0})</span>
                 </button>
 
@@ -833,16 +826,16 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                     gap: '5px',
                     padding: '4px 10px',
                     fontSize: '11px',
-                    fontWeight: 800,
+                    fontWeight: qualityMode === 'custom' ? 600 : 500,
                     borderRadius: 'var(--radius-xs)',
                     border: 'none',
                     backgroundColor: qualityMode === 'custom' ? 'var(--accent-primary)' : 'transparent',
-                    color: qualityMode === 'custom' ? '#000000' : 'var(--text-secondary)',
+                    color: qualityMode === 'custom' ? 'var(--accent-text)' : 'var(--text-muted)',
                     cursor: 'pointer',
                     transition: 'all 0.1s ease',
                   }}
                 >
-                  <SlidersHorizontal size={12} strokeWidth={2.5} />
+                  <SlidersHorizontal size={12} strokeWidth={2} />
                   <span>Custom Settings</span>
                 </button>
               </div>
@@ -850,19 +843,19 @@ export const ImportPage: React.FC<ImportPageProps> = ({
               {/* Status / NLE Badge */}
               <span
                 style={{
-                  fontSize: '10px',
-                  color: 'var(--success)',
-                  fontWeight: 700,
+                  fontSize: '9.5px',
+                  color: 'var(--text-secondary)',
+                  fontWeight: 500,
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px',
-                  backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.06)',
                   padding: '3px 7px',
                   borderRadius: 'var(--radius-xs)',
-                  border: '1px solid rgba(34, 197, 94, 0.3)',
+                  border: '1px solid var(--border-default)',
                 }}
               >
-                <ShieldCheck size={12} strokeWidth={2.5} /> NLE Compatible (H.264 / AAC / ProRes)
+                <ShieldCheck size={11} strokeWidth={2} /> NLE Compatible (H.264 / AAC / ProRes)
               </span>
             </div>
 
@@ -886,16 +879,17 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                       style={{
                         padding: '3px 8px',
                         fontSize: '10px',
-                        fontWeight: presetCategory === cat.id ? 800 : 600,
+                        fontWeight: presetCategory === cat.id ? 600 : 500,
                         borderRadius: 'var(--radius-xs)',
                         border: presetCategory === cat.id
-                          ? '1px solid var(--accent-primary)'
+                          ? '1px solid rgba(255, 255, 255, 0.35)'
                           : '1px solid var(--border-subtle)',
                         backgroundColor: presetCategory === cat.id
-                          ? 'var(--accent-subtle)'
+                          ? 'rgba(255, 255, 255, 0.1)'
                           : 'var(--bg-tertiary)',
-                        color: presetCategory === cat.id ? 'var(--accent-primary)' : 'var(--text-muted)',
+                        color: presetCategory === cat.id ? '#ffffff' : 'var(--text-muted)',
                         cursor: 'pointer',
+                        transition: 'all 0.12s ease',
                       }}
                     >
                       {cat.label} ({cat.count})
@@ -927,30 +921,28 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                           padding: '8px 10px',
                           borderRadius: 'var(--radius-sm)',
                           border: isSelected
-                            ? '1.5px solid var(--accent-primary)'
-                            : '1.5px solid var(--border-subtle)',
+                            ? '1px solid #ffffff'
+                            : '1px solid var(--border-default)',
                           backgroundColor: isSelected
-                            ? 'var(--accent-subtle)'
+                            ? 'rgba(255, 255, 255, 0.08)'
                             : 'var(--bg-tertiary)',
-                          boxShadow: isSelected
-                            ? '2px 2px 0px var(--accent-primary)'
-                            : 'none',
+                          boxShadow: 'none',
                           cursor: 'pointer',
-                          transition: 'all 0.08s ease',
+                          transition: 'all 0.12s ease',
                           minHeight: '44px',
                         }}
                       >
-                        <div style={{ color: isSelected ? 'var(--accent-primary)' : 'var(--text-muted)', flexShrink: 0 }}>
-                          {isVideo && (isProRes ? <Sparkles size={14} strokeWidth={2.5} /> : <Film size={14} strokeWidth={2.5} />)}
-                          {isAudio && <Music size={14} strokeWidth={2.5} />}
-                          {isImage && <ImageIcon size={14} strokeWidth={2.5} />}
+                        <div style={{ color: isSelected ? '#ffffff' : 'var(--text-muted)', flexShrink: 0 }}>
+                          {isVideo && (isProRes ? <Sparkles size={14} strokeWidth={2} /> : <Film size={14} strokeWidth={2} />)}
+                          {isAudio && <Music size={14} strokeWidth={2} />}
+                          {isImage && <ImageIcon size={14} strokeWidth={2} />}
                         </div>
 
                         <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
                           <div
                             style={{
                               fontSize: '11px',
-                              fontWeight: 800,
+                              fontWeight: 600,
                               color: isSelected ? '#ffffff' : 'var(--text-primary)',
                               whiteSpace: 'nowrap',
                               overflow: 'hidden',
@@ -971,7 +963,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                               marginTop: '1px',
                             }}
                           >
-                            <span style={{ fontWeight: 700 }}>{fmtUpper}</span>
+                            <span style={{ fontWeight: 600 }}>{fmtUpper}</span>
                             {asset.resolution ? ` • ${asset.resolution}` : ''}
                             {fSize ? ` • ${formatBytes(fSize)}` : ''}
                           </div>
@@ -980,8 +972,8 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                         {isSelected && (
                           <CheckCircle
                             size={13}
-                            strokeWidth={2.5}
-                            color="var(--accent-primary)"
+                            strokeWidth={2}
+                            color="#ffffff"
                             style={{ flexShrink: 0 }}
                           />
                         )}
@@ -1003,25 +995,25 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                       gap: '8px',
                       padding: '8px 10px',
                       borderRadius: 'var(--radius-sm)',
-                      border: '1.5px dashed var(--border-subtle)',
+                      border: '1px dashed var(--border-strong)',
                       backgroundColor: 'transparent',
                       cursor: 'pointer',
-                      transition: 'all 0.08s ease',
+                      transition: 'all 0.12s ease',
                       minHeight: '44px',
-                      opacity: 0.8,
+                      opacity: 0.85,
                     }}
                     onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent-primary)';
+                      (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255, 255, 255, 0.4)';
                       (e.currentTarget as HTMLElement).style.opacity = '1';
                     }}
                     onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-subtle)';
-                      (e.currentTarget as HTMLElement).style.opacity = '0.8';
+                      (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-strong)';
+                      (e.currentTarget as HTMLElement).style.opacity = '0.85';
                     }}
                   >
-                    <SlidersHorizontal size={14} strokeWidth={2} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+                    <SlidersHorizontal size={13} strokeWidth={2} color="var(--text-muted)" style={{ flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                      <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>
                         + Custom Options...
                       </div>
                       <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>
@@ -1038,9 +1030,9 @@ export const ImportPage: React.FC<ImportPageProps> = ({
               <div
                 style={{
                   backgroundColor: 'var(--bg-tertiary)',
-                  border: '1.5px solid #000000',
+                  border: '1px solid var(--border-default)',
                   borderRadius: 'var(--radius-sm)',
-                  boxShadow: '2px 2px 0px #000000',
+                  boxShadow: 'var(--shadow-xs)',
                   padding: '12px',
                   display: 'flex',
                   flexDirection: 'column',
@@ -1050,7 +1042,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
                   {/* Dropdown 1: Media Type */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+                    <label style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
                       1. Media Type
                     </label>
                     <select
@@ -1058,25 +1050,24 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                       value={customMediaType}
                       onChange={(e) => handleCustomMediaTypeChange(e.target.value as 'video' | 'audio' | 'image')}
                       style={{
-                        height: '34px',
+                        height: '32px',
                         fontSize: '11px',
-                        fontWeight: 700,
+                        fontWeight: 500,
                         backgroundColor: 'var(--bg-secondary)',
                         color: 'var(--text-primary)',
-                        border: '1.5px solid #000000',
-                        boxShadow: '1.5px 1.5px 0px #000000',
+                        border: '1px solid var(--border-default)',
                         cursor: 'pointer',
                       }}
                     >
-                      <option value="video">🎥 Video & Audio</option>
-                      <option value="audio">🎵 Audio Only (Stem / Score)</option>
-                      {imageAssets.length > 0 && <option value="image">🖼️ Artwork / Thumbnail</option>}
+                      <option value="video">Video & Audio</option>
+                      <option value="audio">Audio Only (Stem / Score)</option>
+                      {imageAssets.length > 0 && <option value="image">Artwork / Thumbnail</option>}
                     </select>
                   </div>
 
                   {/* Dropdown 2: Stream Quality / Resolution */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+                    <label style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
                       2. Stream Quality
                     </label>
                     <select
@@ -1084,13 +1075,12 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                       value={customQualityAssetId}
                       onChange={(e) => setCustomQualityAssetId(e.target.value)}
                       style={{
-                        height: '34px',
+                        height: '32px',
                         fontSize: '11px',
-                        fontWeight: 700,
+                        fontWeight: 500,
                         backgroundColor: 'var(--bg-secondary)',
                         color: 'var(--text-primary)',
-                        border: '1.5px solid #000000',
-                        boxShadow: '1.5px 1.5px 0px #000000',
+                        border: '1px solid var(--border-default)',
                         cursor: 'pointer',
                       }}
                     >
@@ -1152,7 +1142,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
 
                   {/* Dropdown 3: Target Output Codec / Format */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+                    <label style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
                       3. Output Format / Codec
                     </label>
                     <select
@@ -1160,13 +1150,12 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                       value={customFormat}
                       onChange={(e) => setCustomFormat(e.target.value)}
                       style={{
-                        height: '34px',
+                        height: '32px',
                         fontSize: '11px',
-                        fontWeight: 700,
+                        fontWeight: 500,
                         backgroundColor: 'var(--bg-secondary)',
                         color: 'var(--text-primary)',
-                        border: '1.5px solid #000000',
-                        boxShadow: '1.5px 1.5px 0px #000000',
+                        border: '1px solid var(--border-default)',
                         cursor: 'pointer',
                       }}
                     >
@@ -1210,12 +1199,12 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                     borderRadius: 'var(--radius-xs)',
                     backgroundColor: 'var(--bg-secondary)',
                     border: '1px solid var(--border-subtle)',
-                    fontSize: '10.5px',
+                    fontSize: '10px',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontWeight: 800, color: 'var(--accent-primary)' }}>Active Pipeline:</span>
-                    <span style={{ color: 'var(--text-secondary)' }}>
+                    <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Active Pipeline:</span>
+                    <span style={{ color: 'var(--text-muted)' }}>
                       {customMediaType === 'video' && customFormat === 'mov'
                         ? 'FFmpeg ProRes 422 Master Transcoder'
                         : customMediaType === 'audio' && customFormat === 'wav'
@@ -1226,9 +1215,9 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--success)', fontWeight: 700 }}>
-                    <CheckCircle size={11} strokeWidth={2.5} />
-                    <span>Instant NLE Import Ready ({customFormat.toUpperCase()})</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--success)', fontWeight: 600 }}>
+                    <CheckCircle size={11} strokeWidth={2} />
+                    <span>NLE Import Ready ({customFormat.toUpperCase()})</span>
                   </div>
                 </div>
               </div>
@@ -1240,7 +1229,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
           {/* Destination & Action */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                 Bin:
               </span>
               <input
@@ -1249,19 +1238,19 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                 value={targetBin}
                 onChange={(e) => setTargetBin(e.target.value)}
                 placeholder="Xdrop"
-                style={{ height: '32px', fontSize: '11px', flex: '1 1 120px', minWidth: '100px' }}
+                style={{ height: '30px', fontSize: '11px', flex: '1 1 120px', minWidth: '100px' }}
               />
 
               {/* Auto-import Checkbox + Software Selection Dropdown */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                   <input
                     type="checkbox"
                     checked={autoImport}
                     onChange={(e) => setAutoImport(e.target.checked)}
-                    style={{ width: '15px', height: '15px', accentColor: 'var(--accent-primary)', cursor: 'pointer' }}
+                    style={{ width: '13px', height: '13px', accentColor: '#ffffff', cursor: 'pointer' }}
                   />
-                  <span style={{ color: '#ffffff' }}>Auto-import</span>
+                  <span style={{ color: 'var(--text-primary)' }}>Auto-import</span>
                 </label>
 
                 {autoImport && (
@@ -1273,23 +1262,18 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                       setUserSelectedEditor(true);
                     }}
                     style={{
-                      height: '32px',
+                      height: '30px',
                       padding: '2px 8px',
                       fontSize: '11px',
-                      fontWeight: 800,
+                      fontWeight: 500,
                       borderRadius: 'var(--radius-xs)',
-                      border: '1.5px solid #000000',
+                      border: '1px solid var(--border-default)',
                       backgroundColor: 'var(--bg-tertiary)',
-                      color:
-                        autoImportEditor === 'resolve'
-                          ? 'var(--color-resolve)'
-                          : autoImportEditor === 'premiere'
-                          ? 'var(--color-premiere)'
-                          : 'var(--color-ae)',
-                      boxShadow: '1.5px 1.5px 0px #000000',
+                      color: 'var(--text-primary)',
+                      boxShadow: 'none',
                       cursor: 'pointer',
                       width: 'auto',
-                      minWidth: '135px',
+                      minWidth: '130px',
                     }}
                     title="Select software to automatically import media into after download"
                   >
@@ -1305,29 +1289,21 @@ export const ImportPage: React.FC<ImportPageProps> = ({
             <div style={{ display: 'flex', gap: '6px', width: '100%', alignItems: 'center' }}>
               <button
                 type="button"
-                className={
-                  autoImport
-                    ? autoImportEditor === 'aftereffects'
-                      ? 'btn btn-ae btn-lg'
-                      : autoImportEditor === 'premiere'
-                      ? 'btn btn-premiere btn-lg'
-                      : 'btn btn-resolve btn-lg'
-                    : 'btn btn-primary btn-lg'
-                }
+                className="btn btn-primary btn-lg"
                 onClick={() => handleStartDownload()}
                 disabled={isSubmitting || (qualityMode === 'presets' && !selectedAsset)}
-                style={{ flex: 1, padding: '8px 14px', fontSize: '12px' }}
+                style={{ flex: 1, padding: '8px 14px', fontSize: '11.5px', fontWeight: 600 }}
               >
                 {autoImport ? (
                   autoImportEditor === 'aftereffects' ? (
-                    <Sparkles size={14} strokeWidth={2.5} />
+                    <Sparkles size={13} strokeWidth={2} />
                   ) : autoImportEditor === 'premiere' ? (
-                    <Layers size={14} strokeWidth={2.5} />
+                    <Layers size={13} strokeWidth={2} />
                   ) : (
-                    <Film size={14} strokeWidth={2.5} />
+                    <Film size={13} strokeWidth={2} />
                   )
                 ) : (
-                  <Download size={14} strokeWidth={2.5} />
+                  <Download size={13} strokeWidth={2} />
                 )}
                 <span>
                   {autoImport
@@ -1340,7 +1316,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                       }`
                     : `Download ${qualityMode === 'custom' ? `Custom ${customFormat.toUpperCase()}` : 'Asset Only'}`}
                 </span>
-                <ArrowRight size={13} strokeWidth={2.5} />
+                <ArrowRight size={12} strokeWidth={2} />
               </button>
             </div>
           </div>

@@ -7,7 +7,7 @@ export interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue>({
   accentColor: 'var(--accent-primary)',
-  glowColor: 'rgba(0, 210, 255, 0.25)',
+  glowColor: 'rgba(255, 255, 255, 0.12)',
 });
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -15,7 +15,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     <ThemeContext.Provider
       value={{
         accentColor: 'var(--accent-primary)',
-        glowColor: 'rgba(0, 210, 255, 0.25)',
+        glowColor: 'rgba(255, 255, 255, 0.12)',
       }}
     >
       {children}
@@ -26,4 +26,3 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 export const useTheme = (): ThemeContextValue => {
   return useContext(ThemeContext);
 };
-

@@ -148,31 +148,30 @@ export const QueuePage: React.FC<QueuePageProps> = ({
           maxWidth: '520px',
           margin: '36px auto',
           textAlign: 'center',
-          padding: '32px 18px',
+          padding: '36px 18px',
           backgroundColor: 'var(--bg-secondary)',
           borderRadius: 'var(--radius-md)',
-          border: '1.5px solid #000000',
-          boxShadow: 'var(--neo-shadow-card)',
+          border: '1px solid var(--border-default)',
+          boxShadow: 'var(--shadow-sm)',
         }}
       >
         <div
           style={{
-            width: '42px',
-            height: '42px',
+            width: '40px',
+            height: '40px',
             margin: '0 auto 12px',
-            borderRadius: 'var(--radius-sm)',
+            borderRadius: 'var(--radius-xs)',
             backgroundColor: 'var(--bg-tertiary)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: 'var(--accent-primary)',
-            border: '1.5px solid #000000',
-            boxShadow: '1.5px 1.5px 0px #000000',
+            color: 'var(--text-muted)',
+            border: '1px solid var(--border-default)',
           }}
         >
-          <Zap size={22} strokeWidth={2.5} />
+          <Zap size={20} strokeWidth={2} />
         </div>
-        <h4 style={{ fontSize: '13.5px', fontWeight: 900, marginBottom: '4px', color: '#ffffff' }}>
+        <h4 style={{ fontSize: '13px', fontWeight: 600, marginBottom: '4px', color: 'var(--text-primary)' }}>
           Queue is Empty
         </h4>
         <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
@@ -196,18 +195,18 @@ export const QueuePage: React.FC<QueuePageProps> = ({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontSize: '11px', fontWeight: 900, letterSpacing: '0.02em', color: '#ffffff' }}>
+          <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.04em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
             DOWNLOAD QUEUE
           </span>
           <span
             style={{
               fontSize: '9.5px',
-              fontWeight: 800,
+              fontWeight: 600,
               padding: '1px 5px',
               borderRadius: '2px',
               backgroundColor: 'var(--bg-tertiary)',
-              border: '1px solid #000000',
-              color: 'var(--text-muted)',
+              border: '1px solid var(--border-default)',
+              color: 'var(--text-secondary)',
             }}
           >
             {downloads.length}
@@ -220,8 +219,8 @@ export const QueuePage: React.FC<QueuePageProps> = ({
             display: 'flex',
             backgroundColor: 'var(--bg-secondary)',
             padding: '2px',
-            borderRadius: 'var(--radius-sm)',
-            border: '1.5px solid #000000',
+            borderRadius: 'var(--radius-xs)',
+            border: '1px solid var(--border-default)',
             gap: '2px',
           }}
         >
@@ -241,13 +240,13 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                 onClick={() => setFilter(t)}
                 className="btn btn-sm"
                 style={{
-                  border: isSel ? '1px solid #000000' : '1px solid transparent',
+                  border: isSel ? '1px solid var(--border-strong)' : '1px solid transparent',
                   backgroundColor: isSel ? 'var(--bg-elevated)' : 'transparent',
                   color: isSel ? '#ffffff' : 'var(--text-muted)',
-                  padding: '2px 7px',
+                  padding: '2px 8px',
                   fontSize: '9.5px',
-                  fontWeight: isSel ? 800 : 700,
-                  boxShadow: isSel ? '1px 1px 0px #000000' : 'none',
+                  fontWeight: isSel ? 600 : 500,
+                  boxShadow: 'none',
                   transform: 'none',
                   textTransform: 'capitalize',
                 }}
@@ -308,8 +307,8 @@ export const QueuePage: React.FC<QueuePageProps> = ({
               className="panel"
               style={{
                 padding: '10px 12px',
-                border: '1.5px solid #000000',
-                borderLeft: `4px solid ${
+                border: '1px solid var(--border-default)',
+                borderLeft: `3px solid ${
                   isActive
                     ? 'var(--accent-primary)'
                     : isCompleted
@@ -319,8 +318,8 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                     : 'var(--border-default)'
                 }`,
                 backgroundColor: 'var(--bg-secondary)',
-                boxShadow: '2px 2px 0px #000000',
-                transition: 'all 0.1s ease',
+                boxShadow: 'var(--shadow-xs)',
+                transition: 'border-color 0.12s ease',
               }}
             >
               {/* Row 1: Icon, Title & Status Badge */}
@@ -328,26 +327,26 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
                   <div
                     style={{
-                      width: '24px',
-                      height: '24px',
+                      width: '22px',
+                      height: '22px',
                       borderRadius: 'var(--radius-xs)',
                       backgroundColor: 'var(--bg-tertiary)',
-                      border: '1px solid #000000',
+                      border: '1px solid var(--border-default)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: '#ffffff',
+                      color: 'var(--text-secondary)',
                       flexShrink: 0,
                     }}
                   >
-                    {isAudio ? <Music size={13} strokeWidth={2.5} /> : <Film size={13} strokeWidth={2.5} />}
+                    {isAudio ? <Music size={12} strokeWidth={2} /> : <Film size={12} strokeWidth={2} />}
                   </div>
 
                   <h5
                     style={{
-                      fontSize: '12px',
-                      fontWeight: 800,
-                      color: '#ffffff',
+                      fontSize: '11.5px',
+                      fontWeight: 600,
+                      color: 'var(--text-primary)',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
@@ -367,7 +366,7 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                   )}
                   {job.status === 'processing' && (
                     <span className="badge badge-warning" style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px' }}>
-                      <span className="spin">⟳</span> OPTIMIZING NLE
+                      <span className="spin">⟳</span> PROCESSING
                     </span>
                   )}
                   {job.status === 'importing' && (
@@ -387,11 +386,9 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                         fontSize: '8.5px',
                         padding: '1px 6px',
                         gap: '3px',
-                        backgroundColor: isAutoImportedComplete ? 'rgba(34, 197, 94, 0.2)' : undefined,
-                        border: isAutoImportedComplete ? '1px solid var(--success)' : undefined,
                       }}
                     >
-                      <CheckCircle2 size={10} strokeWidth={2.5} />
+                      <CheckCircle2 size={10} strokeWidth={2} />
                       {isAutoImportedComplete
                         ? targetEditor === 'premiere'
                           ? 'IMPORTED TO PREMIERE'
@@ -403,12 +400,12 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                   )}
                   {isFailed && (
                     <span className="badge badge-danger" style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px' }}>
-                      <AlertCircle size={10} strokeWidth={2.5} /> ERROR
+                      <AlertCircle size={10} strokeWidth={2} /> ERROR
                     </span>
                   )}
                   {isCancelled && (
                     <span className="badge badge-neutral" style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px' }}>
-                      <XCircle size={10} strokeWidth={2.5} /> CANCELLED
+                      <XCircle size={10} strokeWidth={2} /> CANCELLED
                     </span>
                   )}
                 </div>
@@ -418,12 +415,11 @@ export const QueuePage: React.FC<QueuePageProps> = ({
               <div
                 style={{
                   width: '100%',
-                  height: '6px',
-                  backgroundColor: '#000000',
+                  height: '4px',
+                  backgroundColor: 'var(--bg-primary)',
                   borderRadius: '2px',
                   overflow: 'hidden',
                   margin: '8px 0 6px',
-                  border: '1px solid #000000',
                 }}
               >
                 <div
@@ -434,8 +430,6 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                       ? 'var(--success)'
                       : isFailed
                       ? 'var(--danger)'
-                      : job.status === 'processing'
-                      ? 'var(--color-resolve)'
                       : 'var(--accent-primary)',
                     transition: 'width 0.15s ease',
                   }}
@@ -448,7 +442,7 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  fontSize: '10px',
+                  fontSize: '9.5px',
                   color: 'var(--text-muted)',
                   gap: '8px',
                 }}
@@ -474,9 +468,9 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                       {job.eta ? ` • ETA: ${job.eta}` : ''}
                     </span>
                   ) : job.status === 'processing' ? (
-                    <span style={{ color: 'var(--color-resolve)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                       <span className="spin" style={{ fontSize: '9px' }}>⟳</span>
-                      <span>Optimizing stream for NLE timeline playback & compatibility...</span>
+                      <span>Transcoding stream for NLE timeline playback & compatibility...</span>
                     </span>
                   ) : job.status === 'importing' ? (
                     <span style={{ color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
@@ -488,14 +482,14 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                   ) : isCompleted ? (
                     <span style={{ color: 'var(--text-secondary)' }}>
                       {isAutoImportedComplete ? (
-                        <span style={{ color: 'var(--success)', fontWeight: 700 }}>
+                        <span style={{ color: 'var(--success)', fontWeight: 600 }}>
                           ✓ Available in Bin '{job.premiereBin || job.aftereffectsBin || (job as any).premiere_bin || (job as any).target_media_pool_bin || 'Xdrop'}' •{' '}
                         </span>
                       ) : null}
                       {formatStr} {job.qualityLabel ? `• ${job.qualityLabel}` : ''} • {formatBytes(downloadedBytes)}
                     </span>
                   ) : isFailed ? (
-                    <span style={{ color: 'var(--color-resolve)' }}>{errorMsg}</span>
+                    <span style={{ color: 'var(--danger)' }}>{errorMsg}</span>
                   ) : (
                     <span>{formatStr} {job.qualityLabel ? `• ${job.qualityLabel}` : ''}</span>
                   )}
@@ -555,24 +549,18 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                     /* Auto-imported mode: Display completed badge without import dropdown or button */
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <span
-                        className={
-                          targetEditor === 'aftereffects' || isAfterEffectsImported
-                            ? 'badge badge-ae'
-                            : targetEditor === 'premiere' || isPremiereImported
-                            ? 'badge badge-premiere'
-                            : 'badge badge-resolve'
-                        }
+                        className="badge badge-resolve"
                         style={{
                           fontSize: '9.5px',
-                          padding: '3px 8px',
-                          fontWeight: 800,
+                          padding: '2px 7px',
+                          fontWeight: 600,
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '4px',
                         }}
                         title="Media was automatically imported into project workspace upon download completion."
                       >
-                        <Check size={11} strokeWidth={3} />
+                        <Check size={11} strokeWidth={2.5} />
                         Auto-imported to {
                           targetEditor === 'aftereffects' || isAfterEffectsImported
                             ? 'After Effects'
@@ -593,7 +581,7 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                             style={{ fontSize: '8.5px', padding: '1px 5px' }}
                             title="Imported into DaVinci Resolve"
                           >
-                            <Check size={9} strokeWidth={3} /> Resolve
+                            <Check size={9} strokeWidth={2.5} /> Resolve
                           </span>
                         )}
                         {isPremiereImported && (
@@ -602,7 +590,7 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                             style={{ fontSize: '8.5px', padding: '1px 5px' }}
                             title="Imported into Adobe Premiere Pro"
                           >
-                            <Check size={9} strokeWidth={3} /> Premiere
+                            <Check size={9} strokeWidth={2.5} /> Premiere
                           </span>
                         )}
                         {isAfterEffectsImported && (
@@ -611,12 +599,12 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                             style={{ fontSize: '8.5px', padding: '1px 5px' }}
                             title="Imported into Adobe After Effects"
                           >
-                            <Check size={9} strokeWidth={3} /> AE
+                            <Check size={9} strokeWidth={2.5} /> AE
                           </span>
                         )}
                         {!isResolveImported && !isPremiereImported && !isAfterEffectsImported && (
                           <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                            Choose target editor:
+                            Target editor:
                           </span>
                         )}
                       </div>
@@ -628,22 +616,17 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                           value={currentTarget}
                           onChange={(e) => handleEditorSelectionChange(job.id, e.target.value as EditorTarget)}
                           style={{
-                            height: '28px',
+                            height: '26px',
                             padding: '2px 8px',
-                            fontSize: '11px',
-                            fontWeight: 800,
+                            fontSize: '10.5px',
+                            fontWeight: 500,
                             borderRadius: 'var(--radius-xs)',
-                            border: '1.5px solid #000000',
+                            border: '1px solid var(--border-default)',
                             backgroundColor: 'var(--bg-tertiary)',
-                            color:
-                              currentTarget === 'resolve'
-                                ? 'var(--color-resolve)'
-                                : currentTarget === 'premiere'
-                                ? 'var(--color-premiere)'
-                                : 'var(--color-ae)',
-                            boxShadow: '1.5px 1.5px 0px #000000',
+                            color: 'var(--text-primary)',
+                            boxShadow: 'none',
                             width: 'auto',
-                            minWidth: '135px',
+                            minWidth: '130px',
                             cursor: 'pointer',
                           }}
                           title="Select software for importing"
@@ -662,18 +645,12 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                         <button
                           onClick={() => handleTriggerImport(job.id, currentTarget)}
                           disabled={isCurrentlyImporting}
-                          className={
-                            currentTarget === 'aftereffects'
-                              ? 'btn btn-sm btn-ae'
-                              : currentTarget === 'premiere'
-                              ? 'btn btn-sm btn-premiere'
-                              : 'btn btn-sm btn-resolve'
-                          }
+                          className="btn btn-sm btn-primary"
                           style={{
-                            height: '28px',
-                            padding: '3px 10px',
-                            fontSize: '11px',
-                            fontWeight: 800,
+                            height: '26px',
+                            padding: '2px 10px',
+                            fontSize: '10.5px',
+                            fontWeight: 600,
                             gap: '4px',
                           }}
                           title={`Import asset into ${
@@ -687,7 +664,7 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                           {isCurrentlyImporting ? (
                             <span className="spin">⟳</span>
                           ) : (
-                            <ArrowUpRight size={12} strokeWidth={2.5} />
+                            <ArrowUpRight size={11} strokeWidth={2} />
                           )}
                           <span>
                             {isAlreadyImportedInTarget ? 'Re-import' : 'Import'}
