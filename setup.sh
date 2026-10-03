@@ -58,7 +58,7 @@ echo "[OK] Using Python: $PYTHON_BIN"
 echo ""
 
 # 2. Run Python setup script
-$PYTHON_BIN "$SCRIPT_DIR/scripts/setup.py"
+$PYTHON_BIN "$SCRIPT_DIR/apps/desktop-service/xdrop/setup.py"
 
 echo ""
 echo "Setup is complete! Launching Xdrop..."

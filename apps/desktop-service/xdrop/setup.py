@@ -32,7 +32,7 @@ if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     except Exception:
         pass
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
+ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent
 DESKTOP_SERVICE_DIR = ROOT_DIR / "apps" / "desktop-service"
 sys.path.insert(0, str(DESKTOP_SERVICE_DIR))
 

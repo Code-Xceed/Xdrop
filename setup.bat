@@ -107,7 +107,7 @@ echo [OK] Using Python: !PYTHON_EXE!
 echo.
 
 :: 3. Execute setup orchestrator
-"!PYTHON_EXE!" scripts\setup.py
+"!PYTHON_EXE!" apps\desktop-service\xdrop\setup.py
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo [ERROR] Setup encountered an issue. See above for details.

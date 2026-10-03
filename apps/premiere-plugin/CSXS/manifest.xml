@@ -46,8 +46,13 @@
                             <Height>400</Height>
                             <Width>340</Width>
                         </MinSize>
-                    </Geometry>
-                    <Icons />
+                    <Icons>
+                        <Icon Type="Normal">./icons/iconNormal.png</Icon>
+                        <Icon Type="RollOver">./icons/iconHover.png</Icon>
+                        <Icon Type="Disabled">./icons/iconDisabled.png</Icon>
+                        <Icon Type="DarkNormal">./icons/iconDark.png</Icon>
+                        <Icon Type="DarkRollOver">./icons/iconHover.png</Icon>
+                    </Icons>
                 </UI>
             </DispatchInfo>
         </Extension>

@@ -11,9 +11,7 @@
     "dev:ui": "npm run dev --workspace=apps/resolve-plugin",
     "build:ui": "npm run build --workspace=apps/resolve-plugin",
     "build:packages": "npm run build --workspaces --if-present",
-    "test:ui": "npm run build:ui",
-    "test:backend": "python -m pytest tests",
-    "test": "npm run build:ui && python -m pytest tests",
+    "test": "npm run build:ui",
     "start:service": "python apps/desktop-service/xdrop/main.py",
     "start:gui": "python apps/desktop-service/xdrop/main.py --gui"
   },

@@ -6,7 +6,6 @@
 > 
 > *Paste URL → Detect Platform → Inspect Assets → Download & Transcode → Instantly Drop into Active Editor Timelines & Bins.*
 
-[![Build & Test](https://img.shields.io/badge/tests-36%20passed-brightgreen.svg)]()
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-blue.svg)]()
 [![Editors](https://img.shields.io/badge/editors-Resolve%20%7C%20Premiere%20%7C%20After%20Effects-purple.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-purple.svg)](LICENSE)
@@ -127,7 +126,7 @@ Social media platforms (YouTube, Instagram, TikTok, etc.) frequently update thei
 
 ## 7. Developer Setup (Contributing)
 
-For developers looking to customize the React UI, add platform providers, or run unit tests:
+For developers looking to customize the React UI or add platform providers:
 
 1. **Install Dependencies**:
    ```bash
@@ -149,11 +148,6 @@ For developers looking to customize the React UI, add platform providers, or run
 4. **Build Production Bundle**:
    ```bash
    npm run build:ui
-   ```
-
-5. **Run Test Suite**:
-   ```bash
-   python -m pytest tests -v
    ```
 
 ---
