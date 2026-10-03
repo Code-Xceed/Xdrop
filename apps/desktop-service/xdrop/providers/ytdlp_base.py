@@ -214,6 +214,13 @@ class YtDlpBaseProvider(PlatformProvider):
             quality_label="AAC / M4A (320kbps)",
             is_default=False
         ))
+        assets.append(MediaAssetModel(
+            id="audio_flac",
+            media_type="audio",
+            format="flac",
+            quality_label="Lossless FLAC",
+            is_default=False
+        ))
 
         # 3. Add Thumbnail asset if available
         if info.get("thumbnail"):
@@ -240,7 +247,7 @@ class YtDlpBaseProvider(PlatformProvider):
         dest_path.parent.mkdir(parents=True, exist_ok=True)
         ffmpeg_bin = discover_ffmpeg()
 
-        is_audio = "audio" in asset_id.lower() or dest_path.suffix.lower() in (".wav", ".mp3", ".aac")
+        is_audio = "audio" in asset_id.lower() or dest_path.suffix.lower() in (".wav", ".mp3", ".aac", ".m4a", ".flac")
         is_thumb = "thumb" in asset_id.lower()
 
         # Handle direct thumbnail download
@@ -297,7 +304,10 @@ class YtDlpBaseProvider(PlatformProvider):
         })
 
         if is_audio:
-            if "wav" in asset_id.lower() or dest_path.suffix.lower() == ".wav":
+            if "flac" in asset_id.lower() or dest_path.suffix.lower() == ".flac":
+                fmt = "flac"
+                qual = "0"
+            elif "wav" in asset_id.lower() or dest_path.suffix.lower() == ".wav":
                 fmt = "wav"
                 qual = "0"
             elif "aac" in asset_id.lower() or "m4a" in asset_id.lower() or dest_path.suffix.lower() in (".aac", ".m4a"):
@@ -323,7 +333,7 @@ class YtDlpBaseProvider(PlatformProvider):
             parts = asset_id.split("_", 2)
             if len(parts) >= 3 and parts[2] and not parts[2].startswith("mov"):
                 fmt_id = parts[2]
-                format_spec = f"{fmt_id}+bestaudio[acodec^=mp4a]/{fmt_id}+bestaudio/bestvideo+bestaudio/best"
+                format_spec = f"{fmt_id}+bestaudio[acodec^=mp4a]/{fmt_id}+bestaudio/{fmt_id}/bestvideo+bestaudio/best"
             ydl_opts.update({
                 "format": format_spec,
                 "merge_output_format": "mp4"

@@ -1,5 +1,6 @@
 import os
 import re
+import uuid
 from pathlib import Path
 from typing import Dict, Any, Optional, Callable
 import httpx
@@ -40,11 +41,11 @@ class DirectMediaProvider(PlatformProvider):
     platform_name = "Direct Media URL"
 
     def can_handle(self, url: str) -> bool:
-        clean = url.split("?")[0].lower()
+        clean = url.split("?")[0].split("#")[0].lower()
         return any(clean.endswith(ext) for ext in DIRECT_EXTENSIONS.keys())
 
     def inspect(self, url: str) -> MediaInfoModel:
-        clean_url = url.split("?")[0]
+        clean_url = url.split("?")[0].split("#")[0]
         ext = Path(clean_url).suffix.lower()
         media_type, fmt = DIRECT_EXTENSIONS.get(ext, ("video", "mp4"))
         filename = Path(clean_url).name or "direct_media"
@@ -101,6 +102,13 @@ class DirectMediaProvider(PlatformProvider):
                 quality_label="AAC / M4A (320kbps)",
                 is_default=False
             ))
+            assets.append(MediaAssetModel(
+                id="direct_audio_flac",
+                media_type="audio",
+                format="flac",
+                quality_label="Lossless FLAC",
+                is_default=False
+            ))
         elif media_type == "audio":
             assets.append(MediaAssetModel(
                 id="direct_original_audio",
@@ -135,6 +143,14 @@ class DirectMediaProvider(PlatformProvider):
                     quality_label="AAC / M4A (320kbps)",
                     is_default=False
                 ))
+            if fmt != "flac":
+                assets.append(MediaAssetModel(
+                    id="direct_audio_flac",
+                    media_type="audio",
+                    format="flac",
+                    quality_label="Lossless FLAC",
+                    is_default=False
+                ))
         else: # image
             assets.append(MediaAssetModel(
                 id="direct_image",
@@ -167,6 +183,17 @@ class DirectMediaProvider(PlatformProvider):
             import time
             target_path = Path(output_template).resolve()
             target_path.parent.mkdir(parents=True, exist_ok=True)
+
+            clean_url = url.split("?")[0].split("#")[0].lower()
+            source_ext = Path(clean_url).suffix
+            # If target has a different extension than source URL (e.g. user selected audio extraction
+            # or ProRes MOV conversion from a direct video), download to the source extension first
+            # so the subsequent FFmpeg audio extraction or transcoding pipeline can process it properly.
+            if source_ext in DIRECT_EXTENSIONS and target_path.suffix.lower() != source_ext:
+                download_target = target_path.with_suffix(source_ext)
+            else:
+                download_target = target_path
+
             downloaded = 0
             start_time = time.time()
             last_cb_time = 0.0
@@ -181,48 +208,53 @@ class DirectMediaProvider(PlatformProvider):
                         )
 
                     total_bytes = int(response.headers.get("content-length", 0))
-                    temp_file = target_path.with_suffix(f"{target_path.suffix}.tmp")
+                    temp_file = download_target.with_suffix(f".{uuid.uuid4().hex[:8]}.tmp")
 
-                    # High-throughput 1MB buffer write loop
-                    with open(temp_file, "wb", buffering=1024 * 1024) as f:
-                        for chunk in response.iter_bytes(chunk_size=1024 * 1024):
-                            if not chunk:
-                                continue
-                            f.write(chunk)
-                            downloaded += len(chunk)
-                            now = time.time()
+                    # High-throughput 1MB buffer write loop with graceful cleanup
+                    try:
+                        with open(temp_file, "wb", buffering=1024 * 1024) as f:
+                            for chunk in response.iter_bytes(chunk_size=1024 * 1024):
+                                if not chunk:
+                                    continue
+                                f.write(chunk)
+                                downloaded += len(chunk)
+                                now = time.time()
 
-                            # Compute real-time transfer speed & ETA
-                            elapsed = now - start_time
-                            speed_bps = (downloaded / elapsed) if elapsed > 0.1 else 0.0
-                            speed_str = f"{(speed_bps / (1024 * 1024)):.1f} MB/s" if speed_bps > 0 else None
+                                # Compute real-time transfer speed & ETA
+                                elapsed = now - start_time
+                                speed_bps = (downloaded / elapsed) if elapsed > 0.1 else 0.0
+                                speed_str = f"{(speed_bps / (1024 * 1024)):.1f} MB/s" if speed_bps > 0 else None
 
-                            eta_str = None
-                            if total_bytes > downloaded and speed_bps > 0:
-                                rem_sec = int((total_bytes - downloaded) / speed_bps)
-                                eta_str = f"{rem_sec // 60:02d}:{rem_sec % 60:02d}"
+                                eta_str = None
+                                if total_bytes > downloaded and speed_bps > 0:
+                                    rem_sec = int((total_bytes - downloaded) / speed_bps)
+                                    eta_str = f"{rem_sec // 60:02d}:{rem_sec % 60:02d}"
 
-                            # Throttle callbacks to at most once per 200ms to preserve peak network I/O
-                            if progress_callback and (now - last_cb_time >= 0.2 or downloaded >= total_bytes):
-                                last_cb_time = now
-                                percent = (downloaded / total_bytes * 100.0) if total_bytes > 0 else 50.0
-                                progress_callback({
-                                    "status": "downloading",
-                                    "progress": round(percent, 1),
-                                    "downloaded_bytes": downloaded,
-                                    "total_bytes": total_bytes if total_bytes > 0 else None,
-                                    "speed": speed_str,
-                                    "eta": eta_str
-                                })
+                                # Throttle callbacks to at most once per 200ms to preserve peak network I/O
+                                if progress_callback and (now - last_cb_time >= 0.2 or (total_bytes > 0 and downloaded >= total_bytes)):
+                                    last_cb_time = now
+                                    percent = (downloaded / total_bytes * 100.0) if total_bytes > 0 else 50.0
+                                    progress_callback({
+                                        "status": "downloading",
+                                        "progress": round(percent, 1),
+                                        "downloaded_bytes": downloaded,
+                                        "total_bytes": total_bytes if total_bytes > 0 else None,
+                                        "speed": speed_str,
+                                        "eta": eta_str
+                                    })
 
-                    if temp_file.exists():
-                        if target_path.exists():
-                            target_path.unlink()
-                        temp_file.rename(target_path)
+                        if temp_file.exists():
+                            os.replace(str(temp_file), str(download_target))
+                    finally:
+                        if temp_file.exists():
+                            try:
+                                temp_file.unlink(missing_ok=True)
+                            except Exception:
+                                pass
 
             return DownloadResult(
                 success=True,
-                output_file_path=str(target_path),
+                output_file_path=str(download_target),
                 downloaded_bytes=downloaded
             )
         except Exception as e:

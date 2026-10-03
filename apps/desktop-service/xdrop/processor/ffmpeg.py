@@ -91,9 +91,15 @@ class FFmpegProcessor:
         if fmt == "wav":
             cmd.extend(["-c:a", "pcm_s16le", "-ar", "48000"])
         elif fmt == "mp3":
-            cmd.extend(["-c:a", "libmp3lame", "-q:a", "0"])
-        elif fmt == "aac" or fmt == "m4a":
+            cmd.extend(["-c:a", "libmp3lame", "-b:a", "320k"])
+        elif fmt in ("aac", "m4a"):
             cmd.extend(["-c:a", "aac", "-b:a", "320k"])
+        elif fmt == "flac":
+            cmd.extend(["-c:a", "flac"])
+        elif fmt == "ogg":
+            cmd.extend(["-c:a", "libvorbis", "-q:a", "6"])
+        elif fmt == "aiff":
+            cmd.extend(["-c:a", "pcm_s16be", "-ar", "48000"])
         else:
             cmd.extend(["-c:a", "copy"])
 
@@ -317,18 +323,8 @@ class FFmpegProcessor:
         # Replace file safely
         final_target = inp.with_suffix(out_ext)
         try:
-            if final_target == inp:
-                backup = inp.with_suffix(".orig_pre_compat")
-                if backup.exists():
-                    backup.unlink(missing_ok=True)
-                inp.rename(backup)
-                temp_out.rename(final_target)
-                try:
-                    backup.unlink(missing_ok=True)
-                except Exception:
-                    pass
-            else:
-                temp_out.rename(final_target)
+            os.replace(str(temp_out), str(final_target))
+            if final_target != inp and inp.exists():
                 try:
                     inp.unlink(missing_ok=True)
                 except Exception:

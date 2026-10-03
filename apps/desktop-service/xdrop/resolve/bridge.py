@@ -12,7 +12,50 @@ class ResolveBridge:
     def __init__(self):
         self._bmd = None
         self._initialized = False
+        self._last_process_check_time: Optional[datetime] = None
+        self._last_process_running: bool = False
         self._setup_environment()
+
+    def _is_process_running(self) -> bool:
+        """Fast cached check if Resolve.exe is in operating system processes to avoid slow scriptapp timeout."""
+        now = datetime.now(timezone.utc)
+        if self._last_process_check_time and (now - self._last_process_check_time).total_seconds() < 5.0:
+            return self._last_process_running
+
+        import subprocess
+        try:
+            if sys.platform == "win32":
+                res = subprocess.run(
+                    ["tasklist", "/FI", "IMAGENAME eq Resolve.exe", "/NH"],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    timeout=1.5
+                )
+                running = "Resolve.exe" in res.stdout
+            elif sys.platform == "darwin":
+                res = subprocess.run(
+                    ["pgrep", "-x", "Resolve"],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    timeout=1.5
+                )
+                running = res.returncode == 0
+            else:
+                res = subprocess.run(
+                    ["pgrep", "-f", "resolve"],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    timeout=1.5
+                )
+                running = res.returncode == 0
+            self._last_process_running = running
+            self._last_process_check_time = now
+            return running
+        except Exception:
+            return self._last_process_running
 
     def _setup_environment(self) -> None:
         """Configures Python path for DaVinciResolveScript according to OS specifications."""
@@ -63,6 +106,9 @@ class ResolveBridge:
 
     def get_resolve_app(self) -> Optional[Any]:
         """Returns the active Resolve application instance, or None if not running."""
+        if not self._is_process_running():
+            return None
+
         if not self._bmd:
             self._setup_environment()
         if not self._bmd:
@@ -74,6 +120,12 @@ class ResolveBridge:
         except Exception as e:
             resolve_logger.debug(f"Unable to connect to Resolve scriptapp: {e}")
             return None
+
+    def is_running(self) -> bool:
+        """Returns True if DaVinci Resolve is currently active and reachable."""
+        if not self._is_process_running():
+            return False
+        return self.get_resolve_app() is not None
 
     def get_status(self) -> Dict[str, Any]:
         """Returns detailed status of DaVinci Resolve connection and active project."""

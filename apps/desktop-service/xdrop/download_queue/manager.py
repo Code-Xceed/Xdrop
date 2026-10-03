@@ -164,6 +164,15 @@ class DownloadQueueManager:
         if not job:
             return None
 
+        # Wait for any lingering active worker task to complete/cancel before re-queueing
+        task = self._active_tasks.get(job_id)
+        if task and not task.done():
+            task.cancel()
+            try:
+                await task
+            except (asyncio.CancelledError, Exception):
+                pass
+
         self._cancelled_jobs.discard(job_id)
         update_download_status(job_id, "queued", None)
         update_download_progress(job_id, "queued", 0.0, 0)
@@ -391,7 +400,13 @@ class DownloadQueueManager:
                     lambda: ffmpeg.extract_audio(final_file, str(audio_out), target_afmt)
                 )
                 if success and audio_out.exists():
+                    orig_raw = final_file
                     final_file = str(audio_out)
+                    if orig_raw != final_file and Path(orig_raw).exists():
+                        try:
+                            Path(orig_raw).unlink()
+                        except Exception:
+                            pass
 
         # Video format transcoding if requested (e.g. ProRes MOV or Universal MP4)
         target_vfmt = req.transcode_video_format or (req.format if req.format and req.format.lower() in ("mov", "mp4") else None) or (settings.preferred_video_format if settings.preferred_video_format != "original" else None)
@@ -405,7 +420,13 @@ class DownloadQueueManager:
                         lambda: ffmpeg.convert_video_format(final_file, str(trans_out), target_vfmt.lower())
                     )
                     if success and trans_out.exists():
+                        orig_raw = final_file
                         final_file = str(trans_out)
+                        if orig_raw != final_file and Path(orig_raw).exists():
+                            try:
+                                Path(orig_raw).unlink()
+                            except Exception:
+                                pass
 
         # Always ensure NLE codec compatibility for video assets
         # (transcodes AV1/VP9 video to H.264 and Opus audio to AAC so Premiere Pro and Resolve never fail on import)
