@@ -103,7 +103,7 @@ Xdrop includes an automated setup engine that scans your computer, auto-detects 
    python apps/desktop-service/xdrop/main.py --gui
    ```
 
-*(Node.js/npm is **not required** for standard users — pre-compiled high-performance UI bundles are bundled directly with the repo!)*
+*(Zero-Configuration: If Python is not installed, `setup.bat` automatically detects and installs it silently without requiring admin privileges! Node.js/npm is also **not required** for standard users — pre-compiled high-performance UI bundles are bundled directly with the repo!)*
 
 ---
 
@@ -125,7 +125,18 @@ Once setup is complete, Xdrop is directly integrated into your editing suites:
 
 ---
 
-## 6. Developer Setup (Contributing)
+## 6. One-Click Updates
+
+Social platforms (YouTube, Instagram, TikTok, etc.) frequently change their video delivery algorithms. To keep extractors functioning without breaking:
+
+- **Windows**: Double-click `update.bat`
+- **macOS / Linux**: Run `./update.sh`
+
+This automatically pulls new features, upgrades extraction engines (`yt-dlp`), updates dependencies, and re-syncs all editor scripts.
+
+---
+
+## 7. Developer Setup (Contributing)
 
 For developers looking to customize the React UI, add platform providers, or run unit tests:
 

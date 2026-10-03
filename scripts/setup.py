@@ -379,7 +379,11 @@ def configure_user_settings(detected_editors: dict):
 title Xdrop Desktop Service
 cd /d "%~dp0"
 echo Starting Xdrop Engine...
-python apps\\desktop-service\\xdrop\\main.py --gui
+if exist "{sys.executable}" (
+    "{sys.executable}" apps\\desktop-service\\xdrop\\main.py --gui
+) else (
+    python apps\\desktop-service\\xdrop\\main.py --gui
+)
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo Service stopped or encountered an error.

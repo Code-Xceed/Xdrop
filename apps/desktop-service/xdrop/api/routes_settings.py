@@ -132,3 +132,79 @@ async def trigger_install_aftereffects_extension():
     if not success:
         raise HTTPException(status_code=500, detail=msg)
     return {"success": True, "message": "Synced extension for Adobe Premiere Pro & After Effects"}
+
+@router.get("/system-info")
+async def get_system_info():
+    """Returns system diagnostic information including Python, yt-dlp, FFmpeg versions and OS."""
+    import sys
+    import platform
+    import yt_dlp
+    
+    db_settings = get_settings_from_db()
+    current = AppSettingsModel(**db_settings)
+    ffmpeg = get_ffmpeg_processor(current.ffmpeg_path)
+    ff_ok, ff_info = ffmpeg.is_available()
+
+    return {
+        "python": {
+            "version": platform.python_version(),
+            "executable": sys.executable,
+            "is64bit": sys.maxsize > 2**32
+        },
+        "ytdlp": {
+            "version": getattr(yt_dlp.version, "__version__", "unknown")
+        },
+        "ffmpeg": {
+            "isAvailable": ff_ok,
+            "path": ffmpeg.ffmpeg_path,
+            "info": ff_info
+        },
+        "os": {
+            "system": platform.system(),
+            "release": platform.release(),
+            "machine": platform.machine()
+        },
+        "editors": {
+            "resolveInstalled": is_resolve_script_installed(),
+            "adobeInstalled": is_premiere_extension_installed()
+        }
+    }
+
+@router.post("/update-ytdlp")
+async def trigger_update_ytdlp():
+    """Updates yt-dlp to the latest upstream release via pip."""
+    import sys
+    import subprocess
+    import yt_dlp
+    
+    old_version = getattr(yt_dlp.version, "__version__", "unknown")
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--upgrade", "yt-dlp"],
+            capture_output=True,
+            text=True,
+            timeout=60.0
+        )
+        if proc.returncode != 0:
+            return {
+                "success": False,
+                "error": proc.stderr or proc.stdout,
+                "currentVersion": old_version
+            }
+        
+        import importlib
+        importlib.reload(yt_dlp)
+        new_version = getattr(yt_dlp.version, "__version__", old_version)
+        return {
+            "success": True,
+            "oldVersion": old_version,
+            "newVersion": new_version,
+            "message": f"yt-dlp updated successfully from {old_version} to {new_version}."
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "currentVersion": old_version
+        }
+

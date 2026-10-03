@@ -91,23 +91,34 @@ def run_service(host: str = "127.0.0.1", port: int = 8484):
     server.run()
 
 def run_gui(host: str = "127.0.0.1", port: int = 8484):
-    """Launches the service alongside a pywebview native desktop companion window."""
+    """Launches the service alongside a pywebview native desktop companion window or falls back to default browser."""
     import threading
-    import webview
+    import time
+    import webbrowser
 
     service_thread = threading.Thread(target=run_service, args=(host, port), daemon=True)
     service_thread.start()
 
     url = f"http://{host}:{port}"
-    window = webview.create_window(
-        title="Xdrop - Video Asset Importer",
-        url=url,
-        width=1020,
-        height=720,
-        min_size=(780, 520),
-        background_color="#08090d"
-    )
-    webview.start()
+    try:
+        import webview
+        window = webview.create_window(
+            title="Xdrop - Video Asset Importer",
+            url=url,
+            width=1020,
+            height=720,
+            min_size=(780, 520),
+            background_color="#08090d"
+        )
+        webview.start()
+    except Exception as e:
+        app_logger.warning(f"Native desktop window unavailable ({e}). Opening in default browser instead.")
+        webbrowser.open(url)
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            pass
 
 def main():
     parser = argparse.ArgumentParser(description="Xdrop Desktop Service")
