@@ -24,16 +24,13 @@ apps/premiere-plugin/
 
 ## 2. Installation for Premiere Pro & After Effects
 
-Run the automated installer script:
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\install-premiere-plugin.ps1
-```
+Installation is handled automatically by running the root setup script:
+- **Windows**: Double-click `setup.bat` in the repository root.
+- **macOS / Linux**: Run `./setup.sh` in the repository root.
 
-Or double-click `scripts\install-premiere-plugin.bat`.
-
-This script:
-1. Copies `apps/premiere-plugin` into `%APPDATA%\Adobe\CEP\extensions\com.xdrop.panel`.
-2. Sets `PlayerDebugMode=1` in the Windows Registry (`HKCU\Software\Adobe\CSXS.*`) so Premiere Pro and After Effects load custom local extensions.
+The automated setup:
+1. Copies `apps/premiere-plugin` into Adobe's CEP extensions folder (`%APPDATA%\Adobe\CEP\extensions\com.xdrop.panel` on Windows or `~/Library/Application Support/Adobe/CEP/extensions/com.xdrop.panel` on macOS).
+2. Automatically enables `PlayerDebugMode=1` in the Registry (`HKCU\Software\Adobe\CSXS.*`) so Premiere Pro and After Effects load local CEP extensions seamlessly.
 
 ---
 

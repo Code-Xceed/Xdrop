@@ -85,7 +85,22 @@ DaVinci Resolve provides a Python scripting interface powered by `fusionscript`.
 
 ---
 
-## 3. Provider Architecture
+## 3. Adobe Premiere Pro & After Effects Integration (CEP)
+
+Adobe Premiere Pro and Adobe After Effects are supported via an official **Adobe Common Extensibility Platform (CEP)** dockable panel:
+
+1. **CEP Architecture**:
+   - Manifest: `apps/premiere-plugin/CSXS/manifest.xml` registers extension `com.xdrop.panel` for host IDs `PPRO` (Premiere Pro) and `AEFT` (After Effects).
+   - Frontend: Connects via local WebSocket to `ws://127.0.0.1:8484/ws` and sends automatic heartbeat pings (`/api/premiere/heartbeat`, `/api/aftereffects/heartbeat`).
+2. **ExtendScript Media Pool Injection (`hostscript.jsx`)**:
+   - In **Premiere Pro**: `app.project.importFiles([filePath])` automatically creates an `"Xdrop"` project bin and places imported footage into it.
+   - In **After Effects**: `app.project.importFile(new ImportOptions(File(filePath)))` imports footage directly into the Project panel and active composition.
+3. **Auto-Detection**:
+   - The desktop service tracks active heartbeats and dynamically updates `GET /api/editors/status` with `activeEditor: "premiere" | "aftereffects" | "resolve"`.
+
+---
+
+## 4. Provider Architecture
 
 Platform-specific extraction logic is decoupled from downloader routines via the `PlatformProvider` interface:
 

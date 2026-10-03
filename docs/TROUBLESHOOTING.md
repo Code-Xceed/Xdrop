@@ -50,3 +50,27 @@
 - Check that the URL is public and accessible without logging in.
 - For private videos or stories that require authentication, Xdrop will decline to download in compliance with security guidelines.
 - Try copying the direct canonical share link from your browser address bar.
+
+---
+
+### 5. Premiere Pro or After Effects: Extension Not Appearing in Menu
+
+**Symptom**: `Window → Extensions → Xdrop` is missing in Premiere Pro or After Effects.
+
+**Fix**:
+1. Run `setup.bat` (Windows) or `./setup.sh` (macOS) to re-synchronize the extension files into `%APPDATA%\Adobe\CEP\extensions\com.xdrop.panel`.
+2. Ensure `PlayerDebugMode` is enabled in the Windows Registry:
+   - Run in PowerShell:
+     ```powershell
+     9..16 | ForEach-Object { reg add "HKCU\Software\Adobe\CSXS.$_" /v PlayerDebugMode /t REG_SZ /d "1" /f }
+     ```
+3. Restart Premiere Pro or After Effects.
+
+---
+
+### 6. Video Download Fails with HTTP 403 or "Signature extraction failed"
+
+**Symptom**: A social media platform suddenly fails to download.
+
+**Fix**:
+- Platform APIs change frequently. Simply run `setup.bat` again (or click "Update" via the API) to update `yt-dlp` to the latest upstream release.

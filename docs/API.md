@@ -123,29 +123,51 @@ Reveals the asset file in Windows File Explorer (`explorer.exe /select,...`).
 
 ---
 
-## 4. DaVinci Resolve Bridge Endpoints
+## 4. Cross-NLE Bridge Endpoints
 
-### `GET /api/resolve/status`
-Returns live status of DaVinci Resolve connection:
+### `GET /api/editors/status`
+Returns live status of all video editors and indicates which editor is currently active:
 ```json
 {
-  "isAvailable": true,
-  "version": "21.0.4.5",
-  "productName": "DaVinci Resolve Studio",
-  "currentProject": "Commercial_Cut_v2",
-  "currentTimeline": "Timeline 1",
-  "mediaPoolFolder": "Master",
-  "error": null,
-  "lastChecked": "2026-10-01T03:00:00Z"
+  "activeEditor": "resolve",
+  "resolve": {
+    "isAvailable": true,
+    "productName": "DaVinci Resolve Studio",
+    "version": "19.0.0",
+    "currentProject": "Commercial_Cut_v2"
+  },
+  "premiere": {
+    "isAvailable": false,
+    "productName": "Adobe Premiere Pro"
+  },
+  "aftereffects": {
+    "isAvailable": false,
+    "productName": "Adobe After Effects"
+  }
 }
 ```
+
+### `GET /api/resolve/status`
+Returns live status of DaVinci Resolve connection.
 
 ### `POST /api/resolve/import`
 Directly imports specified paths into a target Media Pool bin.
 
+### `GET /api/premiere/status` & `POST /api/premiere/heartbeat`
+Returns live status and receives CEP panel heartbeats from Adobe Premiere Pro.
+
+### `POST /api/premiere/import`
+Broadcasts an import command to the Adobe Premiere Pro CEP panel.
+
+### `GET /api/aftereffects/status` & `POST /api/aftereffects/heartbeat`
+Returns live status and receives CEP panel heartbeats from Adobe After Effects.
+
+### `POST /api/aftereffects/import`
+Broadcasts an import command to the Adobe After Effects CEP panel.
+
 ---
 
-## 5. Settings Endpoints
+## 5. Settings & Diagnostics Endpoints
 
 ### `GET /api/settings`
 Returns current application configuration.
@@ -154,10 +176,28 @@ Returns current application configuration.
 Updates and persists application configuration.
 
 ### `GET /api/settings/tools-status`
-Returns operational status of FFmpeg and DaVinci Resolve script installation.
+Returns operational status of FFmpeg and editor script/extension installations.
+
+### `GET /api/settings/system-info`
+Returns full machine diagnostics:
+```json
+{
+  "python": { "version": "3.11.9", "executable": "...", "is64bit": true },
+  "ytdlp": { "version": "2024.08.01" },
+  "ffmpeg": { "isAvailable": true, "path": "...", "info": "..." },
+  "os": { "system": "Windows", "release": "11", "machine": "AMD64" },
+  "editors": { "resolveInstalled": true, "adobeInstalled": true }
+}
+```
+
+### `POST /api/settings/update-ytdlp`
+Updates the `yt-dlp` social media extractor engine directly via pip.
 
 ### `POST /api/settings/install-resolve-script`
 Installs `Xdrop.py` into DaVinci Resolve Utility Scripts.
+
+### `POST /api/settings/install-premiere-extension`
+Installs the CEP dockable panel for Adobe Premiere Pro and After Effects.
 
 ---
 
