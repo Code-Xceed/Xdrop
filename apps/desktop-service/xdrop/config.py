@@ -35,17 +35,30 @@ def get_default_downloads_dir() -> Path:
 
 def discover_ffmpeg() -> str:
     """Discovers FFmpeg executable on the system."""
+    import sys
+
     # 1. Environment variable override
     env_path = os.getenv("FFMPEG_PATH")
     if env_path and Path(env_path).is_file():
         return str(Path(env_path).resolve())
 
-    # 2. System PATH
+    # 2. Local portable bin directory inside Xdrop or AppData
+    exe_name = "ffmpeg.exe" if sys.platform == "win32" else "ffmpeg"
+    local_bins = [
+        Path(__file__).resolve().parent.parent / "bin" / exe_name,
+        Path(__file__).resolve().parent.parent.parent.parent / "bin" / exe_name,
+        get_base_data_dir() / "bin" / exe_name,
+    ]
+    for lb in local_bins:
+        if lb.is_file():
+            return str(lb.resolve())
+
+    # 3. System PATH
     which_ffmpeg = shutil.which("ffmpeg")
     if which_ffmpeg:
         return str(Path(which_ffmpeg).resolve())
 
-    # 3. Known common locations on Windows
+    # 4. Known common locations on Windows
     candidate_paths = [
         Path("C:/Program Files/ShareX/ffmpeg.exe"),
         Path("C:/Program Files/ffmpeg/bin/ffmpeg.exe"),
@@ -54,6 +67,13 @@ def discover_ffmpeg() -> str:
         Path("C:/ProgramData/chocolatey/bin/ffmpeg.exe"),
         Path(os.getenv("USERPROFILE", "")) / "scoop/shims/ffmpeg.exe",
         Path("C:/Program Files/Softdeluxe/Free Download Manager/ffmpeg.exe"),
+        # macOS Homebrew & MacPorts
+        Path("/opt/homebrew/bin/ffmpeg"),
+        Path("/usr/local/bin/ffmpeg"),
+        Path("/opt/local/bin/ffmpeg"),
+        # Linux standard paths
+        Path("/usr/bin/ffmpeg"),
+        Path("/usr/local/bin/ffmpeg"),
     ]
 
     for cand in candidate_paths:

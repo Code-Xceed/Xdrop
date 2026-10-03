@@ -1,9 +1,10 @@
 # Node & Web
 node_modules/
-dist/
+/dist/
 dist-installer/
 .npm/
 .turbo/
+!apps/resolve-plugin/dist/
 
 # Python
 __pycache__/

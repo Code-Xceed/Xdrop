@@ -6,7 +6,7 @@
 > 
 > *Paste URL → Detect Platform → Inspect Assets → Download & Transcode → Instantly Drop into Active Editor Timelines & Bins.*
 
-[![Build & Test](https://img.shields.io/badge/tests-31%20passed-brightgreen.svg)]()
+[![Build & Test](https://img.shields.io/badge/tests-36%20passed-brightgreen.svg)]()
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-blue.svg)]()
 [![Editors](https://img.shields.io/badge/editors-Resolve%20%7C%20Premiere%20%7C%20After%20Effects-purple.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-purple.svg)](LICENSE)
@@ -74,37 +74,86 @@ Video editors constantly jump between browsers, ad-heavy downloader websites, do
 
 ---
 
-## 4. Quick Start
+## 4. Quick Start (Automated 1-Click Setup)
 
-### Running the Application
+Xdrop includes an automated setup engine that scans your computer, auto-detects installed video editors (**DaVinci Resolve**, **Adobe Premiere Pro**, **Adobe After Effects**), tests GPU encoders, configures default folders, and installs all editor scripts and CEP panel extensions automatically.
+
+### 🪟 Windows (Easiest)
+1. **Clone or Download** this repository:
+   ```cmd
+   git clone https://github.com/Code-Xceed/Xdrop.git
+   cd Xdrop
+   ```
+2. **Double-click `setup.bat`** (or execute `.\setup.ps1` in PowerShell).
+3. **Double-click `run.bat`** to start Xdrop!
+
+### 🍏 macOS / Linux
+1. **Clone or Download** this repository:
+   ```bash
+   git clone https://github.com/Code-Xceed/Xdrop.git
+   cd Xdrop
+   ```
+2. Run the automated installer:
+   ```bash
+   chmod +x setup.sh
+   ./setup.sh
+   ```
+3. Start Xdrop:
+   ```bash
+   python apps/desktop-service/xdrop/main.py --gui
+   ```
+
+*(Node.js/npm is **not required** for standard users — pre-compiled high-performance UI bundles are bundled directly with the repo!)*
+
+---
+
+## 5. Using Xdrop in Your Editors
+
+Once setup is complete, Xdrop is directly integrated into your editing suites:
+
+- **DaVinci Resolve**:
+  - In Resolve's top menu bar, click: **Workspace** → **Scripts** → **Utility** → **Xdrop**.
+  - Dropdowns and auto-import features drop downloaded files straight into your active project bin!
+- **Adobe Premiere Pro**:
+  - In Premiere's top menu bar, click: **Window** → **Extensions** → **Xdrop**.
+  - The dockable CEP panel automatically syncs with Premiere's media bin.
+- **Adobe After Effects**:
+  - In After Effects' top menu bar, click: **Window** → **Extensions** → **Xdrop**.
+  - Imported assets are automatically placed into the project panel and composition target.
+- **Standalone Companion / Web Browser**:
+  - Open `http://localhost:8484` in any web browser, or launch with the `--gui` flag for the floating desktop window.
+
+---
+
+## 6. Developer Setup (Contributing)
+
+For developers looking to customize the React UI, add platform providers, or run unit tests:
 
 1. **Install Dependencies**:
    ```bash
    npm install
+   pip install -r requirements.txt
    ```
 
-2. **Launch Desktop Service**:
-   ```bash
-   # Run background service (default port 8484):
-   npm run start:service
-
-   # Or run with native desktop companion window:
-   npm run start:gui
-   ```
-
-3. **Start Web / Plugin UI (Development)**:
+2. **Start Development Frontend**:
    ```bash
    npm run dev:ui
    ```
 
-4. **Build Production UI**:
+3. **Start Desktop Service**:
+   ```bash
+   npm run start:service   # Background headless service
+   npm run start:gui       # With floating desktop window
+   ```
+
+4. **Build Production Bundle**:
    ```bash
    npm run build:ui
    ```
 
-5. **Run Full Test Suite**:
+5. **Run Test Suite**:
    ```bash
-   npm test
+   python -m pytest tests -v
    ```
 
 ---
