@@ -1,15 +1,8 @@
-# Node & Web
-node_modules/
-/dist/*
-!dist/Xdrop - Starter Bin.drb
-!dist/xdrop-uxp-premiere-1.0.0.ccx
-!dist/xdrop-uxp-aftereffects-1.0.0.ccx
-!dist/xdrop_blender_addon.zip
-!dist/xdrop.ico
+# Build outputs & installers
+dist/
+build/
+*.spec
 dist-installer/
-.npm/
-.turbo/
-!apps/resolve-plugin/dist/
 
 # Python
 __pycache__/
@@ -21,7 +14,11 @@ __pycache__/
 .venv/
 venv/
 ENV/
-build/
+
+# Node & Web
+node_modules/
+.npm/
+.turbo/
 
 # Local databases and logs
 *.db
@@ -37,4 +34,5 @@ proxies/
 Thumbs.db
 .vscode/
 .idea/
+
 .freebuff/

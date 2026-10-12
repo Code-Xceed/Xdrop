@@ -14,29 +14,28 @@
 
 ## ⚡ 1-Click Standalone Installers
 
-Xdrop provides dedicated standalone executables tailored to each editor's extension architecture. **No Python, Git, or command-line setup is required.**
+Download the installer for your video editor. **No Python, Git, or command-line setup is required.**
 
 | Installer Executable | Target Host & Extension Architecture | Status |
 | :--- | :--- | :--- |
 | [**`XdropInstaller-Resolve.exe`**](XdropInstaller-Resolve.exe) | **DaVinci Resolve (Free & Studio)**<br>• Native Fusion UI Comp Script (`Xdrop.lua`)<br>• Color-Coded Starter Bin (`Xdrop - Starter Bin.drb`)<br>• Studio Workflow Integration panel | **Ready (`11 MB`)** |
 | [**`XdropInstaller-Premiere.exe`**](XdropInstaller-Premiere.exe) | **Adobe Creative Cloud (CC 2019–2026+)**<br>• Premiere Pro CEP Docked Extension (`com.xdrop.panel`)<br>• Automated `PlayerDebugMode` Registry Setup<br>• After Effects & Audition Extension Panels<br>• Modern Creative Cloud UXP Bundle (`.ccx`) | **Ready (`11 MB`)** |
-| [**`XdropInstaller.exe`**](XdropInstaller.exe) | **Universal Master Installer**<br>• Full system scanner provisioning all detected editors in 1 click | **Ready (`11 MB`)** |
 
-📖 **For detailed instructions and FAQs, see the complete [Installation & User Guide](docs/INSTALLATION_GUIDE.md).**
+📖 **For detailed instructions and FAQs, see the [Installation Guide](src/docs/INSTALLATION_GUIDE.md).**
 
 ---
 
 ## 🎬 How to Access Xdrop in Your Editors
 
 ### 1. DaVinci Resolve (Free & Studio)
-1. Run [`XdropInstaller-Resolve.exe`](XdropInstaller-Resolve.exe).
+1. Double-click [**`XdropInstaller-Resolve.exe`**](XdropInstaller-Resolve.exe).
 2. Launch DaVinci Resolve and open any project.
 3. Open from top menu: **Workspace → Scripts → Comp → Xdrop** *(or Script → Xdrop in Fusion)*.
 4. *Studio users:* You can also open the docked panel via **Workspace → Workflow Integrations → Xdrop**.
-5. *Starter Bins:* Right-click your Media Pool → **Import Bin...** and choose [`dist/Xdrop - Starter Bin.drb`](dist/Xdrop%20-%20Starter%20Bin.drb) for pre-organized, color-coded bins (`000_Xdrop Assets`, `01_Downloads`, etc.).
+5. *Starter Bins:* Right-click your Media Pool → **Import Bin...** and choose [`src/resolve-plugin/Xdrop - Starter Bin.drb`](src/resolve-plugin/Xdrop%20-%20Starter%20Bin.drb) for pre-organized, color-coded bins (`000_Xdrop Assets`, `01_Downloads`, etc.).
 
 ### 2. Adobe Premiere Pro (CC 2019–2026+)
-1. Run [`XdropInstaller-Premiere.exe`](XdropInstaller-Premiere.exe).
+1. Double-click [**`XdropInstaller-Premiere.exe`**](XdropInstaller-Premiere.exe).
 2. Launch Premiere Pro and open any project.
 3. Open from top menu: **Window → Extensions → Xdrop**.
 4. Drag and dock the panel anywhere in your workspace (alongside Project Bins, Source Monitor, or Essential Graphics).
@@ -64,55 +63,24 @@ Xdrop provides dedicated standalone executables tailored to each editor's extens
 
 ---
 
-## 🛠️ Developer Setup & Script Automation
-
-If you prefer building or running from source:
-
-### Windows:
-```cmd
-setup.bat
-```
-*(Automatically verifies Python, installs dependencies, configures editor extensions, and starts the service)*
-
-### macOS / Linux:
-```bash
-chmod +x setup.sh
-./setup.sh
-```
-
-### Running the Test Suite:
-```bash
-python -m pytest -q
-```
-*(Runs all 88 unit, integration, packaging, and installer tests)*
-
-### Running the Performance Benchmark:
-```bash
-python tools/benchmark_media_pipeline.py
-```
-
----
-
-## 📁 Repository Structure
+## 📁 Open-Source Repository Structure
 
 ```text
 Xdrop/
-├── XdropInstaller-Resolve.exe      # Standalone installer for DaVinci Resolve
-├── XdropInstaller-Premiere.exe     # Standalone installer for Adobe Creative Cloud
-├── XdropInstaller.exe              # Universal multi-editor master installer
-├── setup.bat                       # Automated 1-click developer setup
-├── start_engine.vbs                # Silent zero-flicker background engine launcher
-├── apps/
-│   ├── desktop-service/            # FastAPI background engine & download queue
-│   ├── resolve-plugin/             # Native DaVinci Resolve Lua UI (Xdrop.lua) & UI
-│   ├── resolve-workflow-integration# Studio Workflow Integration docked panel
-│   ├── premiere-plugin/            # Adobe CEP panel & modern UXP CCX package
-│   ├── blender-addon/              # Blender Sequencer Add-on
-│   └── browser-extension/          # Companion browser extension
-├── dist/                           # Production builds, DRB starter bins & CCX packages
-├── docs/                           # Full guides (INSTALLATION_GUIDE.md, API.md, etc.)
-├── tests/                          # Automated test suite (88 passing tests)
-└── tools/                          # Packaging, benchmarking, and installer source scripts
+├── XdropInstaller-Resolve.exe      # 1-Click Installer for DaVinci Resolve (Free & Studio)
+├── XdropInstaller-Premiere.exe     # 1-Click Installer for Adobe Creative Cloud
+├── LICENSE                         # MIT License
+├── README.md                       # Project overview & guide
+└── src/                            # Clean open-source implementation
+    ├── desktop-service/            # Headless Python backend engine & queue
+    ├── resolve-plugin/             # DaVinci Resolve Native Lua Script & Starter Bins
+    ├── premiere-plugin/            # Adobe CEP Panel & UXP Packages
+    ├── resolve-workflow-integration# DaVinci Studio Workflow Integration
+    ├── blender-addon/              # Blender Sequencer Add-on
+    ├── browser-extension/          # Browser Companion Extension
+    ├── tools/                      # Build & packaging scripts
+    ├── tests/                      # Automated test suite (88 passing tests)
+    └── docs/                       # Technical documentation
 ```
 
 ---
