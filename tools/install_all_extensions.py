@@ -95,7 +95,11 @@ def install_davinci_resolve() -> Dict[str, bool]:
             if not item.is_file():
                 continue
             fname = item.name.lower()
-            if "resolvefetch" in fname or "xdrop" in fname:
+            is_canonical_comp_file = (
+                item.parent.name.lower() == "comp"
+                and fname in ["xdrop.lua", "xdrop - starter bin.drb"]
+            )
+            if "resolvefetch" in fname or ("xdrop" in fname and not is_canonical_comp_file):
                 if "snap" in fname or "caption" in fname:
                     continue
                 try:

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Xdrop</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 320px;
+      padding: 16px;
+      background: #09090b;
+      color: #fafafa;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 12px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #27272a;
+    }
+    .logo {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: #00e5ff; }
+    .status-badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(34, 197, 94, 0.15);
+      color: #22c55e;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+    .status-badge.offline {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+    .field {
+      margin-bottom: 10px;
+    }
+    label {
+      display: block;
+      color: #a1a1aa;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    input, select {
+      width: 100%;
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 6px;
+      color: #fafafa;
+      padding: 7px 10px;
+      font-size: 11px;
+      outline: none;
+    }
+    input:focus, select:focus {
+      border-color: #00e5ff;
+    }
+    .btn {
+      width: 100%;
+      margin-top: 6px;
+      padding: 8px 12px;
+      background: #00e5ff;
+      color: #09090b;
+      border: none;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .btn:hover { background: #33ebff; }
+    .btn:disabled { background: #27272a; color: #71717a; cursor: not-allowed; }
+    .feedback {
+      margin-top: 8px;
+      font-size: 11px;
+      text-align: center;
+      min-height: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo"><span>X</span>drop</div>
+    <div id="status" class="status-badge">Checking...</div>
+  </div>
+
+  <div class="field">
+    <label for="url">Media URL</label>
+    <input type="text" id="url" placeholder="https://..." />
+  </div>
+
+  <div class="field">
+    <label for="format">Export Preset</label>
+    <select id="format">
+      <option value="mp4_1080">1080p Full HD (H.264 MP4)</option>
+      <option value="prores_master">4K ProRes 422 Master (MOV)</option>
+      <option value="audio_wav">Broadcast WAV 48kHz (Audio Only)</option>
+      <option value="audio_mp3">High-Quality MP3 (Audio Only)</option>
+    </select>
+  </div>
+
+  <button id="send-btn" class="btn">Send to Active Editor</button>
+  <div id="feedback" class="feedback"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

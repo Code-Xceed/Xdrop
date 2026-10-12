@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Xdrop — Video & Audio Importer",
+  "version": "1.0.0",
+  "description": "Send videos and audio from YouTube, TikTok, Instagram, and X directly into DaVinci Resolve and Adobe Premiere Pro.",
+  "permissions": [
+    "contextMenus",
+    "activeTab",
+    "storage"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:8484/*",
+    "http://localhost:8484/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "public/icons/icon-16.png",
+      "32": "public/icons/icon-32.png",
+      "48": "public/icons/icon-48.png",
+      "128": "public/icons/icon-128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "public/icons/icon-16.png",
+    "32": "public/icons/icon-32.png",
+    "48": "public/icons/icon-48.png",
+    "128": "public/icons/icon-128.png"
+  }
+}

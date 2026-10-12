@@ -1,8 +1,8 @@
-# Xdrop for Adobe Premiere Pro & Adobe After Effects
+# Xdrop for Adobe Premiere Pro, After Effects & Audition
 
-This package is the unified Adobe CEP (Common Extensibility Platform) panel extension for **Adobe Premiere Pro** and **Adobe After Effects**.
+This package is the unified Adobe CEP and UXP extension for **Adobe Premiere Pro**, **Adobe After Effects**, and **Adobe Audition**.
 
-It docks directly inside Premiere Pro and After Effects workspaces (**Window → Extensions → Xdrop**) and automatically imports downloaded media into your active project bin or folder.
+It docks directly inside Adobe workspaces (**Window → Extensions → Xdrop**) and automatically imports downloaded media into your active project bin or timeline.
 
 ---
 
