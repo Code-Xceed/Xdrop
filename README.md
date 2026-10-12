@@ -1,157 +1,122 @@
 # Xdrop
 
-> **Universal Social Media & Web Asset Importer for Video Editors**
-> 
-> *DaVinci Resolve • Adobe Premiere Pro • Adobe After Effects*
-> 
-> *Paste URL → Detect Platform → Inspect Assets → Download & Transcode → Instantly Drop into Active Editor Timelines & Bins.*
+> **Universal High-Performance Media Importer for Video Editors**  
+> *DaVinci Resolve • Adobe Premiere Pro • Adobe After Effects • Adobe Audition*  
+>  
+> *Paste URL → Detect Platform → Inspect Quality → Download & Transcode → Instantly Drop into Timelines & Bins.*
 
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-blue.svg)]()
-[![Editors](https://img.shields.io/badge/editors-Resolve%20%7C%20Premiere%20%7C%20After%20Effects-purple.svg)]()
+[![Editors](https://img.shields.io/badge/editors-DaVinci%20Resolve%20%7C%20Premiere%20Pro%20%7C%20After%20Effects-purple.svg)]()
+[![Tests](https://img.shields.io/badge/tests-88%20passed-brightgreen.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-purple.svg)](LICENSE)
 
 ---
 
-## 1. Overview
+## ⚡ 1-Click Standalone Installers
 
-Video editors constantly jump between browsers, ad-heavy downloader websites, download folders, FFmpeg conversion scripts, and their NLE just to import reference clips, background music, or social media assets.
+Xdrop provides dedicated standalone executables tailored to each editor's extension architecture. **No Python, Git, or command-line setup is required.**
 
-**Xdrop** eliminates this context switching by providing a native, cross-editor companion utility that runs alongside **DaVinci Resolve**, **Adobe Premiere Pro**, and **Adobe After Effects**, interfacing directly with project bins and timelines.
+| Installer Executable | Target Host & Extension Architecture | Status |
+| :--- | :--- | :--- |
+| [**`XdropInstaller-Resolve.exe`**](XdropInstaller-Resolve.exe) | **DaVinci Resolve (Free & Studio)**<br>• Native Fusion UI Comp Script (`Xdrop.lua`)<br>• Color-Coded Starter Bin (`Xdrop - Starter Bin.drb`)<br>• Studio Workflow Integration panel | **Ready (`11 MB`)** |
+| [**`XdropInstaller-Premiere.exe`**](XdropInstaller-Premiere.exe) | **Adobe Creative Cloud (CC 2019–2026+)**<br>• Premiere Pro CEP Docked Extension (`com.xdrop.panel`)<br>• Automated `PlayerDebugMode` Registry Setup<br>• After Effects & Audition Extension Panels<br>• Modern Creative Cloud UXP Bundle (`.ccx`) | **Ready (`11 MB`)** |
+| [**`XdropInstaller.exe`**](XdropInstaller.exe) | **Universal Master Installer**<br>• Full system scanner provisioning all detected editors in 1 click | **Ready (`11 MB`)** |
 
----
-
-## 2. Key Features
-
-- **Multi-Editor Integration**:
-  - **DaVinci Resolve**: Directly communicates via the official `DaVinciResolveScript` API to inspect active projects and drop media into target bins (`Xdrop`). Installed under `Workspace → Scripts → Utility → Xdrop`.
-  - **Adobe Premiere Pro**: Native CEP dockable panel via ExtendScript (`hostscript.jsx`), automating bin creation and media pool imports.
-  - **Adobe After Effects**: Unified Adobe CEP panel targeting active compositions (`CompItem`) and project folders.
-- **Auto-Detection & Smart Adapting**: Automatically senses which editor is active and adapts UI badges and action highlights (DaVinci Crimson, Premiere Cyan, After Effects Cyber-Violet).
-- **Modular Provider Architecture**: Cleanly separated platform provider interfaces for **YouTube, Instagram, X (Twitter), TikTok, Reddit, Vimeo, Facebook, Pinterest**, and **Direct Media URLs** (`.mp4`, `.mov`, `.wav`, `.mp3`, `.png`, etc.).
-- **Neo-Brutalist High-Density UI**: Dark, compact, responsive interface built with React 18, TypeScript, and Vite. Designed to dock down to `<340px` inside Premiere/AE or run as a standalone companion.
-- **Real-Time Asynchronous Queue**: Non-blocking concurrent download engine with live speed (`MB/s`), accurate progress (`%`), and `ETA`.
-- **Integrated FFmpeg Processing**: Fast remuxing, ProRes MOV / H.264 MP4 transcoding, high-fidelity WAV audio extraction, frame thumbnail capture, and proxy generation.
-- **Local Asset Library**: Built-in SQLite database tracking all imported assets with search, filtering, and one-click "Import Again" or "Reveal in Explorer".
-- **Project-Aware Organization**: Dynamic directory templates such as `{project}/{platform}/{mediaType}/{title}_{quality}`.
+📖 **For detailed instructions and FAQs, see the complete [Installation & User Guide](docs/INSTALLATION_GUIDE.md).**
 
 ---
 
-## 3. Architecture
+## 🎬 How to Access Xdrop in Your Editors
 
-```text
-┌────────────────────────────────────────────────────────┐
-│                   NLE Applications                     │
-│  DaVinci Resolve  │  Premiere Pro  │  After Effects    │
-│  (Utility Script) │   (CEP Panel)  │   (CEP Panel)     │
-│                                                        │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │                     Xdrop UI                     │  │
-│  │                React + TypeScript                │  │
-│  └────────────────────────┬─────────────────────────┘  │
-└───────────────────────────┼────────────────────────────┘
-                            │ Local HTTP / WebSocket (:8484)
-                            ▼
-┌────────────────────────────────────────────────────────┐
-│                 Xdrop Desktop Service                  │
-│                                                        │
-│  ┌────────────────────┐      ┌──────────────────────┐  │
-│  │  Provider Manager  │      │ Async Download Queue │  │
-│  │  (YouTube, X, IG)  │      │  (Workers & SQLite)  │  │
-│  └────────────────────┘      └──────────────────────┘  │
-│                                                        │
-│  ┌────────────────────┐      ┌──────────────────────┐  │
-│  │  FFmpeg Processor  │      │ Multi-Editor Bridges │  │
-│  │ (Transcode/Audio)  │      │(Resolve/Premiere/AE) │  │
-│  └────────────────────┘      └──────────────────────┘  │
-└───────────────────────────┬────────────────────────────┘
-                            │
-               ┌─────────────┴─────────────┐
-               ▼                           ▼
-      Local Asset Library          Editor Project Bins
-    (C:/.../Xdrop Assets)          (Active Project Bin)
+### 1. DaVinci Resolve (Free & Studio)
+1. Run [`XdropInstaller-Resolve.exe`](XdropInstaller-Resolve.exe).
+2. Launch DaVinci Resolve and open any project.
+3. Open from top menu: **Workspace → Scripts → Comp → Xdrop** *(or Script → Xdrop in Fusion)*.
+4. *Studio users:* You can also open the docked panel via **Workspace → Workflow Integrations → Xdrop**.
+5. *Starter Bins:* Right-click your Media Pool → **Import Bin...** and choose [`dist/Xdrop - Starter Bin.drb`](dist/Xdrop%20-%20Starter%20Bin.drb) for pre-organized, color-coded bins (`000_Xdrop Assets`, `01_Downloads`, etc.).
+
+### 2. Adobe Premiere Pro (CC 2019–2026+)
+1. Run [`XdropInstaller-Premiere.exe`](XdropInstaller-Premiere.exe).
+2. Launch Premiere Pro and open any project.
+3. Open from top menu: **Window → Extensions → Xdrop**.
+4. Drag and dock the panel anywhere in your workspace (alongside Project Bins, Source Monitor, or Essential Graphics).
+5. Paste any link and click **Download & Import**; clips drop directly into your active project bin and playhead sequence.
+
+### 3. Adobe After Effects & Audition
+- Open from top menu: **Window → Extensions → Xdrop**.
+- In **After Effects**: media automatically drops into the active project bin and composition.
+- In **Audition**: audio rips drop straight into the active waveform or multitrack session.
+
+---
+
+## ✨ Key Features
+
+- **Direct NLE Bin & Timeline Insertion**: Automatically imports media into your active project bin (`000_Xdrop Assets`) and drops clips at the playhead position.
+- **Zero-Flicker Headless Engine**: Runs silently under `pythonw.exe` via `start_engine.vbs` with `CREATE_NO_WINDOW` flags. Zero command prompt popups or terminal flashes.
+- **Ultra-Fast Remuxing & Transcoding**:
+  - **Stream Copy Remuxing**: <125ms with 0% quality loss.
+  - **Hardware Acceleration**: NVIDIA NVENC, Intel QuickSync, and Apple VideoToolbox support.
+  - **Broadcast Audio**: 48.0 kHz 16-bit PCM WAV and 192k AAC conversion.
+  - **FastStart Header**: `moov` atom placement at file start for instant timeline scrubbing.
+- **Universal Provider Support**: One-click downloads from YouTube, TikTok, Instagram, Twitter/X, Reddit, Vimeo, and direct media URLs (`.mp4`, `.mov`, `.wav`, `.mp3`).
+- **Color-Coded Starter Bins**: Pre-configured folder hierarchy for organized video editing workflows.
+- **Apple FCPXML 1.11 Sidecars**: Companion `.fcpxml` sidecars generated for universal timeline drag-and-drop.
+
+---
+
+## 🛠️ Developer Setup & Script Automation
+
+If you prefer building or running from source:
+
+### Windows:
+```cmd
+setup.bat
+```
+*(Automatically verifies Python, installs dependencies, configures editor extensions, and starts the service)*
+
+### macOS / Linux:
+```bash
+chmod +x setup.sh
+./setup.sh
+```
+
+### Running the Test Suite:
+```bash
+python -m pytest -q
+```
+*(Runs all 88 unit, integration, packaging, and installer tests)*
+
+### Running the Performance Benchmark:
+```bash
+python tools/benchmark_media_pipeline.py
 ```
 
 ---
 
-## 4. Quick Start (The Only File You Need)
+## 📁 Repository Structure
 
-Xdrop includes a fully automated 1-click installer that sets up everything from scratch on any computer.
-
-### 🪟 Windows Users (Single File Setup)
-1. Download or clone this repository.
-2. **Double-click `setup.bat`**.
-
-That's it! `setup.bat` will:
-- ✅ Auto-install Python silently if it is not installed on your PC (no admin rights needed).
-- ✅ Auto-install all required libraries and dependencies.
-- ✅ Auto-detect and configure **FFmpeg** and GPU hardware acceleration.
-- ✅ Auto-detect and install extensions for **DaVinci Resolve**, **Adobe Premiere Pro**, and **Adobe After Effects**.
-- ✅ **Immediately launch Xdrop on your screen, 100% ready to work!**
-
-*(To launch Xdrop in the future, simply double-click `run.bat` or `setup.bat`)*
-
-### 🍏 macOS / Linux Users
-1. Download or clone this repository.
-2. Run:
-   ```bash
-   ./setup.sh
-   ```
-*(Automatically installs dependencies, configures editors, and launches Xdrop)*
+```text
+Xdrop/
+├── XdropInstaller-Resolve.exe      # Standalone installer for DaVinci Resolve
+├── XdropInstaller-Premiere.exe     # Standalone installer for Adobe Creative Cloud
+├── XdropInstaller.exe              # Universal multi-editor master installer
+├── setup.bat                       # Automated 1-click developer setup
+├── start_engine.vbs                # Silent zero-flicker background engine launcher
+├── apps/
+│   ├── desktop-service/            # FastAPI background engine & download queue
+│   ├── resolve-plugin/             # Native DaVinci Resolve Lua UI (Xdrop.lua) & UI
+│   ├── resolve-workflow-integration# Studio Workflow Integration docked panel
+│   ├── premiere-plugin/            # Adobe CEP panel & modern UXP CCX package
+│   ├── blender-addon/              # Blender Sequencer Add-on
+│   └── browser-extension/          # Companion browser extension
+├── dist/                           # Production builds, DRB starter bins & CCX packages
+├── docs/                           # Full guides (INSTALLATION_GUIDE.md, API.md, etc.)
+├── tests/                          # Automated test suite (88 passing tests)
+└── tools/                          # Packaging, benchmarking, and installer source scripts
+```
 
 ---
 
-## 5. Using Xdrop in Your Editors
+## 📄 License
 
-Once setup is complete, Xdrop is directly integrated into your editing suites:
-
-- **DaVinci Resolve**:
-  - In Resolve's top menu bar, click: **Workspace** → **Scripts** → **Utility** → **Xdrop**.
-  - Dropdowns and auto-import features drop downloaded files straight into your active project bin!
-- **Adobe Premiere Pro**:
-  - In Premiere's top menu bar, click: **Window** → **Extensions** → **Xdrop**.
-  - The dockable CEP panel automatically syncs with Premiere's media bin.
-- **Adobe After Effects**:
-  - In After Effects' top menu bar, click: **Window** → **Extensions** → **Xdrop**.
-  - Imported assets are automatically placed into the project panel and composition target.
-- **Standalone Companion / Web Browser**:
-  - Open `http://localhost:8484` in any web browser, or launch with the `--gui` flag for the floating desktop window.
-
----
-
-## 6. Keeping Up-to-Date
-
-Social media platforms (YouTube, Instagram, TikTok, etc.) frequently update their video delivery formats. If downloads ever stop working or if you want the latest features, simply **run `setup.bat` again** (or `./setup.sh`). It automatically fetches updates, upgrades extractor engines, and launches.
-
----
-
-## 7. Developer Setup (Contributing)
-
-For developers looking to customize the React UI or add platform providers:
-
-1. **Install Dependencies**:
-   ```bash
-   npm install
-   pip install -r requirements.txt
-   ```
-
-2. **Start Development Frontend**:
-   ```bash
-   npm run dev:ui
-   ```
-
-3. **Start Desktop Service**:
-   ```bash
-   npm run start:service   # Background headless service
-   npm run start:gui       # With floating desktop window
-   ```
-
-4. **Build Production Bundle**:
-   ```bash
-   npm run build:ui
-   ```
-
----
-
-## License
-
-MIT License — see [LICENSE](LICENSE) for details.
+MIT License. Designed and built for professional video editors.

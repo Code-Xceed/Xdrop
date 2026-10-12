@@ -68,6 +68,12 @@ def _register_default_providers(self) -> None:
 
 ## 4. Writing Automated Tests
 
+> The test suite is being built incrementally (milestone **M2** in
+> [REVAMP_PLAN.md](REVAMP_PLAN.md)). `tests/` currently holds regression tests for the
+> CEP manifest and the Adobe extension installer — `tests/test_providers.py` does not
+> exist yet. The example below is the intended shape; add your provider's cases wherever
+> the suite lands.
+
 Add test cases in `tests/test_providers.py`:
 
 ```python

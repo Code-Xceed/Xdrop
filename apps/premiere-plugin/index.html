@@ -11,14 +11,15 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            user-select: none;
         }
         body, html {
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: #07080a;
-            color: #f8fafc;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #09090b;
+            color: #fafafa;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             font-size: 12px;
         }
         #app-frame {
@@ -26,6 +27,7 @@
             height: 100%;
             border: none;
             display: none;
+            background: #09090b;
         }
         #status-container {
             display: flex;
@@ -34,52 +36,108 @@
             justify-content: center;
             height: 100%;
             text-align: center;
-            padding: 28px;
-            background-color: #0b0c10;
+            padding: 32px 24px;
+            gap: 16px;
+            background: radial-gradient(circle at 50% 30%, #18181b 0%, #09090b 80%);
+        }
+        .pulse-badge {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            background: rgba(0, 229, 255, 0.08);
+            border: 1px solid rgba(0, 229, 255, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 24px rgba(0, 229, 255, 0.15);
+            animation: pulse 2.5s infinite ease-in-out;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.04); opacity: 1; box-shadow: 0 0 32px rgba(0, 229, 255, 0.3); }
+        }
+        .badge-icon {
+            font-size: 24px;
+            line-height: 1;
         }
         .spinner {
-            width: 34px;
-            height: 34px;
+            width: 32px;
+            height: 32px;
             border: 3px solid rgba(255, 255, 255, 0.1);
-            border-top-color: #0ea5e9;
+            border-top-color: #00e5ff;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
-            margin-bottom: 16px;
         }
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-        .title {
-            font-size: 15px;
+        .title-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .app-title-row {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+        .brand-x {
+            color: #00e5ff;
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+        .brand-drop {
+            color: #fafafa;
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+        .host-badge {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 2px 7px;
+            border-radius: 4px;
+            background: rgba(0, 229, 255, 0.1);
+            color: #00e5ff;
+            border: 1px solid rgba(0, 229, 255, 0.25);
+            margin-bottom: 2px;
+        }
+        .status-title {
+            font-size: 14px;
             font-weight: 600;
-            color: #f1f5f9;
-            margin-bottom: 6px;
+            color: #e4e4e7;
+            margin-top: 2px;
         }
-        .subtitle {
+        .status-desc {
             font-size: 12px;
-            color: #94a3b8;
-            max-width: 280px;
-            line-height: 1.4;
-            margin-bottom: 14px;
+            color: #71717a;
+            max-width: 290px;
+            line-height: 1.5;
         }
-        .btn {
-            background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
-            color: white;
+        .action-btn {
+            background: #00e5ff;
+            color: #09090b;
             border: none;
-            border-radius: 6px;
-            padding: 8px 18px;
-            font-size: 12px;
-            font-weight: 600;
+            padding: 9px 20px;
+            border-radius: 8px;
             cursor: pointer;
-            box-shadow: 0 2px 12px rgba(14, 165, 233, 0.3);
-            transition: opacity 0.2s, transform 0.1s;
+            font-weight: 600;
+            font-size: 12px;
+            letter-spacing: 0.02em;
+            transition: all 0.15s ease-out;
+            box-shadow: 0 2px 10px rgba(0, 229, 255, 0.25);
         }
-        .btn:hover {
-            opacity: 0.92;
+        .action-btn:hover {
+            background: #38bdf8;
             transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(0, 229, 255, 0.4);
         }
-        .btn:active {
-            transform: translateY(0);
+        .action-btn:active {
+            transform: scale(0.96);
         }
     </style>
 </head>
@@ -87,28 +145,56 @@
     <iframe id="app-frame" src=""></iframe>
 
     <div id="status-container">
-        <div id="status-spinner" class="spinner"></div>
-        <div id="status-title" class="title">Connecting to Xdrop...</div>
-        <div id="status-desc" class="subtitle">Verifying background service connection...</div>
-        <button id="status-btn" class="btn" style="display: none;" onclick="manualRetry()">Start & Connect Engine</button>
+        <div class="pulse-badge" id="badge-wrapper">
+            <span class="badge-icon">⚡</span>
+        </div>
+        <div id="status-spinner" class="spinner" style="display: none;"></div>
+
+        <div class="title-block">
+            <span id="host-badge" class="host-badge">Premiere Pro</span>
+            <div class="app-title-row">
+                <span class="brand-x">X</span>
+                <span class="brand-drop">drop</span>
+            </div>
+            <div id="status-title" class="status-title">Connecting to Engine...</div>
+        </div>
+
+        <p id="status-desc" class="status-desc">
+            The background media service starts automatically. Once online, your studio workspace will load right here.
+        </p>
+
+        <button id="status-btn" class="action-btn" style="display: none;" onclick="manualRetry()">Start Engine</button>
     </div>
 
     <script>
         const csInterface = new CSInterface();
         let currentHost = 'premiere';
+        let hostLabel = 'Premiere Pro';
+
         try {
             const env = csInterface.getHostEnvironment();
             if (env && env.appId === 'AEFT') {
                 currentHost = 'aftereffects';
+                hostLabel = 'After Effects';
                 document.title = 'Xdrop — After Effects';
+            } else if (env && env.appId === 'AUDT') {
+                currentHost = 'audition';
+                hostLabel = 'Audition';
+                document.title = 'Xdrop — Audition';
             } else {
+                currentHost = 'premiere';
+                hostLabel = 'Premiere Pro';
                 document.title = 'Xdrop — Premiere Pro';
             }
         } catch (_) {}
 
+        const hostBadgeEl = document.getElementById('host-badge');
+        if (hostBadgeEl) hostBadgeEl.textContent = hostLabel;
+
         const appFrame = document.getElementById('app-frame');
         const statusContainer = document.getElementById('status-container');
         const statusSpinner = document.getElementById('status-spinner');
+        const badgeWrapper = document.getElementById('badge-wrapper');
         const statusTitle = document.getElementById('status-title');
         const statusDesc = document.getElementById('status-desc');
         const statusBtn = document.getElementById('status-btn');
@@ -123,6 +209,7 @@
             statusTitle.textContent = title;
             statusDesc.textContent = desc;
             statusSpinner.style.display = showSpinner ? 'block' : 'none';
+            badgeWrapper.style.display = showSpinner ? 'none' : 'flex';
             statusBtn.style.display = showButton ? 'inline-block' : 'none';
         }
 
@@ -137,7 +224,7 @@
 
         function checkServiceHealth(callback) {
             const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-            const timeoutId = controller ? setTimeout(function() { controller.abort(); }, 1500) : null;
+            const timeoutId = controller ? setTimeout(function() { controller.abort(); }, 1200) : null;
             const options = { method: 'GET', cache: 'no-store' };
             if (controller) options.signal = controller.signal;
 
@@ -152,11 +239,49 @@
                 });
         }
 
+        // Locate pythonw.exe silently with 0 CMD console windows
+        function findSilentPythonw(fs, path, config) {
+            const isWin = (window.process && window.process.platform === 'win32') || navigator.platform.indexOf('Win') > -1;
+            if (!isWin) return null;
+
+            const localAppData = window.process && window.process.env && window.process.env.LOCALAPPDATA
+                ? window.process.env.LOCALAPPDATA
+                : '';
+
+            const candidates = [];
+
+            // 1. Next to config python executable
+            if (config && config.pythonExe) {
+                const cand = path.join(path.dirname(config.pythonExe), 'pythonw.exe');
+                candidates.push(cand);
+            }
+
+            // 2. Standard Python installations
+            if (localAppData) {
+                for (let v of ['Python314', 'Python313', 'Python312', 'Python311', 'Python310', 'Python39']) {
+                    candidates.push(path.join(localAppData, 'Programs', 'Python', v, 'pythonw.exe'));
+                }
+            }
+
+            for (let v of ['Python314', 'Python313', 'Python312', 'Python311', 'Python310', 'Python39']) {
+                candidates.push('C:\\Program Files\\' + v + '\\pythonw.exe');
+                candidates.push('C:\\' + v + '\\pythonw.exe');
+            }
+
+            for (let c of candidates) {
+                if (c && fs.existsSync(c)) {
+                    return c;
+                }
+            }
+            return null;
+        }
+
+        // Headless, zero-flicker auto-start
         function tryAutoStartEngine() {
             if (isAutoStarting) return;
             isAutoStarting = true;
 
-            setStatus("Starting Xdrop Engine...", "Spawning background download service...", true, false);
+            setStatus("Starting Xdrop Engine...", "Launching silent background download service...", true, false);
 
             let started = false;
             try {
@@ -184,71 +309,82 @@
                     }
 
                     const isWin = (window.process && window.process.platform === 'win32') || navigator.platform.indexOf('Win') > -1;
+                    const localAppData = (window.process && window.process.env && window.process.env.LOCALAPPDATA) || '';
 
-                    // 1. Launch via run.bat (Windows)
-                    if (isWin && config && config.runBat && fs.existsSync(config.runBat)) {
-                        console.log("[Xdrop CEP] Launching via runBat:", config.runBat);
-                        cp.spawn('cmd.exe', ['/c', config.runBat], {
-                            detached: true,
-                            stdio: 'ignore',
-                            windowsHide: true,
-                            cwd: path.dirname(config.runBat)
-                        }).unref();
-                        started = true;
+                    // Strategy A: start_engine.vbs via wscript.exe (100% headless, ZERO window flicker on Windows)
+                    const vbsCandidates = [];
+                    if (localAppData) {
+                        vbsCandidates.push(path.join(localAppData, 'Xdrop', 'start_engine.vbs'));
                     }
-                    // 2. Launch via run.sh (macOS / Linux)
-                    else if (!isWin && config && config.runSh && fs.existsSync(config.runSh)) {
-                        console.log("[Xdrop CEP] Launching via runSh:", config.runSh);
-                        cp.spawn('bash', [config.runSh], {
-                            detached: true,
-                            stdio: 'ignore',
-                            cwd: path.dirname(config.runSh)
-                        }).unref();
-                        started = true;
+                    if (extDir) {
+                        vbsCandidates.push(path.resolve(extDir, '..', '..', 'start_engine.vbs'));
+                        vbsCandidates.push(path.resolve(extDir, 'start_engine.vbs'));
                     }
-                    // 3. Launch via explicit Python executable & main.py
-                    else if (config && config.pythonExe && config.mainPy && fs.existsSync(config.pythonExe) && fs.existsSync(config.mainPy)) {
-                        console.log("[Xdrop CEP] Launching via Python executable:", config.pythonExe, config.mainPy);
-                        const flags = isWin ? { detached: true, stdio: 'ignore', windowsHide: true, cwd: path.dirname(config.mainPy) } : { detached: true, stdio: 'ignore', cwd: path.dirname(config.mainPy) };
-                        cp.spawn(config.pythonExe, [config.mainPy, '--gui'], flags).unref();
-                        started = true;
-                    }
-                    // 4. Fallback search for run.bat in repo structure
-                    else if (extDir) {
-                        const candidates = [
-                            path.resolve(extDir, '..', '..', 'run.bat'),
-                            path.resolve(extDir, '..', '..', '..', 'run.bat'),
-                            path.resolve(extDir, 'run.bat')
-                        ];
-                        for (let cand of candidates) {
-                            if (fs.existsSync(cand)) {
-                                console.log("[Xdrop CEP] Launching via fallback run.bat:", cand);
-                                cp.spawn('cmd.exe', ['/c', cand], {
-                                    detached: true,
-                                    stdio: 'ignore',
-                                    windowsHide: true,
-                                    cwd: path.dirname(cand)
-                                }).unref();
-                                started = true;
-                                break;
-                            }
+
+                    for (let vbs of vbsCandidates) {
+                        if (fs.existsSync(vbs)) {
+                            console.log("[Xdrop CEP] Launching headless via wscript:", vbs);
+                            cp.spawn('wscript.exe', ['//B', vbs], {
+                                detached: true,
+                                stdio: 'ignore',
+                                windowsHide: true,
+                                cwd: path.dirname(vbs)
+                            }).unref();
+                            started = true;
+                            break;
                         }
                     }
 
-                    // 5. Ultimate fallback: system python
-                    if (!started) {
-                        const pyCmd = isWin ? 'python' : 'python3';
-                        console.log("[Xdrop CEP] Launching via generic python command:", pyCmd);
-                        cp.spawn(pyCmd, ['-m', 'xdrop.main', '--gui'], {
-                            detached: true,
-                            stdio: 'ignore',
-                            windowsHide: true
-                        }).unref();
-                        started = true;
+                    // Strategy B: pythonw.exe + run_engine.py / main.py --background (Zero console window)
+                    if (!started && isWin) {
+                        const pythonw = findSilentPythonw(fs, path, config);
+                        const scriptCandidates = [];
+                        if (localAppData) {
+                            scriptCandidates.push(path.join(localAppData, 'Xdrop', 'run_engine.py'));
+                        }
+                        if (config && config.mainPy) {
+                            scriptCandidates.push(config.mainPy);
+                        }
+                        if (extDir) {
+                            scriptCandidates.push(path.resolve(extDir, '..', '..', 'apps', 'desktop-service', 'xdrop', 'main.py'));
+                        }
+
+                        let targetScript = null;
+                        for (let s of scriptCandidates) {
+                            if (s && fs.existsSync(s)) {
+                                targetScript = s;
+                                break;
+                            }
+                        }
+
+                        if (pythonw && targetScript) {
+                            console.log("[Xdrop CEP] Launching silent pythonw:", pythonw, targetScript);
+                            cp.spawn(pythonw, [targetScript, '--background'], {
+                                detached: true,
+                                stdio: 'ignore',
+                                windowsHide: true,
+                                cwd: path.dirname(targetScript)
+                            }).unref();
+                            started = true;
+                        }
+                    }
+
+                    // Strategy C: macOS / Linux daemon spawn
+                    if (!started && !isWin) {
+                        const mainPy = (config && config.mainPy) || (extDir ? path.resolve(extDir, '..', '..', 'apps', 'desktop-service', 'xdrop', 'main.py') : null);
+                        if (mainPy && fs.existsSync(mainPy)) {
+                            console.log("[Xdrop CEP] Launching background python3:", mainPy);
+                            cp.spawn('python3', [mainPy, '--background'], {
+                                detached: true,
+                                stdio: 'ignore',
+                                cwd: path.dirname(mainPy)
+                            }).unref();
+                            started = true;
+                        }
                     }
                 }
             } catch (err) {
-                console.warn("[Xdrop CEP] Auto-start spawn error:", err);
+                console.warn("[Xdrop CEP] Silent auto-start notice:", err);
             }
 
             // Poll for service health up to 10 seconds (20 iterations * 500ms)
@@ -263,12 +399,13 @@
                         isEngineOnline = true;
                         showApp();
                         connectWebSocket();
+                        setupStarterBins();
                     } else if (attempts >= maxAttempts) {
                         clearInterval(pollInterval);
                         isAutoStarting = false;
                         setStatus(
-                            "Xdrop Service is Offline",
-                            "The local engine could not be started automatically. Ensure Python is installed and click below to retry.",
+                            "Engine Offline",
+                            "The Xdrop background service could not be contacted. Launch Xdrop or click below to retry.",
                             false,
                             true
                         );
@@ -278,40 +415,41 @@
         }
 
         function manualRetry() {
-            setStatus("Starting Xdrop Engine...", "Attempting connection...", true, false);
+            setStatus("Starting Engine...", "Attempting connection...", true, false);
             tryAutoStartEngine();
         }
 
+        function setupStarterBins() {
+            csInterface.evalScript('setupXdropBins()', function(res) {
+                console.log("[Xdrop CEP] Canonical bins initialized:", res);
+            });
+        }
+
         function checkHostProject(callback) {
+            let fn = 'getPremiereProjectInfo()';
+            let endpoint = 'premiere';
+
             if (currentHost === 'aftereffects') {
-                csInterface.evalScript('getAfterEffectsProjectInfo()', function(res) {
-                    try {
-                        const info = JSON.parse(res);
-                        fetch('http://127.0.0.1:8484/api/aftereffects/heartbeat', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(info)
-                        }).catch(function() {});
-                        if (callback) callback(info);
-                    } catch(e) {
-                        if (callback) callback({ isAvailable: false, error: e.toString() });
-                    }
-                });
-            } else {
-                csInterface.evalScript('getPremiereProjectInfo()', function(res) {
-                    try {
-                        const info = JSON.parse(res);
-                        fetch('http://127.0.0.1:8484/api/premiere/heartbeat', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(info)
-                        }).catch(function() {});
-                        if (callback) callback(info);
-                    } catch(e) {
-                        if (callback) callback({ isAvailable: false, error: e.toString() });
-                    }
-                });
+                fn = 'getAfterEffectsProjectInfo()';
+                endpoint = 'aftereffects';
+            } else if (currentHost === 'audition') {
+                fn = 'getAuditionProjectInfo()';
+                endpoint = 'audition';
             }
+
+            csInterface.evalScript(fn, function(res) {
+                try {
+                    const info = JSON.parse(res);
+                    fetch('http://127.0.0.1:8484/api/' + endpoint + '/heartbeat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(info)
+                    }).catch(function() {});
+                    if (callback) callback(info);
+                } catch(e) {
+                    if (callback) callback({ isAvailable: false, error: e.toString() });
+                }
+            });
         }
 
         // Periodic project info check
@@ -329,20 +467,71 @@
             });
         }, 8000);
 
-        function importToHost(filePath, binName) {
-            if (!filePath) return;
-            const escapedPath = filePath.replace(/\\/g, "\\\\");
-            if (currentHost === 'aftereffects') {
-                const script = `importMediaIntoAfterEffects("${escapedPath}", "${binName || 'Xdrop'}")`;
-                csInterface.evalScript(script, function(result) {
-                    console.log("[Xdrop CEP AE] Import response:", result);
-                });
-            } else {
-                const script = `importMediaIntoPremiere("${escapedPath}", "${binName || 'Xdrop'}")`;
-                csInterface.evalScript(script, function(result) {
-                    console.log("[Xdrop CEP Premiere] Import response:", result);
+        function reportImportResult(host, requestId, outcome) {
+            if (!requestId) return;
+            const endpoint = host === 'aftereffects' ? 'aftereffects' : (host === 'audition' ? 'audition' : 'premiere');
+            fetch('http://127.0.0.1:8484/api/' + endpoint + '/import-result', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    requestId: requestId,
+                    success: !!outcome.success,
+                    error: outcome.error || null,
+                    clipName: outcome.clipName || null,
+                    binName: outcome.binName || null
+                })
+            }).catch(function(err) {
+                console.warn("[Xdrop CEP] Could not report import result:", err);
+            });
+        }
+
+        function importToHost(filePaths, binName, requestId, insertTimeline) {
+            const paths = Array.isArray(filePaths) ? filePaths : [filePaths];
+            if (!paths.length) return;
+
+            const bin = String(binName || '000_Xdrop Assets');
+            const outcomes = [];
+            let remaining = paths.length;
+
+            function settle() {
+                remaining--;
+                if (remaining > 0) return;
+                const failures = outcomes.filter(function(o) { return !o.success; });
+                const firstOk = outcomes.filter(function(o) { return o.success; })[0];
+                reportImportResult(currentHost, requestId, {
+                    success: failures.length === 0,
+                    error: failures.length ? failures[0].error : null,
+                    clipName: firstOk ? firstOk.clipName : null,
+                    binName: bin
                 });
             }
+
+            paths.forEach(function(filePath) {
+                const outcome = { success: false, error: null, clipName: null };
+                outcomes.push(outcome);
+
+                const escapedPath = String(filePath).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+                const escapedBin = bin.replace(/"/g, '\\"');
+                const shouldInsert = insertTimeline ? 'true' : 'false';
+
+                const fn = currentHost === 'aftereffects'
+                    ? 'importMediaIntoAfterEffects'
+                    : (currentHost === 'audition' ? 'importMediaIntoAudition' : 'importMediaIntoPremiere');
+                const script = `${fn}("${escapedPath}", "${escapedBin}", ${shouldInsert})`;
+
+                csInterface.evalScript(script, function(result) {
+                    try {
+                        const parsed = JSON.parse(result);
+                        outcome.success = !!parsed.success;
+                        outcome.error = parsed.error || null;
+                        outcome.clipName = parsed.clipName || null;
+                    } catch (e) {
+                        outcome.error = 'The editor returned an unreadable response: ' + String(result);
+                    }
+                    console.log("[Xdrop CEP] Import response:", result);
+                    settle();
+                });
+            });
         }
 
         let pingTimer = null;
@@ -374,7 +563,7 @@
                 ws = new WebSocket("ws://127.0.0.1:8484/ws");
 
                 ws.onopen = function() {
-                    console.log("[Xdrop CEP] Connected to Xdrop engine WebSocket. Host:", currentHost);
+                    console.log("[Xdrop CEP] Connected to Xdrop WebSocket. Host:", currentHost);
                     isEngineOnline = true;
                     showApp();
                     startPing();
@@ -395,18 +584,13 @@
                     try {
                         const msg = JSON.parse(event.data);
                         if (msg.type === "PONG") return;
+
                         if (msg.type === "PREMIERE_IMPORT_REQUEST" && currentHost === "premiere" && msg.payload) {
-                            const paths = msg.payload.filePaths || [];
-                            const targetBin = msg.payload.targetBin || "Xdrop";
-                            paths.forEach(function(p) {
-                                importToHost(p, targetBin);
-                            });
+                            importToHost(msg.payload.filePaths, msg.payload.targetBin, msg.payload.requestId, msg.payload.insertTimeline);
                         } else if (msg.type === "AFTEREFFECTS_IMPORT_REQUEST" && currentHost === "aftereffects" && msg.payload) {
-                            const paths = msg.payload.filePaths || [];
-                            const targetBin = msg.payload.targetBin || "Xdrop";
-                            paths.forEach(function(p) {
-                                importToHost(p, targetBin);
-                            });
+                            importToHost(msg.payload.filePaths, msg.payload.targetBin, msg.payload.requestId, msg.payload.insertTimeline);
+                        } else if (msg.type === "AUDITION_IMPORT_REQUEST" && currentHost === "audition" && msg.payload) {
+                            importToHost(msg.payload.filePaths, msg.payload.targetBin, msg.payload.requestId, false);
                         }
                     } catch(e) {
                         console.error("[Xdrop CEP] Message error:", e);
@@ -426,7 +610,7 @@
                                 connectWebSocket();
                             } else {
                                 isEngineOnline = false;
-                                setStatus("Reconnecting to Xdrop...", "Waiting for service to resume...", true, true);
+                                setStatus("Reconnecting to Engine...", "Waiting for service to resume...", true, true);
                             }
                         });
                     }, 3000);
@@ -438,9 +622,13 @@
         }
 
         window.addEventListener('message', function(event) {
-            if (event.data && (event.data.type === 'IMPORT_TO_PREMIERE' || event.data.type === 'IMPORT_TO_AFTEREFFECTS')) {
-                importToHost(event.data.filePath, event.data.binName);
-            } else if (event.data && event.data.type === 'REQUEST_HOST_INFO') {
+            if (!event.data) return;
+
+            if (event.data.type === 'IMPORT_TO_PREMIERE' || event.data.type === 'IMPORT_TO_AFTEREFFECTS') {
+                importToHost(event.data.filePath, event.data.binName, event.data.requestId, event.data.insertTimeline);
+            } else if (event.data.type === 'SETUP_BINS') {
+                setupStarterBins();
+            } else if (event.data.type === 'REQUEST_HOST_INFO') {
                 checkHostProject(function(info) {
                     if (event.source) {
                         event.source.postMessage({
@@ -460,6 +648,7 @@
                     isEngineOnline = true;
                     showApp();
                     connectWebSocket();
+                    setupStarterBins();
                 } else {
                     tryAutoStartEngine();
                 }

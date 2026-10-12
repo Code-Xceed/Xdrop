@@ -9,6 +9,10 @@ import {
   AppSettings,
   LibraryItem,
   LibraryFilter,
+  IntegrationHost,
+  InstallScope,
+  IntegrationsStatus,
+  InstallIntegrationsResponse,
 } from '@xdrop/shared-types';
 
 const API_BASE = '/api';
@@ -28,6 +32,8 @@ export interface CreateDownloadParams {
   target_premiere_bin?: string;
   auto_import_to_aftereffects?: boolean;
   target_aftereffects_bin?: string;
+  auto_import_to_audition?: boolean;
+  target_audition_bin?: string;
   transcode_video_format?: string;
   transcode_audio_format?: string;
   extract_audio_only?: boolean;
@@ -194,6 +200,36 @@ export async function getToolsStatus(): Promise<{
   return resp.json();
 }
 
+/**
+ * Reads the full integration picture: per-host install state, the paths checked, and
+ * whether the Adobe hosts can currently load the CEP panel.
+ */
+export async function getIntegrationsStatus(): Promise<IntegrationsStatus> {
+  const resp = await fetch(`${API_BASE}/settings/integrations`);
+  if (!resp.ok) throw new Error('Failed to get integration status.');
+  return resp.json();
+}
+
+/**
+ * Installs the requested hosts for the current user. Defaults to every host, with no
+ * administrator rights and no visible window — the one-click path the panel exposes.
+ */
+export async function installIntegrations(params?: {
+  hosts?: IntegrationHost[];
+  scope?: InstallScope;
+}): Promise<InstallIntegrationsResponse> {
+  const resp = await fetch(`${API_BASE}/settings/integrations/install`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params ?? {}),
+  });
+  if (!resp.ok) {
+    const detail = await resp.text();
+    throw new Error(detail || 'Failed to install integrations.');
+  }
+  return resp.json();
+}
+
 export async function installResolveScript(): Promise<{ success: boolean; message: string }> {
   const resp = await fetch(`${API_BASE}/settings/install-resolve-script`, { method: 'POST' });
   return resp.json();
@@ -240,5 +276,10 @@ export async function importJobToPremiere(id: string): Promise<{ success: boolea
 
 export async function importJobToAfterEffects(id: string): Promise<{ success: boolean; clipName?: string; error?: string }> {
   const resp = await fetch(`${API_BASE}/downloads/${id}/import-aftereffects`, { method: 'POST' });
+  return resp.json();
+}
+
+export async function importJobToAudition(id: string): Promise<{ success: boolean; clipName?: string; error?: string }> {
+  const resp = await fetch(`${API_BASE}/downloads/${id}/import-audition`, { method: 'POST' });
   return resp.json();
 }

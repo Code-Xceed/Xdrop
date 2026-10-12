@@ -3,7 +3,11 @@ import subprocess
 from pathlib import Path
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
-from xdrop.database import get_library_items, delete_library_item, get_db_connection
+from xdrop.database import (
+    delete_library_item,
+    get_library_items,
+    set_asset_import_flag,
+)
 from xdrop.resolve import get_resolve_bridge
 from xdrop.logger import app_logger
 
@@ -65,8 +69,7 @@ async def import_library_asset(asset_id: str, target_bin: str = Query("Xdrop")):
     res = bridge.import_media([file_path], target_bin)
 
     if res.get("success"):
-        with get_db_connection() as conn:
-            conn.execute("UPDATE assets SET resolve_imported = 1 WHERE id = ?", (asset_id,))
+        set_asset_import_flag(file_path, "resolve", True)
 
     return res
 
@@ -84,12 +87,8 @@ async def import_library_asset_to_premiere(asset_id: str, target_bin: str = Quer
         raise HTTPException(status_code=400, detail=f"File does not exist on disk: {file_path}")
 
     bridge = get_premiere_bridge()
-    res = await bridge.import_media_async(file_path, target_bin)
-
-    if res.get("success"):
-        with get_db_connection() as conn:
-            conn.execute("UPDATE assets SET premiere_imported = 1 WHERE id = ?", (asset_id,))
-
+    # The panel confirms the real outcome later, which is what marks the asset imported.
+    res = await bridge.import_media_async(file_path, target_bin, asset_paths=[file_path])
     return res
 
 @router.post("/{asset_id}/import-aftereffects")
@@ -106,12 +105,25 @@ async def import_library_asset_to_aftereffects(asset_id: str, target_bin: str = 
         raise HTTPException(status_code=400, detail=f"File does not exist on disk: {file_path}")
 
     bridge = get_aftereffects_bridge()
-    res = await bridge.import_media_async(file_path, target_bin)
+    # The panel confirms the real outcome later, which is what marks the asset imported.
+    res = await bridge.import_media_async(file_path, target_bin, asset_paths=[file_path])
+    return res
 
-    if res.get("success"):
-        with get_db_connection() as conn:
-            conn.execute("UPDATE assets SET aftereffects_imported = 1 WHERE id = ?", (asset_id,))
+@router.post("/{asset_id}/import-audition")
+async def import_library_asset_to_audition(asset_id: str, target_bin: str = Query("Audition Files")):
+    """Imports an existing library asset file into Adobe Audition."""
+    from xdrop.audition.bridge import get_audition_bridge
+    items = get_library_items(limit=1000)
+    asset = next((a for a in items if a["id"] == asset_id), None)
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found.")
 
+    file_path = asset["file_path"]
+    if not os.path.isfile(file_path):
+        raise HTTPException(status_code=400, detail=f"File does not exist on disk: {file_path}")
+
+    bridge = get_audition_bridge()
+    res = await bridge.import_media_async(file_path, target_bin, asset_paths=[file_path])
     return res
 
 @router.post("/{asset_id}/reveal")

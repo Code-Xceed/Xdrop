@@ -1,0 +1,64 @@
+{
+  "manifestVersion": 6,
+  "id": "{{PLUGIN_ID}}",
+  "name": "{{PLUGIN_NAME}}",
+  "version": "{{PLUGIN_VERSION}}",
+  "main": "index.html",
+  "host": {
+    "app": "{{HOST_APP}}",
+    "minVersion": "{{MIN_VERSION}}"
+  },
+  "entrypoints": [
+    {
+      "type": "panel",
+      "id": "{{PLUGIN_ID}}.main",
+      "label": {
+        "default": "{{PLUGIN_NAME}}"
+      },
+      "minimumSize": { "width": 320, "height": 420 },
+      "maximumSize": { "width": 2000, "height": 2000 },
+      "preferredDockedSize": { "width": 440, "height": 700 },
+      "preferredFloatingSize": { "width": 460, "height": 760 },
+      "icons": [
+        {
+          "width": 23,
+          "height": 23,
+          "path": "icons/iconDark.png",
+          "scale": [1, 2],
+          "theme": ["darkest", "dark", "medium"]
+        },
+        {
+          "width": 23,
+          "height": 23,
+          "path": "icons/iconNormal.png",
+          "scale": [1, 2],
+          "theme": ["lightest", "light"]
+        }
+      ]
+    }
+  ],
+  "featureFlags": {
+    "enableAlerts": true
+  },
+  "requiredPermissions": {
+    "network": {
+      "domains": ["http://127.0.0.1:8484", "ws://127.0.0.1:8484"]
+    },
+    "webview": {
+      "allow": "yes",
+      "allowLocalRendering": "yes",
+      "domains": "all",
+      "enableMessageBridge": "localAndRemote"
+    }
+  },
+  "icons": [
+    {
+      "width": 48,
+      "height": 48,
+      "path": "icons/iconNormal.png",
+      "scale": [1, 2],
+      "theme": ["darkest", "dark", "medium", "lightest", "light", "all"],
+      "species": ["pluginList"]
+    }
+  ]
+}

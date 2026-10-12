@@ -73,4 +73,10 @@
 **Symptom**: A social media platform suddenly fails to download.
 
 **Fix**:
-- Platform APIs change frequently. Simply run `setup.bat` again (or click "Update" via the API) to update `yt-dlp` to the latest upstream release.
+- Platform APIs change frequently. Update the extractor using the **Update yt-dlp** action
+  in Settings (it runs `pip install --upgrade yt-dlp`), or from a terminal:
+  ```bash
+  pip install --upgrade yt-dlp
+  ```
+- Re-running `setup.bat` alone does **not** upgrade an already-installed `yt-dlp`,
+  because `pip install -r requirements.txt` treats satisfied requirements as already met.

@@ -114,13 +114,15 @@ class AppSettingsModel(BaseModel):
 
     naming_pattern: str = "{project}/{platform}/{mediaType}/{title}_{quality}"
     concurrent_downloads: int = 3
-    default_editor: str = "auto" # 'auto', 'resolve', 'premiere', 'aftereffects'
+    default_editor: str = "auto" # 'auto', 'resolve', 'premiere', 'aftereffects', 'audition'
     auto_import_to_resolve: bool = True
     target_media_pool_bin: str = "Xdrop"
     auto_import_to_premiere: bool = True
     target_premiere_bin: str = "Xdrop"
     auto_import_to_aftereffects: bool = True
     target_aftereffects_bin: str = "Xdrop"
+    auto_import_to_audition: bool = True
+    target_audition_bin: str = "Xdrop"
     overwrite_existing: bool = False
     ffmpeg_path: str = Field(default_factory=discover_ffmpeg)
     preferred_video_format: str = "mp4" # mp4, mov, original

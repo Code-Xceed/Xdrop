@@ -4,17 +4,19 @@ import {
   ResolveStatus,
   PremiereStatus,
   AfterEffectsStatus,
+  AuditionStatus,
   SupportedEditor
 } from '@xdrop/shared-types';
 import { getEditorsStatus } from '../services/api';
 
 export interface EditorContextValue {
   activeEditor: SupportedEditor;
-  detectedHost: 'resolve' | 'premiere' | 'aftereffects' | 'standalone';
+  detectedHost: 'resolve' | 'premiere' | 'aftereffects' | 'audition' | 'standalone';
   editorsStatus: EditorsStatus | null;
   resolveStatus: ResolveStatus | null;
   premiereStatus: PremiereStatus | null;
   aftereffectsStatus: AfterEffectsStatus | null;
+  auditionStatus: AuditionStatus | null;
   activeEditorName: string;
   activeProjectName: string | null;
   activeSequenceOrTimeline: string | null;
@@ -28,12 +30,13 @@ const EditorContext = createContext<EditorContextValue | undefined>(undefined);
 
 export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // 1. Detect Host from URL Query or Environment
-  const [detectedHost, setDetectedHost] = useState<'resolve' | 'premiere' | 'aftereffects' | 'standalone'>(() => {
+  const [detectedHost, setDetectedHost] = useState<'resolve' | 'premiere' | 'aftereffects' | 'audition' | 'standalone'>(() => {
     try {
       const params = new URLSearchParams(window.location.search);
       const h = params.get('host');
       if (h === 'aftereffects') return 'aftereffects';
       if (h === 'premiere') return 'premiere';
+      if (h === 'audition') return 'audition';
       if (h === 'resolve') return 'resolve';
     } catch (_) {}
     return 'standalone';
@@ -41,13 +44,15 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const [activeEditor, setActiveEditorState] = useState<SupportedEditor>(() => {
     const saved = (localStorage.getItem('xdrop_active_editor') || localStorage.getItem('resolvefetch_active_editor')) as SupportedEditor;
-    if (saved && (saved === 'resolve' || saved === 'premiere' || saved === 'aftereffects')) {
+    if (saved && (saved === 'resolve' || saved === 'premiere' || saved === 'aftereffects' || saved === 'audition')) {
       return saved;
     }
     return detectedHost === 'aftereffects'
       ? 'aftereffects'
       : detectedHost === 'premiere'
       ? 'premiere'
+      : detectedHost === 'audition'
+      ? 'audition'
       : detectedHost === 'resolve'
       ? 'resolve'
       : 'resolve';
@@ -74,6 +79,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setActiveEditorState('aftereffects');
       } else if (detectedHost === 'premiere') {
         setActiveEditorState('premiere');
+      } else if (detectedHost === 'audition') {
+        setActiveEditorState('audition');
       } else if (detectedHost === 'resolve') {
         setActiveEditorState('resolve');
       } else {
@@ -101,6 +108,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               activeEditor: 'aftereffects',
               resolve: prev?.resolve || { isAvailable: false, lastChecked: new Date().toISOString() },
               premiere: prev?.premiere || { isAvailable: false, lastChecked: new Date().toISOString() },
+              audition: prev?.audition || { isAvailable: false, lastChecked: new Date().toISOString() },
               aftereffects: {
                 isAvailable: event.data.projectInfo.isAvailable ?? true,
                 productName: 'Adobe After Effects',
@@ -119,6 +127,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             setEditorsStatus((prev) => ({
               activeEditor: 'premiere',
               resolve: prev?.resolve || { isAvailable: false, lastChecked: new Date().toISOString() },
+              aftereffects: prev?.aftereffects || { isAvailable: false, lastChecked: new Date().toISOString() },
+              audition: prev?.audition || { isAvailable: false, lastChecked: new Date().toISOString() },
               premiere: {
                 isAvailable: event.data.projectInfo.isAvailable ?? true,
                 productName: 'Adobe Premiere Pro',
@@ -127,8 +137,27 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 projectPath: event.data.projectInfo.projectPath,
                 error: event.data.projectInfo.error,
                 lastChecked: new Date().toISOString()
-              },
-              aftereffects: prev?.aftereffects || { isAvailable: false, lastChecked: new Date().toISOString() }
+              }
+            }));
+          }
+        } else if (event.data.host === 'audition') {
+          setDetectedHost('audition');
+          setActiveEditorState('audition');
+          if (event.data.projectInfo) {
+            setEditorsStatus((prev) => ({
+              activeEditor: 'audition',
+              resolve: prev?.resolve || { isAvailable: false, lastChecked: new Date().toISOString() },
+              premiere: prev?.premiere || { isAvailable: false, lastChecked: new Date().toISOString() },
+              aftereffects: prev?.aftereffects || { isAvailable: false, lastChecked: new Date().toISOString() },
+              audition: {
+                isAvailable: event.data.projectInfo.isAvailable ?? true,
+                productName: 'Adobe Audition',
+                currentProject: event.data.projectInfo.currentProject,
+                activeSequence: event.data.projectInfo.activeSequence,
+                projectPath: event.data.projectInfo.projectPath,
+                error: event.data.projectInfo.error,
+                lastChecked: new Date().toISOString()
+              }
             }));
           }
         }
@@ -161,6 +190,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const resolveStatus = editorsStatus?.resolve || null;
   const premiereStatus = editorsStatus?.premiere || null;
   const aftereffectsStatus = editorsStatus?.aftereffects || null;
+  const auditionStatus = editorsStatus?.audition || null;
 
   let activeEditorName = 'Video Editor';
   let activeProjectName: string | null = null;
@@ -177,6 +207,11 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     isEditorConnected = premiereStatus?.isAvailable ?? false;
     activeProjectName = premiereStatus?.currentProject || null;
     activeSequenceOrTimeline = premiereStatus?.activeSequence || null;
+  } else if (activeEditor === 'audition') {
+    activeEditorName = 'Adobe Audition';
+    isEditorConnected = auditionStatus?.isAvailable ?? false;
+    activeProjectName = auditionStatus?.currentProject || null;
+    activeSequenceOrTimeline = auditionStatus?.activeSequence || null;
   } else if (activeEditor === 'resolve') {
     activeEditorName = 'DaVinci Resolve';
     isEditorConnected = resolveStatus?.isAvailable ?? false;
@@ -193,6 +228,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         resolveStatus,
         premiereStatus,
         aftereffectsStatus,
+        auditionStatus,
         activeEditorName,
         activeProjectName,
         activeSequenceOrTimeline,

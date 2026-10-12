@@ -1,5 +1,7 @@
 import asyncio
 import os
+import sys
+import json
 import uuid
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Callable, Set
@@ -10,8 +12,11 @@ from xdrop.database import (
     insert_download,
     update_download_progress,
     update_download_status,
+    update_download_import_state,
     get_download_by_id,
     get_all_downloads,
+    get_jobs_pending_import,
+    set_asset_import_flag,
     delete_download,
     insert_library_item,
     get_settings_from_db,
@@ -22,8 +27,21 @@ from xdrop.resolve import get_resolve_bridge
 from xdrop.config import AppSettingsModel, DATA_DIR, PROXIES_DIR
 from xdrop.logger import downloads_logger, errors_logger
 
+#: Display names used when explaining why an import is waiting for an editor.
+EDITOR_LABELS = {
+    "resolve": "DaVinci Resolve",
+    "premiere": "Adobe Premiere Pro",
+    "aftereffects": "Adobe After Effects",
+    "audition": "Adobe Audition",
+}
+
 class DownloadQueueManager:
-    """Orchestrates asynchronous download queue, processing, and DaVinci Resolve imports."""
+    """Orchestrates asynchronous download queue, processing, and editor imports."""
+
+    #: Editors in preference order; Resolve first because it is the signature integration.
+    EDITOR_ORDER = ("resolve", "premiere", "aftereffects", "audition")
+    #: How often deferred imports are retried against newly available editors.
+    FLUSH_INTERVAL_SECONDS = 10.0
 
     def __init__(self):
         self._queue: asyncio.Queue = asyncio.Queue()
@@ -32,6 +50,121 @@ class DownloadQueueManager:
         self._subscribers: List[Callable[[Dict[str, Any]], Any]] = []
         self._workers: List[asyncio.Task] = []
         self._running = False
+        # (job_id, editor) pairs already retried by the flush loop this service run, so a
+        # permanently failing import cannot be retried forever in the background.
+        self._flush_attempted: Set[tuple] = set()
+        self._flush_task: Optional[asyncio.Task] = None
+        self._ipc_task: Optional[asyncio.Task] = None
+
+    def _get_ipc_dir(self) -> Path:
+        if sys.platform == "win32":
+            base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local")) / "Xdrop" / "ipc"
+        else:
+            base = Path.home() / ".xdrop" / "ipc"
+        return base
+
+    def _sync_ipc_status(self, event_type: str, payload: Dict[str, Any]) -> None:
+        try:
+            ipc_dir = self._get_ipc_dir()
+            status_dir = ipc_dir / "status"
+            status_dir.mkdir(parents=True, exist_ok=True)
+
+            job_id = None
+            status_data: Dict[str, Any] = {}
+
+            if event_type == "JOB_PROGRESS":
+                prog = payload.get("progress") or {}
+                job_id = prog.get("id")
+                if job_id:
+                    status_data = {
+                        "id": job_id,
+                        "status": prog.get("status", "downloading"),
+                        "progress": prog.get("progress", 0.0),
+                        "speed": prog.get("speed") or "",
+                        "eta": prog.get("eta"),
+                        "downloaded_bytes": prog.get("downloadedBytes", 0),
+                        "output_file_path": prog.get("outputFilePath") or prog.get("output_file_path"),
+                        "error_message": prog.get("errorMessage")
+                    }
+            elif event_type == "JOB_COMPLETED":
+                job_id = payload.get("jobId") or (payload.get("job") or {}).get("id")
+                job_obj = payload.get("job") or {}
+                if job_id:
+                    status_data = {
+                        "id": job_id,
+                        "status": "completed",
+                        "progress": 100.0,
+                        "speed": "",
+                        "output_file_path": job_obj.get("output_file_path") or payload.get("outputFilePath"),
+                        "imported": True
+                    }
+            elif event_type == "JOB_FAILED":
+                job_id = payload.get("jobId")
+                if job_id:
+                    status_data = {
+                        "id": job_id,
+                        "status": "failed",
+                        "progress": 0.0,
+                        "error_message": payload.get("message")
+                    }
+
+            if job_id and status_data:
+                target_file = status_dir / f"job_{job_id}.json"
+                temp_file = status_dir / f"job_{job_id}.tmp"
+                temp_file.write_text(json.dumps(status_data), encoding="utf-8")
+                temp_file.replace(target_file)
+        except Exception as e:
+            errors_logger.debug(f"IPC status sync error: {e}")
+
+    async def _ipc_loop(self) -> None:
+        """Watches ipc/jobs for requests from native Lua / editor scripts and updates heartbeat with zero flicker."""
+        ipc_dir = self._get_ipc_dir()
+        jobs_dir = ipc_dir / "jobs"
+        status_dir = ipc_dir / "status"
+        heartbeat_file = ipc_dir / "heartbeat.json"
+
+        try:
+            jobs_dir.mkdir(parents=True, exist_ok=True)
+            status_dir.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass
+
+        import time
+
+        while self._running:
+            try:
+                # 1. Update heartbeat
+                hb_tmp = ipc_dir / "heartbeat.tmp"
+                hb_data = {
+                    "status": "ok",
+                    "healthy": True,
+                    "pid": os.getpid(),
+                    "timestamp": int(time.time()),
+                    "service": "Xdrop",
+                    "version": "1.1.0"
+                }
+                hb_tmp.write_text(json.dumps(hb_data), encoding="utf-8")
+                hb_tmp.replace(heartbeat_file)
+
+                # 2. Check for incoming job requests
+                if jobs_dir.exists():
+                    for job_file in list(jobs_dir.glob("*.json")):
+                        try:
+                            content = job_file.read_text(encoding="utf-8")
+                            job_file.unlink(missing_ok=True)
+                            data = json.loads(content)
+                            explicit_id = data.get("id")
+                            req = CreateDownloadRequest(**data)
+                            await self.add_download(req, explicit_job_id=explicit_id)
+                        except Exception as jerr:
+                            errors_logger.error(f"Error parsing IPC job {job_file}: {jerr}")
+
+                await asyncio.sleep(0.5)
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                errors_logger.debug(f"IPC loop iteration exception: {e}")
+                await asyncio.sleep(1.0)
 
     def subscribe(self, callback: Callable[[Dict[str, Any]], Any]) -> None:
         """Subscribes a listener (e.g. WebSocket broadcaster) to queue events."""
@@ -43,7 +176,8 @@ class DownloadQueueManager:
             self._subscribers.remove(callback)
 
     async def broadcast_event(self, event_type: str, payload: Dict[str, Any]) -> None:
-        """Broadcasts event to all active WebSocket listeners."""
+        """Broadcasts event to all active WebSocket listeners and writes to IPC status files."""
+        self._sync_ipc_status(event_type, payload)
         msg = {
             "type": event_type,
             "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -67,10 +201,18 @@ class DownloadQueueManager:
         for i in range(worker_count):
             task = asyncio.create_task(self._worker_loop(f"worker-{i+1}"))
             self._workers.append(task)
-        downloads_logger.info(f"DownloadQueueManager started with {worker_count} workers.")
+        self._flush_task = asyncio.create_task(self._flush_pending_loop())
+        self._ipc_task = asyncio.create_task(self._ipc_loop())
+        downloads_logger.info(f"DownloadQueueManager started with {worker_count} workers and zero-flicker IPC.")
 
     async def stop(self) -> None:
         self._running = False
+        if self._ipc_task:
+            self._ipc_task.cancel()
+            self._ipc_task = None
+        if self._flush_task:
+            self._flush_task.cancel()
+            self._flush_task = None
         for task in self._workers:
             task.cancel()
         self._workers.clear()
@@ -79,9 +221,286 @@ class DownloadQueueManager:
         db_settings = get_settings_from_db()
         return AppSettingsModel(**db_settings)
 
-    async def add_download(self, req: CreateDownloadRequest) -> Dict[str, Any]:
+    # ------------------------------------------------------------- editor imports ---
+
+    def _import_flag(self, req: CreateDownloadRequest, settings: AppSettingsModel, editor: str) -> bool:
+        """Resolves the per-editor auto-import flag, preferring the request over settings."""
+        explicit = {
+            "resolve": req.auto_import_to_resolve,
+            "premiere": req.auto_import_to_premiere,
+            "aftereffects": req.auto_import_to_aftereffects,
+            "audition": getattr(req, "auto_import_to_audition", None),
+        }.get(editor)
+        if explicit is not None:
+            return bool(explicit)
+        return bool(getattr(settings, f"auto_import_to_{editor}", True))
+
+    def requested_editors(self, req: CreateDownloadRequest, settings: AppSettingsModel) -> List[str]:
+        """Editors this job should land in, in preference order.
+
+        An explicit per-job target wins. Under 'auto' every enabled editor is a candidate
+        and the ones actually open at completion time receive the file.
+        """
+        target = (req.target_editor or getattr(settings, "default_editor", "auto") or "auto").lower()
+        if target in self.EDITOR_ORDER:
+            return [target]
+        return [e for e in self.EDITOR_ORDER if self._import_flag(req, settings, e)]
+
+    def editor_available(self, editor: str) -> bool:
+        """Whether the editor can receive an import right now.
+
+        Resolve counts as available when the app is running. The Adobe hosts additionally
+        require the Xdrop CEP panel to be open, because a broadcast can only be received
+        by a panel that is actually listening.
+        """
+        from xdrop.resolve import get_resolve_bridge
+        from xdrop.premiere import get_premiere_bridge
+        from xdrop.aftereffects import get_aftereffects_bridge
+        from xdrop.audition import get_audition_bridge
+
+        if editor == "resolve":
+            return get_resolve_bridge().is_running()
+        if editor == "premiere":
+            return get_premiere_bridge().has_live_panel()
+        if editor == "aftereffects":
+            return get_aftereffects_bridge().has_live_panel()
+        if editor == "audition":
+            return get_audition_bridge().has_live_panel()
+        return False
+
+    @staticmethod
+    def _settings_bin(settings: AppSettingsModel, editor: str) -> str:
+        if editor == "resolve":
+            return settings.target_media_pool_bin or "000_Xdrop Assets"
+        return getattr(settings, f"target_{editor}_bin", "") or "000_Xdrop Assets"
+
+    def _bin_for_request(self, req: CreateDownloadRequest, settings: AppSettingsModel, editor: str) -> str:
+        explicit = {
+            "resolve": req.target_media_pool_bin,
+            "premiere": req.target_premiere_bin,
+            "aftereffects": req.target_aftereffects_bin,
+            "audition": getattr(req, "target_audition_bin", None),
+        }.get(editor)
+        return explicit or self._settings_bin(settings, editor)
+
+    @staticmethod
+    def _stored_bin(job: Dict[str, Any], editor: str) -> Optional[str]:
+        return {
+            "resolve": job.get("resolveBin"),
+            "premiere": job.get("premiereBin"),
+            "aftereffects": job.get("aftereffectsBin"),
+            "audition": job.get("auditionBin"),
+        }.get(editor)
+
+    async def attempt_import(
+        self,
+        job_id: str,
+        editor: str,
+        file_path: str,
+        bin_name: str,
+        insert_timeline: bool = False,
+    ) -> Dict[str, Any]:
+        """Imports one file into one editor and records the true outcome for that job.
+
+        Resolve imports happen inline, so success is confirmed immediately. The Adobe
+        hosts hand the work to the CEP panel and confirm later, so a delivered request is
+        left 'pending' rather than reported as imported.
+        """
+        if editor == "resolve":
+            from xdrop.resolve import get_resolve_bridge
+
+            bridge = get_resolve_bridge()
+            loop = asyncio.get_running_loop()
+            res = await loop.run_in_executor(
+                None, lambda: bridge.import_media([file_path], bin_name, insert_timeline=insert_timeline)
+            )
+            if res.get("success"):
+                update_download_import_state(
+                    job_id,
+                    editor,
+                    imported=True,
+                    bin_name=bin_name,
+                    clip_name=res.get("clipName"),
+                )
+                set_asset_import_flag(file_path, editor, True)
+                return {"success": True, "confirmed": True, "clipName": res.get("clipName")}
+
+            error = res.get("error") or "DaVinci Resolve import failed."
+            update_download_import_state(
+                job_id, editor, imported=False, pending=True, error=error, bin_name=bin_name
+            )
+            return {"success": False, "confirmed": False, "error": error}
+
+        if editor == "premiere":
+            from xdrop.premiere import get_premiere_bridge
+
+            bridge = get_premiere_bridge()
+        elif editor == "aftereffects":
+            from xdrop.aftereffects import get_aftereffects_bridge
+
+            bridge = get_aftereffects_bridge()
+        elif editor == "audition":
+            from xdrop.audition import get_audition_bridge
+
+            bridge = get_audition_bridge()
+        else:
+            return {"success": False, "confirmed": False, "error": f"Unknown editor '{editor}'"}
+
+        res = await bridge.import_media([file_path], bin_name, [job_id], insert_timeline=insert_timeline)
+        if res.get("success"):
+            update_download_import_state(
+                job_id, editor, pending=True, error=None, bin_name=bin_name
+            )
+            return {
+                "success": True,
+                "confirmed": False,
+                "requestId": res.get("requestId"),
+            }
+
+        error = res.get("error") or f"{editor} import failed."
+        update_download_import_state(
+            job_id, editor, imported=False, pending=True, error=error, bin_name=bin_name
+        )
+        return {"success": False, "confirmed": False, "error": error}
+
+    async def run_editor_imports(
+        self,
+        job_id: str,
+        file_path: str,
+        req: CreateDownloadRequest,
+        settings: AppSettingsModel,
+        downloaded_bytes: int = 0,
+    ) -> List[Dict[str, Any]]:
+        """Imports a finished download into the editors it was requested for.
+
+        Editors that are open receive the file immediately. When none of the requested
+        editors can accept it, the import is recorded as pending against the preferred
+        editor so the background flush finishes it once that editor is open, instead of
+        the download silently landing nowhere.
+        """
+        requested = self.requested_editors(req, settings)
+        if not requested:
+            return []
+
+        available = [e for e in requested if self.editor_available(e)]
+        summary: List[Dict[str, Any]] = []
+
+        if available:
+            update_download_status(job_id, "importing")
+            await self.broadcast_event("JOB_PROGRESS", {
+                "progress": {
+                    "id": job_id,
+                    "status": "importing",
+                    "progress": 95.0,
+                    "downloadedBytes": downloaded_bytes,
+                    "speed": None,
+                    "eta": None,
+                }
+            })
+
+        for editor in available:
+            bin_name = self._bin_for_request(req, settings, editor)
+            outcome = await self.attempt_import(
+                job_id, editor, file_path, bin_name, insert_timeline=bool(req.insert_timeline)
+            )
+            summary.append({"editor": editor, "bin": bin_name, **outcome})
+            if outcome.get("success"):
+                state = "confirmed" if outcome.get("confirmed") else "requested, awaiting the editor"
+                downloads_logger.info(
+                    f"Import of {file_path} into {EDITOR_LABELS[editor]} bin '{bin_name}': {state}."
+                )
+            else:
+                downloads_logger.warning(
+                    f"Import of {file_path} into {EDITOR_LABELS[editor]} not delivered: "
+                    f"{outcome.get('error')}"
+                )
+
+        if not available:
+            editor = requested[0]
+            bin_name = self._bin_for_request(req, settings, editor)
+            reason = (
+                f"{EDITOR_LABELS[editor]} was not available when the download finished. "
+                f"Xdrop will import this file automatically once {EDITOR_LABELS[editor]} is open."
+            )
+            update_download_import_state(
+                job_id, editor, imported=False, pending=True, error=reason, bin_name=bin_name
+            )
+            summary.append({
+                "editor": editor,
+                "bin": bin_name,
+                "success": False,
+                "confirmed": False,
+                "deferred": True,
+                "error": reason,
+            })
+            downloads_logger.info(
+                f"Deferred import of {file_path} until {EDITOR_LABELS[editor]} is available."
+            )
+
+        return summary
+
+    async def broadcast_import_state(self, job_id: str, editor: Optional[str] = None) -> None:
+        """Pushes the refreshed job so panels show real, current import state."""
+        job = get_download_by_id(job_id)
+        if not job:
+            return
+        await self.broadcast_event("JOB_IMPORT_STATE", {
+            "jobId": job_id,
+            "editor": editor,
+            "job": job,
+        })
+
+    async def flush_pending_imports(self, force: bool = False) -> List[Dict[str, Any]]:
+        """Imports files that were deferred because their target editor was not open.
+
+        Each (job, editor) pair is attempted at most once per service run unless `force`
+        is set, so an import that keeps failing cannot retry forever in the background.
+        """
+        results: List[Dict[str, Any]] = []
+        for editor in self.EDITOR_ORDER:
+            if not self.editor_available(editor):
+                continue
+            for job in get_jobs_pending_import(editor):
+                job_id = job["id"]
+                key = (job_id, editor)
+                if not force and key in self._flush_attempted:
+                    continue
+                self._flush_attempted.add(key)
+
+                file_path = job.get("output_file_path")
+                if not file_path or not os.path.isfile(file_path):
+                    continue
+
+                settings = self._get_settings()
+                bin_name = self._stored_bin(job, editor) or self._settings_bin(settings, editor)
+                outcome = await self.attempt_import(job_id, editor, file_path, bin_name)
+                results.append({"jobId": job_id, "editor": editor, "bin": bin_name, **outcome})
+                await self.broadcast_import_state(job_id, editor)
+        return results
+
+    async def _flush_pending_loop(self) -> None:
+        """Retries deferred imports periodically so they land once the editor opens."""
+        while self._running:
+            try:
+                await asyncio.sleep(self.FLUSH_INTERVAL_SECONDS)
+                flushed = await self.flush_pending_imports()
+                if flushed:
+                    downloads_logger.info(
+                        f"Deferred import flush handled {len(flushed)} import(s)."
+                    )
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                errors_logger.error(f"Deferred import flush error: {e}", exc_info=True)
+
+    async def add_download(self, req: CreateDownloadRequest, explicit_job_id: Optional[str] = None) -> Dict[str, Any]:
         """Creates a download job and places it in the processing queue."""
-        job_id = f"dl_{uuid.uuid4().hex[:10]}"
+        clean_url = req.source_url.strip()
+        if clean_url and not (clean_url.startswith("http://") or clean_url.startswith("https://")):
+            clean_url = "https://" + clean_url
+        req.source_url = clean_url
+
+        job_id = explicit_job_id or f"dl_{uuid.uuid4().hex[:10]}"
         pm = get_provider_manager()
         provider = pm.find_provider_for_url(req.source_url)
         platform_id = provider.platform_id if provider else "generic"
@@ -92,7 +511,8 @@ class DownloadQueueManager:
         is_auto_import = bool(
             req.auto_import_to_resolve or
             req.auto_import_to_premiere or
-            req.auto_import_to_aftereffects
+            req.auto_import_to_aftereffects or
+            req.auto_import_to_audition
         )
 
         job_data = {
@@ -120,6 +540,8 @@ class DownloadQueueManager:
             "premiere_bin": None,
             "aftereffects_imported": False,
             "aftereffects_bin": None,
+            "audition_imported": False,
+            "audition_bin": None,
             "target_editor": req.target_editor,
             "auto_import": 1 if is_auto_import else 0,
             "created_at": now,
@@ -479,85 +901,31 @@ class DownloadQueueManager:
         }
         insert_library_item(library_item)
 
-        # 5. Multi-Editor Import Automation (DaVinci Resolve, Adobe Premiere Pro & Adobe After Effects)
-        from xdrop.premiere import get_premiere_bridge
-        from xdrop.aftereffects import get_aftereffects_bridge
-        prem_bridge = get_premiere_bridge()
-        ae_bridge = get_aftereffects_bridge()
-
-        target_ed = req.target_editor or getattr(settings, "default_editor", "auto")
-        resolve_imported = False
-        premiere_imported = False
-        aftereffects_imported = False
-        clip_name = None
-
-        # Check if should import to Premiere Pro
-        should_import_premiere = (
-            target_ed in ("premiere", "auto")
-            and (req.auto_import_to_premiere if req.auto_import_to_premiere is not None else True)
-            and prem_bridge.is_running()
-        )
-
-        # Check if should import to DaVinci Resolve
-        should_import_resolve = (
-            target_ed in ("resolve", "auto")
-            and (req.auto_import_to_resolve if req.auto_import_to_resolve is not None else settings.auto_import_to_resolve)
-            and bridge.is_running()
-        )
-
-        # Check if should import to Adobe After Effects
-        should_import_aftereffects = (
-            target_ed in ("aftereffects", "auto")
-            and (req.auto_import_to_aftereffects if req.auto_import_to_aftereffects is not None else getattr(settings, "auto_import_to_aftereffects", True))
-            and ae_bridge.is_running()
-        )
-
-        if should_import_premiere or should_import_resolve or should_import_aftereffects:
-            update_download_status(job_id, "importing")
-            await self.broadcast_event("JOB_PROGRESS", {
-                "progress": {
-                    "id": job_id,
-                    "status": "importing",
-                    "progress": 95.0,
-                    "downloadedBytes": download_result.downloaded_bytes,
-                    "speed": None,
-                    "eta": None,
-                }
-            })
-
-            # Premiere Pro Import
-            if should_import_premiere:
-                prem_bin = req.target_premiere_bin or "Xdrop"
-                p_res = await prem_bridge.import_media([final_file], prem_bin)
-                if p_res.get("success"):
-                    premiere_imported = True
-                    clip_name = Path(final_file).name
-                    downloads_logger.info(f"Broadcasted import of {final_file} to Premiere bin '{prem_bin}'")
-
-            # After Effects Import
-            if should_import_aftereffects:
-                ae_bin = req.target_aftereffects_bin or getattr(settings, "target_aftereffects_bin", "Xdrop")
-                ae_res = await ae_bridge.import_media([final_file], ae_bin)
-                if ae_res.get("success"):
-                    aftereffects_imported = True
-                    clip_name = Path(final_file).name
-                    downloads_logger.info(f"Broadcasted import of {final_file} to After Effects bin '{ae_bin}'")
-
-            # DaVinci Resolve Import
-            if should_import_resolve:
-                target_bin = req.target_media_pool_bin or settings.target_media_pool_bin or "Xdrop"
-                import_res = await loop.run_in_executor(
-                    None,
-                    lambda: bridge.import_media([final_file], target_bin)
+        # Generate universal FCPXML sidecar for instant timeline drag-and-drop across any NLE
+        try:
+            from xdrop.processor.fcpxml import write_fcpxml_sidecar
+            await loop.run_in_executor(
+                None,
+                lambda: write_fcpxml_sidecar(
+                    file_path=final_file,
+                    title=req.title or Path(final_file).stem,
+                    duration_sec=probe_info.get("duration"),
+                    width=probe_info.get("width") or 1920,
+                    height=probe_info.get("height") or 1080,
+                    fps=30.0,
                 )
-                if import_res.get("success"):
-                    resolve_imported = True
-                    clip_name = import_res.get("clipName") or Path(final_file).name
-                    downloads_logger.info(f"Successfully imported {final_file} to Resolve bin '{target_bin}'")
-                else:
-                    downloads_logger.warning(
-                        f"Resolve import deferred for {final_file}: {import_res.get('error')}"
-                    )
+            )
+        except Exception as fc_err:
+            downloads_logger.debug(f"FCPXML sidecar generation note: {fc_err}")
+
+        # 5. Editor import automation (DaVinci Resolve, Premiere Pro, After Effects).
+        import_summary = await self.run_editor_imports(
+            job_id,
+            final_file,
+            req,
+            settings,
+            download_result.downloaded_bytes or 0,
+        )
 
         # 6. Complete Job
         update_download_progress(
@@ -567,15 +935,9 @@ class DownloadQueueManager:
             downloaded_bytes=download_result.downloaded_bytes,
             output_file_path=final_file,
             thumbnail_path=thumb_path,
-            resolve_imported=resolve_imported,
-            resolve_clip_name=clip_name,
-            premiere_imported=premiere_imported,
-            premiere_bin=req.target_premiere_bin or "Xdrop" if premiere_imported else None,
-            aftereffects_imported=aftereffects_imported,
-            aftereffects_bin=req.target_aftereffects_bin or "Xdrop" if aftereffects_imported else None,
         )
 
-        completed_job = get_download_by_id(job_id)
+        completed_job = get_download_by_id(job_id) or {"id": job_id, "status": "completed"}
         await self.broadcast_event("JOB_PROGRESS", {
             "progress": {
                 "id": job_id,
@@ -584,135 +946,88 @@ class DownloadQueueManager:
                 "downloadedBytes": download_result.downloaded_bytes,
                 "speed": None,
                 "eta": None,
-                "resolveImported": resolve_imported,
-                "premiereImported": premiere_imported,
-                "aftereffectsImported": aftereffects_imported,
+                "resolveImported": bool(completed_job.get("resolve_imported")),
+                "premiereImported": bool(completed_job.get("premiere_imported")),
+                "aftereffectsImported": bool(completed_job.get("aftereffects_imported")),
+                "auditionImported": bool(completed_job.get("audition_imported")),
             }
         })
         await self.broadcast_event("JOB_COMPLETED", {
-            "job": completed_job or {"id": job_id, "status": "completed"}
+            "job": completed_job,
+            "imports": import_summary,
         })
         downloads_logger.info(f"Job {job_id} successfully completed. File: {final_file}")
 
-    async def import_existing_to_resolve(self, job_id: str) -> Dict[str, Any]:
-        """Manually triggers DaVinci Resolve import for a previously downloaded job."""
+    async def import_existing_to_editor(
+        self, job_id: str, editor: str, bin_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """User-triggered import of an already downloaded file into one editor.
+
+        Refuses up front, with an explanation, when the editor cannot receive imports
+        instead of pretending the import happened.
+        """
         job = get_download_by_id(job_id)
         if not job or not job.get("output_file_path"):
-            return {"success": False, "error": "Job file does not exist."}
+            return {"success": False, "error": "Job file does not exist.", "editor": editor}
 
         file_path = job["output_file_path"]
         if not os.path.isfile(file_path):
-            return {"success": False, "error": f"File no longer exists at: {file_path}"}
+            return {
+                "success": False,
+                "error": f"File no longer exists at: {file_path}",
+                "editor": editor,
+            }
 
         settings = self._get_settings()
-        bridge = get_resolve_bridge()
-        target_bin = settings.target_media_pool_bin or "Xdrop"
+        target_bin = bin_name or self._stored_bin(job, editor) or self._settings_bin(settings, editor)
 
-        loop = asyncio.get_running_loop()
-        res = await loop.run_in_executor(
-            None,
-            lambda: bridge.import_media([file_path], target_bin)
-        )
-
-        if res.get("success"):
-            update_download_progress(
-                job_id=job_id,
-                status=job["status"],
-                progress=job.get("progress", 100.0),
-                downloaded_bytes=job.get("downloaded_bytes", 0),
-                resolve_imported=True,
-                resolve_clip_name=res.get("clipName")
+        if not self.editor_available(editor):
+            hint = (
+                "Start DaVinci Resolve and try again."
+                if editor == "resolve"
+                else f"Open Window > Extensions > Xdrop in {EDITOR_LABELS[editor]} and try again."
             )
-            await self.broadcast_event("JOB_UPDATED", {
-                "jobId": job_id,
-                "progress": {
-                    "id": job_id,
-                    "status": job["status"],
-                    "progress": 100.0,
-                    "downloadedBytes": job.get("downloaded_bytes", 0),
-                    "resolveImported": True,
-                }
-            })
+            return {
+                "success": False,
+                "error": f"{EDITOR_LABELS[editor]} is not ready to receive imports. {hint}",
+                "editor": editor,
+            }
 
-        return res
+        outcome = await self.attempt_import(job_id, editor, file_path, target_bin)
+        await self.broadcast_import_state(job_id, editor)
+
+        if not outcome.get("success"):
+            return {
+                "success": False,
+                "error": outcome.get("error"),
+                "editor": editor,
+                "targetBin": target_bin,
+            }
+
+        return {
+            "success": True,
+            "confirmed": bool(outcome.get("confirmed")),
+            "editor": editor,
+            "targetBin": target_bin,
+            "clipName": outcome.get("clipName"),
+            "requestId": outcome.get("requestId"),
+        }
+
+    async def import_existing_to_resolve(self, job_id: str) -> Dict[str, Any]:
+        """Manually triggers DaVinci Resolve import for a previously downloaded job."""
+        return await self.import_existing_to_editor(job_id, "resolve")
 
     async def import_existing_to_premiere(self, job_id: str, bin_name: Optional[str] = None) -> Dict[str, Any]:
         """Manually triggers Adobe Premiere Pro import for a previously downloaded job."""
-        job = get_download_by_id(job_id)
-        if not job or not job.get("output_file_path"):
-            return {"success": False, "error": "Job file does not exist."}
-
-        file_path = job["output_file_path"]
-        if not os.path.isfile(file_path):
-            return {"success": False, "error": f"File no longer exists at: {file_path}"}
-
-        from xdrop.premiere import get_premiere_bridge
-        prem_bridge = get_premiere_bridge()
-        target_bin = bin_name or "Xdrop"
-        res = await prem_bridge.import_media([file_path], target_bin)
-
-        if res.get("success"):
-            final_p = (res.get("filePaths") or [file_path])[0]
-            update_download_progress(
-                job_id=job_id,
-                status=job["status"],
-                progress=job.get("progress", 100.0),
-                downloaded_bytes=job.get("downloaded_bytes", 0),
-                output_file_path=final_p,
-                premiere_imported=True,
-                premiere_bin=target_bin
-            )
-            await self.broadcast_event("JOB_UPDATED", {
-                "jobId": job_id,
-                "progress": {
-                    "id": job_id,
-                    "status": job["status"],
-                    "progress": 100.0,
-                    "downloadedBytes": job.get("downloaded_bytes", 0),
-                    "premiereImported": True,
-                }
-            })
-
-        return res
+        return await self.import_existing_to_editor(job_id, "premiere", bin_name)
 
     async def import_existing_to_aftereffects(self, job_id: str, bin_name: Optional[str] = None) -> Dict[str, Any]:
         """Manually triggers Adobe After Effects import for a previously downloaded job."""
-        job = get_download_by_id(job_id)
-        if not job or not job.get("output_file_path"):
-            return {"success": False, "error": "Job file does not exist."}
+        return await self.import_existing_to_editor(job_id, "aftereffects", bin_name)
 
-        file_path = job["output_file_path"]
-        if not os.path.isfile(file_path):
-            return {"success": False, "error": f"File no longer exists at: {file_path}"}
-
-        from xdrop.aftereffects import get_aftereffects_bridge
-        ae_bridge = get_aftereffects_bridge()
-        target_bin = bin_name or "Xdrop"
-        res = await ae_bridge.import_media([file_path], target_bin)
-
-        if res.get("success"):
-            final_p = (res.get("filePaths") or [file_path])[0]
-            update_download_progress(
-                job_id=job_id,
-                status=job["status"],
-                progress=job.get("progress", 100.0),
-                downloaded_bytes=job.get("downloaded_bytes", 0),
-                output_file_path=final_p,
-                aftereffects_imported=True,
-                aftereffects_bin=target_bin
-            )
-            await self.broadcast_event("JOB_UPDATED", {
-                "jobId": job_id,
-                "progress": {
-                    "id": job_id,
-                    "status": job["status"],
-                    "progress": 100.0,
-                    "downloadedBytes": job.get("downloaded_bytes", 0),
-                    "aftereffectsImported": True,
-                }
-            })
-
-        return res
+    async def import_existing_to_audition(self, job_id: str, bin_name: Optional[str] = None) -> Dict[str, Any]:
+        """Manually triggers Adobe Audition import for a previously downloaded job."""
+        return await self.import_existing_to_editor(job_id, "audition", bin_name)
 
 _queue_manager_instance: Optional[DownloadQueueManager] = None
 

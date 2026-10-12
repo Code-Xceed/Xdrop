@@ -26,10 +26,25 @@ CREATE TABLE IF NOT EXISTS downloads (
     error_message TEXT,
     resolve_imported INTEGER DEFAULT 0,
     resolve_clip_name TEXT,
+    resolve_bin TEXT,
     premiere_imported INTEGER DEFAULT 0,
     premiere_bin TEXT,
     aftereffects_imported INTEGER DEFAULT 0,
     aftereffects_bin TEXT,
+    audition_imported INTEGER DEFAULT 0,
+    audition_bin TEXT,
+    -- An import is 'pending' when it has been requested but not yet confirmed in the
+    -- editor: either the editor was closed at completion time (deferred until it opens)
+    -- or the Adobe panel has been told to import and has not reported the result yet.
+    resolve_import_pending INTEGER DEFAULT 0,
+    premiere_import_pending INTEGER DEFAULT 0,
+    aftereffects_import_pending INTEGER DEFAULT 0,
+    audition_import_pending INTEGER DEFAULT 0,
+    -- Reason the last import attempt did not succeed; cleared once an import is confirmed.
+    resolve_import_error TEXT,
+    premiere_import_error TEXT,
+    aftereffects_import_error TEXT,
+    audition_import_error TEXT,
     target_editor TEXT,
     auto_import INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -53,33 +68,19 @@ CREATE TABLE IF NOT EXISTS assets (
     resolve_imported INTEGER DEFAULT 0,
     premiere_imported INTEGER DEFAULT 0,
     aftereffects_imported INTEGER DEFAULT 0,
+    audition_imported INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(download_id) REFERENCES downloads(id) ON DELETE SET NULL
 );
 
+-- Reserved for the provider enable/disable API (revamp plan W8.5). No code reads or
+-- writes this table yet; it is kept deliberately so that workstream lands with a place to go.
 CREATE TABLE IF NOT EXISTS platform_sources (
     id TEXT PRIMARY KEY,
     domain TEXT NOT NULL UNIQUE,
     platform_name TEXT NOT NULL,
     enabled INTEGER DEFAULT 1,
     rate_limit_rpm INTEGER DEFAULT 60
-);
-
-CREATE TABLE IF NOT EXISTS projects (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL UNIQUE,
-    resolve_project_id TEXT,
-    custom_assets_dir TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS download_history (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    download_id TEXT NOT NULL,
-    event TEXT NOT NULL,
-    details TEXT,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(download_id) REFERENCES downloads(id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_downloads_status ON downloads(status);

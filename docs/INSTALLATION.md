@@ -6,28 +6,15 @@ Xdrop provides an automated, zero-friction setup for video editors working acros
 
 ## 1. Quick 1-Click Installation (End-Users)
 
-### 🪟 Windows Setup
-1. Clone or download this repository:
-   ```cmd
-   git clone https://github.com/Code-Xceed/Xdrop.git
-   cd Xdrop
-   ```
-2. **Double-click `setup.bat`**.
+### 🪟 Windows Setup (Standalone Executable)
 
-That's all! `setup.bat` automatically:
-- Checks for Python 3.9+ and silently installs official Python if missing (no admin rights required).
-- Installs all Python dependencies.
-- Embeds the pre-compiled UI bundle (no Node.js/npm required for end users).
-- Detects or downloads portable FFmpeg.
-- Probes GPU acceleration (NVIDIA NVENC, QuickSync, Apple ProRes).
-- Detects installed editors and installs:
-  - **DaVinci Resolve Utility Script**: `C:\ProgramData\Blackmagic Design\DaVinci Resolve\Fusion\Scripts\Utility\Xdrop.py`
-  - **Adobe CEP Panel**: `%APPDATA%\Adobe\CEP\extensions\com.xdrop.panel`
-  - **Adobe Registry Keys**: Enables `PlayerDebugMode=1` across CSXS versions 9–16.
-- Configures default media directories (`Videos/Xdrop Assets`).
-- Immediately launches Xdrop ready to work!
+1. **Double-click `XdropInstaller.exe`** (or `dist/XdropInstaller.exe`).
+   - Deep-scans your PC across all local and external drives (`C:\`, `D:\`, `E:\`, `X:\`, etc.) and the Windows Registry (HKLM, HKCU, App Paths).
+   - Auto-discovers every installed video editor: **DaVinci Resolve Studio & Free**, **Adobe Premiere Pro**, **Adobe After Effects**, **Adobe Audition**, **Blender**, **CapCut**, etc.
+   - Automatically provisions and registers native extensions into each host editor.
+   - Requires **no command line** and **no Python installation**.
 
-*(To launch Xdrop in the future, double-click `run.bat` or `setup.bat`)*
+*(Alternatively, run `setup.bat` for full Python environment and dependency synchronization)*
 
 ### 🍏 macOS / Linux Setup
 1. Clone or download this repository.
@@ -42,27 +29,79 @@ That's all! `setup.bat` automatically:
 
 ## 2. Accessing Xdrop in Your Editors
 
-Once setup is complete, Xdrop is immediately available inside your editing suites:
+Once setup is complete, Xdrop is immediately available inside all your editing suites:
 
-### DaVinci Resolve
-1. Open DaVinci Resolve and open any project.
-2. Go to the top menu: **Workspace → Scripts → Utility → Xdrop**.
-3. The Xdrop companion window opens, directly synced to your active project bin (`Xdrop`).
+### 🎬 DaVinci Resolve (Free & Studio) — Native Fusion UI Lua Extension (`Xdrop.lua`)
+- **Plugin Type**: Native Fusion `UIManager` Lua Plugin (matching the architecture of Snap Captions)
+- **How to Open**: Top Menu → **Workspace → Scripts → Comp/Utility → Xdrop** (or inside Fusion page: **Script → Xdrop**)
+- **Capabilities**:
+  - Runs 100% inside DaVinci Resolve — **zero browser tabs, zero external terminals, zero electron processes**.
+  - Direct Media Pool integration: dynamically fetches and selects active project bins.
+  - Option to insert downloaded media directly onto the active timeline at the current playhead position.
+  - One-click `+ Bins` button to auto-provision an organized `000_Xdrop Assets` bin hierarchy.
 
-### Adobe Premiere Pro
-1. Open Adobe Premiere Pro.
-2. Go to the top menu: **Window → Extensions → Xdrop**.
-3. Dock the panel anywhere in your workspace (alongside Project Bins, Source Monitor, etc.).
-4. Downloaded assets automatically appear in the active project bin!
+### 🎬 DaVinci Resolve Companion Starter Bin (`Xdrop - Starter Bin.drb`)
+- **Format**: Native DaVinci Resolve Bin (`.drb` container)
+- **Location**: `dist/Xdrop - Starter Bin.drb` (also deployed alongside `Xdrop.lua`)
+- **How to Use**:
+  - Double-click the `.drb` file or right-click anywhere in your DaVinci Resolve Media Pool → **Import Bin...** and choose `Xdrop - Starter Bin.drb`.
+  - Instantly provisions color-coded media categories:
+    - `000_Xdrop Assets` (Teal)
+    - `01_Downloads` (Cyan)
+    - `02_Video Clips` (Yellow)
+    - `03_Music & SFX` (Green)
+    - `04_Dialogue & Audio` (Orange)
+    - `05_Proxies & Renders` (Pink)
 
-### Adobe After Effects
-1. Open Adobe After Effects.
-2. Go to the top menu: **Window → Extensions → Xdrop**.
-3. Dock the panel in your workspace; media imports directly into the project panel.
+### 🎬 DaVinci Resolve Studio (Native Docked Integration)
+- **Plugin Type**: Blackmagic Workflow Integration (`WorkflowIntegration.node`)
+- **How to Open**: Top Menu → **Workspace → Workflow Integrations → Xdrop**
+- **Capabilities**: Directly docked inside the DaVinci UI. Automatically adds imported clips to your Media Pool and active timeline bin.
 
-### Standalone Companion / Web Browser
-- Launch the floating desktop companion: `run.bat` or `python apps/desktop-service/xdrop/main.py --gui`
-- Or open in any web browser: `http://localhost:8484`
+### 🎬 DaVinci Resolve Free & Studio (Utility Script in Desktop App Mode)
+- **Plugin Type**: Native Python Utility Script launcher running in dedicated desktop app mode (zero browser tabs/address bars)
+- **How to Open**: Top Menu → **Workspace → Scripts → Utility → Xdrop**
+- **Capabilities**: Directly connects to the active DaVinci Resolve project via the Resolve scripting API.
+
+### 🎞️ Adobe Premiere Pro (Native Docked Extension)
+- **Plugin Type**: Adobe CEP & UXP Panel
+- **How to Open**: Top Menu → **Window → Extensions → Xdrop**
+- **Capabilities**: Dock the panel anywhere in your workspace (alongside Project Bins, Source Monitor, or Effects Controls). Downloads are instantly imported into your active project bin.
+
+### 🎞️ Adobe After Effects (Native Docked Extension)
+- **Plugin Type**: Adobe CEP & UXP Panel
+- **How to Open**: Top Menu → **Window → Extensions → Xdrop**
+- **Capabilities**: Dockable panel inside AE composition workspaces. Automatically imports downloads as project footage items.
+
+### 🎙️ Adobe Audition (Native Docked Extension)
+- **Plugin Type**: Adobe CEP Panel
+- **How to Open**: Top Menu → **Window → Extensions → Xdrop**
+- **Capabilities**: Dockable panel inside audio editing and multitrack workspaces. Automatically imports audio rips and music stems directly into the active session.
+
+### 🧊 Blender (Video Sequence Editor Add-on)
+- **Plugin Type**: Native Blender Add-on (`xdrop_blender_addon.zip`)
+- **How to Open**: 
+  1. Open the **Video Editing** workspace.
+  2. Press **N** on your keyboard in the Sequencer to expand the sidebar.
+  3. Click the **Xdrop** tab.
+- **Manual Installation (if needed)**: Go to **Edit → Preferences → Add-ons → Install...**, choose `dist/xdrop_blender_addon.zip` in your Xdrop directory, and enable the checkbox.
+
+### 🍏 Apple Final Cut Pro & Universal NLEs (CapCut, Sony Vegas, Avid)
+- **Format**: FCPXML 1.11 Sidecar & Drag-and-Drop
+- **How to Use**:
+  - Every downloaded file automatically creates a companion `.fcpxml` sidecar.
+  - In Final Cut Pro: **File → Import → XML...** and select the `.fcpxml` file.
+  - Or simply drag-and-drop downloaded clips directly from the Xdrop UI into your timeline or media pool in any NLE.
+
+---
+
+## 3. Manual / Quick Extension Installer Command
+
+If you ever need to reinstall or refresh extensions across all video editors without rerunning the full environment setup:
+```cmd
+python tools/install_all_extensions.py
+```
+This single command automatically updates DaVinci Resolve Studio workflow integrations, DaVinci utility scripts, Adobe CEP panels, Adobe UXP packages, and Blender add-ons.
 
 ---
 

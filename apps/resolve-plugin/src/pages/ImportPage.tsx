@@ -150,10 +150,10 @@ export const ImportPage: React.FC<ImportPageProps> = ({
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [mediaInfo, setMediaInfo] = useState<MediaInfo | null>(null);
   const [selectedAssetId, setSelectedAssetId] = useState<string>('');
-  const [targetBin, setTargetBin] = useState('Xdrop');
+  const [targetBin, setTargetBin] = useState('000_Xdrop Assets');
   const [autoImport, setAutoImport] = useState(true);
-  const [autoImportEditor, setAutoImportEditor] = useState<'resolve' | 'premiere' | 'aftereffects'>(() => {
-    if (activeEditor === 'premiere' || activeEditor === 'aftereffects' || activeEditor === 'resolve') {
+  const [autoImportEditor, setAutoImportEditor] = useState<'resolve' | 'premiere' | 'aftereffects' | 'audition'>(() => {
+    if (activeEditor === 'premiere' || activeEditor === 'aftereffects' || activeEditor === 'audition' || activeEditor === 'resolve') {
       return activeEditor;
     }
     return 'resolve';
@@ -386,6 +386,8 @@ export const ImportPage: React.FC<ImportPageProps> = ({
         auto_import_to_premiere: autoImport && editorToUse === 'premiere',
         target_aftereffects_bin: targetBin,
         auto_import_to_aftereffects: autoImport && editorToUse === 'aftereffects',
+        target_audition_bin: targetBin,
+        auto_import_to_audition: autoImport && editorToUse === 'audition',
         transcode_video_format: transcodeVfmt,
         transcode_audio_format: transcodeAfmt,
         extract_audio_only: extractAudioOnly,
@@ -1237,7 +1239,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                 className="input"
                 value={targetBin}
                 onChange={(e) => setTargetBin(e.target.value)}
-                placeholder="Xdrop"
+                placeholder="000_Xdrop Assets"
                 style={{ height: '30px', fontSize: '11px', flex: '1 1 120px', minWidth: '100px' }}
               />
 
@@ -1258,7 +1260,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                     className="input"
                     value={autoImportEditor}
                     onChange={(e) => {
-                      setAutoImportEditor(e.target.value as 'resolve' | 'premiere' | 'aftereffects');
+                      setAutoImportEditor(e.target.value as 'resolve' | 'premiere' | 'aftereffects' | 'audition');
                       setUserSelectedEditor(true);
                     }}
                     style={{
@@ -1280,6 +1282,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                     <option value="resolve">DaVinci Resolve</option>
                     <option value="premiere">Premiere Pro</option>
                     <option value="aftereffects">After Effects</option>
+                    <option value="audition">Audition</option>
                   </select>
                 )}
               </div>
@@ -1312,7 +1315,9 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                           ? 'DaVinci Resolve'
                           : autoImportEditor === 'premiere'
                           ? 'Premiere Pro'
-                          : 'After Effects'
+                          : autoImportEditor === 'aftereffects'
+                          ? 'After Effects'
+                          : 'Audition'
                       }`
                     : `Download ${qualityMode === 'custom' ? `Custom ${customFormat.toUpperCase()}` : 'Asset Only'}`}
                 </span>

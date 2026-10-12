@@ -9,6 +9,7 @@ import {
   importJobToResolve,
   importJobToPremiere,
   importJobToAfterEffects,
+  importJobToAudition,
 } from '../services/api';
 import {
   Film,
@@ -21,6 +22,7 @@ import {
   ArrowUpRight,
   Zap,
   Check,
+  GripVertical,
 } from 'lucide-react';
 
 interface QueuePageProps {
@@ -29,7 +31,7 @@ interface QueuePageProps {
   showToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
 }
 
-type EditorTarget = 'resolve' | 'premiere' | 'aftereffects';
+type EditorTarget = 'resolve' | 'premiere' | 'aftereffects' | 'audition';
 
 export const QueuePage: React.FC<QueuePageProps> = ({
   downloads,
@@ -47,11 +49,11 @@ export const QueuePage: React.FC<QueuePageProps> = ({
       return selectedEditorMap[job.id];
     }
     // Auto-detect matching where the user is working
-    if (activeEditor === 'premiere' || activeEditor === 'aftereffects' || activeEditor === 'resolve') {
+    if (activeEditor === 'premiere' || activeEditor === 'aftereffects' || activeEditor === 'audition' || activeEditor === 'resolve') {
       return activeEditor;
     }
     const target = job.targetEditor || (job as any).target_editor;
-    if (target === 'premiere' || target === 'aftereffects' || target === 'resolve') {
+    if (target === 'premiere' || target === 'aftereffects' || target === 'audition' || target === 'resolve') {
       return target;
     }
     return 'resolve';
@@ -111,6 +113,14 @@ export const QueuePage: React.FC<QueuePageProps> = ({
           onRefresh();
         } else {
           showToast(res.error || 'Failed to import to After Effects. Ensure AE is open.', 'error');
+        }
+      } else if (target === 'audition') {
+        const res = await importJobToAudition(jobId);
+        if (res.success) {
+          showToast('Imported into Adobe Audition session!', 'success');
+          onRefresh();
+        } else {
+          showToast(res.error || 'Failed to import to Audition. Ensure Audition is open.', 'error');
         }
       } else {
         const res = await importJobToResolve(jobId);
@@ -278,6 +288,39 @@ export const QueuePage: React.FC<QueuePageProps> = ({
           const isResolveImported = Boolean(job.resolveImported ?? (job as any).resolve_imported);
           const isPremiereImported = Boolean(job.premiereImported ?? (job as any).premiere_imported);
           const isAfterEffectsImported = Boolean(job.aftereffectsImported ?? (job as any).aftereffects_imported);
+          const isAuditionImported = Boolean(job.auditionImported ?? (job as any).audition_imported);
+
+          // An import is still outstanding when the editor was closed at download time, or
+          // when the Adobe panel has not confirmed the ExtendScript result yet. Showing the
+          // reason keeps the card honest instead of claiming the clip is already in a bin.
+          const pendingImport = (
+            [
+              {
+                editor: 'DaVinci Resolve',
+                pending: Boolean(job.resolveImportPending ?? (job as any).resolve_import_pending),
+                imported: isResolveImported,
+                error: job.resolveImportError ?? (job as any).resolve_import_error ?? null,
+              },
+              {
+                editor: 'Premiere Pro',
+                pending: Boolean(job.premiereImportPending ?? (job as any).premiere_import_pending),
+                imported: isPremiereImported,
+                error: job.premiereImportError ?? (job as any).premiere_import_error ?? null,
+              },
+              {
+                editor: 'After Effects',
+                pending: Boolean(job.aftereffectsImportPending ?? (job as any).aftereffects_import_pending),
+                imported: isAfterEffectsImported,
+                error: job.aftereffectsImportError ?? (job as any).aftereffects_import_error ?? null,
+              },
+              {
+                editor: 'Audition',
+                pending: Boolean(job.auditionImportPending ?? (job as any).audition_import_pending),
+                imported: isAuditionImported,
+                error: job.auditionImportError ?? (job as any).audition_import_error ?? null,
+              },
+            ] as const
+          ).find((state) => state.pending && !state.imported);
 
           const errorMsg = job.errorMessage || (job as any).error_message || 'Download failed.';
           const formatStr = (job.format || 'MP4').toUpperCase();
@@ -290,7 +333,8 @@ export const QueuePage: React.FC<QueuePageProps> = ({
             (targetEditor === 'resolve' && isResolveImported) ||
             (targetEditor === 'premiere' && isPremiereImported) ||
             (targetEditor === 'aftereffects' && isAfterEffectsImported) ||
-            (!targetEditor && (isResolveImported || isPremiereImported || isAfterEffectsImported))
+            (targetEditor === 'audition' && isAuditionImported) ||
+            (!targetEditor && (isResolveImported || isPremiereImported || isAfterEffectsImported || isAuditionImported))
           );
 
           const currentTarget = getSelectedEditorForJob(job);
@@ -299,12 +343,24 @@ export const QueuePage: React.FC<QueuePageProps> = ({
           const isAlreadyImportedInTarget =
             (currentTarget === 'resolve' && isResolveImported) ||
             (currentTarget === 'premiere' && isPremiereImported) ||
-            (currentTarget === 'aftereffects' && isAfterEffectsImported);
+            (currentTarget === 'aftereffects' && isAfterEffectsImported) ||
+            (currentTarget === 'audition' && isAuditionImported);
+
+          const outputFilePath = job.outputFilePath || (job as any).output_file_path;
+          const canDrag = isCompleted && Boolean(outputFilePath);
 
           return (
             <div
               key={job.id}
               className="panel"
+              draggable={canDrag}
+              onDragStart={(e) => {
+                if (canDrag && outputFilePath) {
+                  e.dataTransfer.setData('text/plain', outputFilePath);
+                  e.dataTransfer.setData('text/uri-list', `file:///${outputFilePath.replace(/\\/g, '/')}`);
+                  e.dataTransfer.effectAllowed = 'copyMove';
+                }
+              }}
               style={{
                 padding: '10px 12px',
                 border: '1px solid var(--border-default)',
@@ -320,11 +376,18 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                 backgroundColor: 'var(--bg-secondary)',
                 boxShadow: 'var(--shadow-xs)',
                 transition: 'border-color 0.12s ease',
+                cursor: canDrag ? 'grab' : 'default',
               }}
+              title={canDrag ? 'Completed! Drag card to drop media into any editor timeline (CapCut, Premiere, Resolve, Final Cut Pro)' : undefined}
             >
               {/* Row 1: Icon, Title & Status Badge */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+                  {canDrag && (
+                    <div style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', cursor: 'grab' }} title="Drag onto timeline">
+                      <GripVertical size={13} strokeWidth={2} />
+                    </div>
+                  )}
                   <div
                     style={{
                       width: '22px',
@@ -379,7 +442,17 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                       QUEUED
                     </span>
                   )}
-                  {isCompleted && (
+                  {isCompleted && pendingImport && (
+                    <span
+                      className="badge badge-warning"
+                      style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px' }}
+                      title={pendingImport.error || `Waiting for ${pendingImport.editor}`}
+                    >
+                      <span className="spin">⟳</span>
+                      {`WAITING FOR ${pendingImport.editor.toUpperCase()}`}
+                    </span>
+                  )}
+                  {isCompleted && !pendingImport && (
                     <span
                       className="badge badge-success"
                       style={{
@@ -481,9 +554,20 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                     <span>Queued in line waiting for worker...</span>
                   ) : isCompleted ? (
                     <span style={{ color: 'var(--text-secondary)' }}>
-                      {isAutoImportedComplete ? (
+                      {pendingImport ? (
+                        <span
+                          style={{ color: 'var(--warning)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          <span className="spin" style={{ fontSize: '9px' }}>⟳</span>
+                          <span>
+                            {pendingImport.error
+                              ? `${pendingImport.error} `
+                              : `Waiting for ${pendingImport.editor}. `}
+                          </span>
+                        </span>
+                      ) : isAutoImportedComplete ? (
                         <span style={{ color: 'var(--success)', fontWeight: 600 }}>
-                          ✓ Available in Bin '{job.premiereBin || job.aftereffectsBin || (job as any).premiere_bin || (job as any).target_media_pool_bin || 'Xdrop'}' •{' '}
+                          ✓ Available in Bin '{job.premiereBin || job.aftereffectsBin || job.resolveBin || (job as any).premiere_bin || (job as any).target_media_pool_bin || 'Xdrop'}' •{' '}
                         </span>
                       ) : null}
                       {formatStr} {job.qualityLabel ? `• ${job.qualityLabel}` : ''} • {formatBytes(downloadedBytes)}
@@ -602,7 +686,16 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                             <Check size={9} strokeWidth={2.5} /> AE
                           </span>
                         )}
-                        {!isResolveImported && !isPremiereImported && !isAfterEffectsImported && (
+                        {isAuditionImported && (
+                          <span
+                            className="badge badge-info"
+                            style={{ fontSize: '8.5px', padding: '1px 5px' }}
+                            title="Imported into Adobe Audition"
+                          >
+                            <Check size={9} strokeWidth={2.5} /> Audition
+                          </span>
+                        )}
+                        {!isResolveImported && !isPremiereImported && !isAfterEffectsImported && !isAuditionImported && (
                           <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
                             Target editor:
                           </span>
@@ -640,6 +733,9 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                           <option value="aftereffects">
                             After Effects {isAfterEffectsImported ? '✓' : ''}
                           </option>
+                          <option value="audition">
+                            Adobe Audition {isAuditionImported ? '✓' : ''}
+                          </option>
                         </select>
 
                         <button
@@ -658,7 +754,9 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                               ? 'DaVinci Resolve'
                               : currentTarget === 'premiere'
                               ? 'Adobe Premiere Pro'
-                              : 'Adobe After Effects'
+                              : currentTarget === 'aftereffects'
+                              ? 'Adobe After Effects'
+                              : 'Adobe Audition'
                           }`}
                         >
                           {isCurrentlyImporting ? (

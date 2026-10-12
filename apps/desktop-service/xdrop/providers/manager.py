@@ -46,6 +46,8 @@ class ProviderManager:
     def find_provider_for_url(self, url: str) -> Optional[PlatformProvider]:
         """Finds the first enabled provider capable of handling the URL."""
         clean_url = url.strip()
+        if clean_url and not (clean_url.startswith("http://") or clean_url.startswith("https://")):
+            clean_url = "https://" + clean_url
         for provider in self._providers:
             if provider.enabled and provider.can_handle(clean_url):
                 return provider
@@ -53,11 +55,14 @@ class ProviderManager:
 
     def inspect_url(self, url: str) -> MediaInfoModel:
         """Inspects media URL using the matching provider."""
-        provider = self.find_provider_for_url(url)
+        clean_url = url.strip()
+        if clean_url and not (clean_url.startswith("http://") or clean_url.startswith("https://")):
+            clean_url = "https://" + clean_url
+        provider = self.find_provider_for_url(clean_url)
         if not provider:
-            raise ValueError(f"No compatible provider found for URL: {url}")
-        app_logger.info(f"Inspecting URL using provider '{provider.platform_name}': {url}")
-        return provider.inspect(url)
+            raise ValueError(f"No compatible provider found for URL: {clean_url}")
+        app_logger.info(f"Inspecting URL using provider '{provider.platform_name}': {clean_url}")
+        return provider.inspect(clean_url)
 
     def set_provider_enabled(self, platform_id: str, enabled: bool) -> bool:
         provider = self.get_provider_by_id(platform_id)

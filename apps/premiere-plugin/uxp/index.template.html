@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<!--
+  Xdrop UXP panel entrypoint.
+
+  The panel Xdrop ships for Premiere Pro and After Effects is one React build served by the
+  local Xdrop service, so the UXP plugin does not re-implement the interface — it hosts the
+  same UI in a `<webview>` pointed at the loopback service. That is what the
+  `requiredPermissions.webview` block in the manifest is for, and it is why one UI serves
+  CEP today and UXP next.
+
+  `{{HOST}}` is substituted per package by `tools/package_uxp.py` (`premiere` or
+  `aftereffects`) so the service knows which host opened it.
+-->
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Xdrop</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="shell">
+      <div id="status" class="status status--checking">
+        <span id="status-text">Connecting to the Xdrop engine...</span>
+      </div>
+      <webview id="panel" src="http://127.0.0.1:8484?host={{HOST}}" data-service-url="http://127.0.0.1:8484"></webview>
+    </div>
+    <script src="main.js"></script>
+  </body>
+</html>

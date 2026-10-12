@@ -55,17 +55,22 @@ npm run start:gui
 
 ## 4. Testing
 
-Run all unit tests, integration tests, and frontend build verification:
-```bash
-npm test
-```
-
-To run only the backend pytest suite:
+The backend test suite lives in `tests/` and runs with pytest:
 ```bash
 python -m pytest tests -v
 ```
 
-To run only the frontend build check:
+`tests/conftest.py` redirects all runtime state (SQLite DB, logs, thumbnails) to athrowaway directory via `XDROP_DATA_DIR`, so running the suite never touches yourreal `%LOCALAPPDATA%\Xdrop` data.
+
+> **Coverage is currently minimal.** The suite so far contains regression tests for
+> the CEP manifest and the Adobe extension installer. A real suite — organizer path
+> safety, provider URL routing, database migrations, API contracts, the auth matrix —
+> is tracked as milestone M2 in [REVAMP_PLAN.md](REVAMP_PLAN.md) (W3.2). Do not
+> assume untested code works.
+
+`npm test` is an alias for the frontend production build, **not** a test run:
 ```bash
-npm run build:ui
+npm test        # same as: npm run build:ui  (tsc + vite build)
 ```
+
+There is no frontend unit-test runner yet (W3.3).

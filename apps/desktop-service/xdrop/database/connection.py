@@ -79,6 +79,27 @@ def init_db() -> None:
                 conn.execute("ALTER TABLE downloads ADD COLUMN auto_import INTEGER DEFAULT 0;")
             except Exception:
                 pass
+            for _column in (
+                "resolve_bin TEXT",
+                "resolve_import_pending INTEGER DEFAULT 0",
+                "premiere_import_pending INTEGER DEFAULT 0",
+                "aftereffects_import_pending INTEGER DEFAULT 0",
+                "audition_imported INTEGER DEFAULT 0",
+                "audition_bin TEXT",
+                "audition_import_pending INTEGER DEFAULT 0",
+                "resolve_import_error TEXT",
+                "premiere_import_error TEXT",
+                "aftereffects_import_error TEXT",
+                "audition_import_error TEXT",
+            ):
+                try:
+                    conn.execute(f"ALTER TABLE downloads ADD COLUMN {_column};")
+                except Exception:
+                    pass
+            try:
+                conn.execute("ALTER TABLE assets ADD COLUMN audition_imported INTEGER DEFAULT 0;")
+            except Exception:
+                pass
         app_logger.info("Database initialized successfully.")
     except Exception as e:
         errors_logger.critical(f"Failed to initialize database: {e}", exc_info=True)

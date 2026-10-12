@@ -22,40 +22,11 @@ class ResolveBridge:
         if self._last_process_check_time and (now - self._last_process_check_time).total_seconds() < 5.0:
             return self._last_process_running
 
-        import subprocess
-        try:
-            if sys.platform == "win32":
-                res = subprocess.run(
-                    ["tasklist", "/FI", "IMAGENAME eq Resolve.exe", "/NH"],
-                    capture_output=True,
-                    text=True,
-                    check=False,
-                    timeout=1.5
-                )
-                running = "Resolve.exe" in res.stdout
-            elif sys.platform == "darwin":
-                res = subprocess.run(
-                    ["pgrep", "-x", "Resolve"],
-                    capture_output=True,
-                    text=True,
-                    check=False,
-                    timeout=1.5
-                )
-                running = res.returncode == 0
-            else:
-                res = subprocess.run(
-                    ["pgrep", "-f", "resolve"],
-                    capture_output=True,
-                    text=True,
-                    check=False,
-                    timeout=1.5
-                )
-                running = res.returncode == 0
-            self._last_process_running = running
-            self._last_process_check_time = now
-            return running
-        except Exception:
-            return self._last_process_running
+        from xdrop.process_util import is_process_running
+        running = is_process_running("Resolve.exe")
+        self._last_process_running = running
+        self._last_process_check_time = now
+        return running
 
     def _setup_environment(self) -> None:
         """Configures Python path for DaVinciResolveScript according to OS specifications."""

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { AppSettings } from '@xdrop/shared-types';
+import { AppSettings, IntegrationsStatus, IntegrationHost } from '@xdrop/shared-types';
 import {
   getSettings,
   updateSettings,
   getToolsStatus,
-  installResolveScript,
-  installPremiereExtension,
+  getIntegrationsStatus,
+  installIntegrations,
 } from '../services/api';
 import {
   Folder,
@@ -13,6 +13,9 @@ import {
   Wrench,
   Save,
   ShieldCheck,
+  CheckCircle2,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 
 interface SettingsPageProps {
@@ -23,9 +26,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ showToast }) => {
 
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [toolsStatus, setToolsStatus] = useState<any>(null);
+  const [integrations, setIntegrations] = useState<IntegrationsStatus | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [isInstallingScript, setIsInstallingScript] = useState(false);
-  const [isInstallingPremiereExt, setIsInstallingPremiereExt] = useState(false);
+  const [isInstallingAll, setIsInstallingAll] = useState(false);
+  const [installingHost, setInstallingHost] = useState<IntegrationHost | null>(null);
 
   useEffect(() => {
     loadSettings();
@@ -33,9 +37,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ showToast }) => {
 
   const loadSettings = async () => {
     try {
-      const [s, t] = await Promise.all([getSettings(), getToolsStatus()]);
+      const [s, t, i] = await Promise.all([
+        getSettings(),
+        getToolsStatus(),
+        getIntegrationsStatus(),
+      ]);
       setSettings(s);
       setToolsStatus(t);
+      setIntegrations(i);
     } catch (e: any) {
       showToast(e.message, 'error');
     }
@@ -56,29 +65,25 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ showToast }) => {
     }
   };
 
-  const handleInstallResolveScript = async () => {
-    setIsInstallingScript(true);
-    try {
-      const res = await installResolveScript();
-      showToast(res.message, 'success');
-      loadSettings();
-    } catch (e: any) {
-      showToast(e.message, 'error');
-    } finally {
-      setIsInstallingScript(false);
+  /**
+   * The one-click path: every host, current user only, so no administrator prompt and no
+   * console window. `hosts` narrows it to a single host for the per-host re-install buttons.
+   */
+  const handleInstall = async (hosts?: IntegrationHost[]) => {
+    if (hosts?.length === 1) {
+      setInstallingHost(hosts[0]);
+    } else {
+      setIsInstallingAll(true);
     }
-  };
-
-  const handleInstallPremiereExtension = async () => {
-    setIsInstallingPremiereExt(true);
     try {
-      const res = await installPremiereExtension();
-      showToast(res.message, 'success');
-      loadSettings();
+      const res = await installIntegrations(hosts?.length ? { hosts } : undefined);
+      setIntegrations(res.status);
+      showToast(res.message, res.success ? 'success' : 'error');
     } catch (e: any) {
       showToast(e.message, 'error');
     } finally {
-      setIsInstallingPremiereExt(false);
+      setIsInstallingAll(false);
+      setInstallingHost(null);
     }
   };
 
@@ -327,71 +332,182 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ showToast }) => {
           </div>
         </div>
 
-        {/* 4. Integration Diagnostics */}
+        {/* 4. Editor Integrations — one click, per-user, no admin, no console window */}
         <div className="panel" style={{ backgroundColor: 'var(--bg-secondary)', padding: '14px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
             <Wrench size={14} strokeWidth={2} color="var(--text-secondary)" />
             <h4 style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Diagnostics & Integrations
+              Editor Integrations
             </h4>
+            <span className="badge badge-success" style={{ fontSize: '8.5px', padding: '1px 5px', marginLeft: 'auto' }}>
+              NO ADMIN NEEDED
+            </span>
+          </div>
+          <p style={{ fontSize: '10px', color: 'var(--text-muted)', margin: '0 0 10px' }}>
+            Installs into this user's own editor folders and enables Adobe developer mode
+            silently — nothing to run, no password prompt.
+          </p>
+
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
+            <button
+              type="button"
+              onClick={() => handleInstall()}
+              disabled={isInstallingAll || installingHost !== null}
+              className="btn btn-primary btn-sm"
+              style={{ flex: 1, fontSize: '10.5px', padding: '6px 10px' }}
+            >
+              <ShieldCheck size={12} strokeWidth={2} />
+              <span>
+                {isInstallingAll
+                  ? 'Installing everything...'
+                  : integrations?.hosts.every((h) => h.installed)
+                  ? 'Re-install all integrations'
+                  : 'Install all integrations'}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={loadSettings}
+              className="btn btn-sm btn-ghost"
+              style={{ fontSize: '10.5px', padding: '6px 10px' }}
+              title="Re-scan every editor folder"
+            >
+              <RefreshCw size={12} strokeWidth={2} />
+              <span>Re-scan</span>
+            </button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px' }}>
-            {/* Resolve Script Status */}
-            <div style={{ padding: '10px 12px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-default)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)' }}>Resolve Script</span>
-                {toolsStatus?.resolveScript?.isInstalled ? (
-                  <span className="badge badge-success" style={{ fontSize: '8.5px', padding: '1px 4px' }}>READY</span>
-                ) : (
-                  <span className="badge badge-warning" style={{ fontSize: '8.5px', padding: '1px 4px' }}>MISSING</span>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={handleInstallResolveScript}
-                disabled={isInstallingScript}
-                className="btn btn-sm btn-secondary"
-                style={{ width: '100%', fontSize: '10px', padding: '4px 8px' }}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {integrations?.hosts.map((host) => (
+              <div
+                key={host.host}
+                style={{
+                  padding: '10px 12px',
+                  borderRadius: 'var(--radius-sm)',
+                  backgroundColor: 'var(--bg-tertiary)',
+                  border: '1px solid var(--border-default)',
+                }}
               >
-                {isInstallingScript ? 'Installing...' : 'Re-install Script'}
-              </button>
-            </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    {host.label}
+                  </span>
+                  {host.installed ? (
+                    <span className="badge badge-success" style={{ fontSize: '8.5px', padding: '1px 5px', gap: '3px' }}>
+                      <CheckCircle2 size={9} strokeWidth={2.5} /> READY
+                    </span>
+                  ) : (
+                    <span className="badge badge-warning" style={{ fontSize: '8.5px', padding: '1px 5px', gap: '3px' }}>
+                      <AlertCircle size={9} strokeWidth={2.5} /> NOT INSTALLED
+                    </span>
+                  )}
+                  {host.requiresAdmin && (
+                    <span className="badge badge-danger" style={{ fontSize: '8.5px', padding: '1px 5px' }}>
+                      NEEDS ADMIN
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleInstall([host.host])}
+                    disabled={isInstallingAll || installingHost === host.host}
+                    className="btn btn-sm btn-ghost"
+                    style={{ marginLeft: 'auto', fontSize: '9.5px', padding: '3px 8px' }}
+                  >
+                    {installingHost === host.host ? 'Installing...' : host.installed ? 'Re-install' : 'Install'}
+                  </button>
+                </div>
 
-            {/* Premiere & AE Extension Status */}
-            <div style={{ padding: '10px 12px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-default)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)' }}>Premiere & AE (CEP)</span>
-                {toolsStatus?.premiereExtension?.isInstalled ? (
-                  <span className="badge badge-success" style={{ fontSize: '8.5px', padding: '1px 4px' }}>READY</span>
-                ) : (
-                  <span className="badge badge-warning" style={{ fontSize: '8.5px', padding: '1px 4px' }}>MISSING</span>
-                )}
+                <div
+                  style={{
+                    fontSize: '9.5px',
+                    color: 'var(--text-muted)',
+                    fontFamily: 'var(--font-mono)',
+                    marginTop: '5px',
+                    wordBreak: 'break-all',
+                  }}
+                >
+                  {host.path || `Not found in: ${host.checkedPaths.join(' • ')}`}
+                </div>
+
+                {host.notes.map((note) => (
+                  <div key={note} style={{ fontSize: '9.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    {note}
+                  </div>
+                ))}
               </div>
-              <button
-                type="button"
-                onClick={handleInstallPremiereExtension}
-                disabled={isInstallingPremiereExt}
-                className="btn btn-sm btn-secondary"
-                style={{ width: '100%', fontSize: '10px', padding: '4px 8px' }}
+            ))}
+
+            {/* Adobe developer mode is what makes an unsigned panel visible at all. If it is
+                off, show the exact command instead of telling the user to "check the registry". */}
+            {integrations?.cepSupported && integrations.playerDebugMode.missing.length > 0 && (
+              <div
+                style={{
+                  padding: '10px 12px',
+                  borderRadius: 'var(--radius-sm)',
+                  backgroundColor: 'var(--bg-tertiary)',
+                  border: '1px solid var(--border-default)',
+                }}
               >
-                {isInstallingPremiereExt ? 'Syncing...' : 'Sync Extension'}
-              </button>
-            </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <AlertCircle size={12} strokeWidth={2} color="var(--danger)" />
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    Adobe developer mode is off
+                  </span>
+                </div>
+                <div style={{ fontSize: '9.5px', color: 'var(--text-muted)', marginTop: '5px' }}>
+                  Premiere Pro and After Effects only list a folder-installed panel when
+                  developer mode is on. Re-installing enables it; to do it by hand:
+                </div>
+                <div
+                  style={{
+                    fontSize: '9px',
+                    fontFamily: 'var(--font-mono)',
+                    color: 'var(--text-secondary)',
+                    marginTop: '5px',
+                    wordBreak: 'break-all',
+                  }}
+                >
+                  {integrations.platform === 'macos'
+                    ? `defaults write com.adobe.CSXS.${integrations.playerDebugMode.missing[0]} PlayerDebugMode 1`
+                    : `reg add HKCU\\Software\\Adobe\\CSXS.${integrations.playerDebugMode.missing[0]} /v PlayerDebugMode /t REG_SZ /d 1 /f`}
+                </div>
+              </div>
+            )}
 
             {/* FFmpeg Engine Status */}
-            <div style={{ padding: '10px 12px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-default)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)' }}>FFmpeg HW Engine</span>
-                {toolsStatus?.ffmpeg?.isAvailable ? (
-                  <span className="badge badge-success" style={{ fontSize: '8.5px', padding: '1px 4px' }}>ACTIVE</span>
-                ) : (
-                  <span className="badge badge-danger" style={{ fontSize: '8.5px', padding: '1px 4px' }}>OFFLINE</span>
-                )}
-              </div>
-              <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div
+              style={{
+                padding: '10px 12px',
+                borderRadius: 'var(--radius-sm)',
+                backgroundColor: 'var(--bg-tertiary)',
+                border: '1px solid var(--border-default)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                FFmpeg HW Engine
+              </span>
+              {toolsStatus?.ffmpeg?.isAvailable ? (
+                <span className="badge badge-success" style={{ fontSize: '8.5px', padding: '1px 4px' }}>ACTIVE</span>
+              ) : (
+                <span className="badge badge-danger" style={{ fontSize: '8.5px', padding: '1px 4px' }}>OFFLINE</span>
+              )}
+              <span
+                style={{
+                  fontSize: '10px',
+                  color: 'var(--text-muted)',
+                  fontFamily: 'var(--font-mono)',
+                  marginLeft: 'auto',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  maxWidth: '55%',
+                }}
+              >
                 {toolsStatus?.ffmpeg?.info || 'Hardware Acceleration Engine'}
-              </div>
+              </span>
             </div>
           </div>
         </div>

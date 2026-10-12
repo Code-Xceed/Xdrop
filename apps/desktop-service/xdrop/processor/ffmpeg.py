@@ -270,21 +270,21 @@ class FFmpegProcessor:
                 encoders_to_try.append([
                     "-threads", "0",
                     "-c:v", "h264_nvenc", "-preset", "p4", "-cq", "19",
-                    "-c:a", "aac", "-b:a", "192k",
+                    "-c:a", "aac", "-b:a", "192k", "-ar", "48000",
                     "-movflags", "+faststart"
                 ])
                 # 2. Intel QuickSync (fast hardware)
                 encoders_to_try.append([
                     "-threads", "0",
                     "-c:v", "h264_qsv",
-                    "-c:a", "aac", "-b:a", "192k",
+                    "-c:a", "aac", "-b:a", "192k", "-ar", "48000",
                     "-movflags", "+faststart"
                 ])
                 # 3. Universal multi-threaded libx264 fallback
                 encoders_to_try.append([
                     "-threads", "0",
                     "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p",
-                    "-c:a", "aac", "-b:a", "192k",
+                    "-c:a", "aac", "-b:a", "192k", "-ar", "48000",
                     "-movflags", "+faststart"
                 ])
         else:
@@ -292,7 +292,7 @@ class FFmpegProcessor:
             encoders_to_try.append([
                 "-threads", "0",
                 "-c:v", "copy",
-                "-c:a", "aac", "-b:a", "192k",
+                "-c:a", "aac", "-b:a", "192k", "-ar", "48000",
                 "-movflags", "+faststart"
             ])
 

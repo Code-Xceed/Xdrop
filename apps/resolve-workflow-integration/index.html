@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xdrop</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      background-color: #09090b;
+      color: #fafafa;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+    }
+    #root-container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+    #frame-container {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #09090b;
+      display: none;
+    }
+    #offline-banner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 24px;
+      text-align: center;
+      height: 100%;
+      gap: 18px;
+      background: radial-gradient(circle at 50% 30%, #18181b 0%, #09090b 80%);
+    }
+    .pulse-badge {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      background: rgba(0, 229, 255, 0.08);
+      border: 1px solid rgba(0, 229, 255, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 24px rgba(0, 229, 255, 0.15);
+      animation: pulse 2.5s infinite ease-in-out;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.9; }
+      50% { transform: scale(1.04); opacity: 1; box-shadow: 0 0 32px rgba(0, 229, 255, 0.3); }
+    }
+    .badge-icon {
+      font-size: 24px;
+      line-height: 1;
+    }
+    .app-title-row {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+    .brand-x {
+      color: #00e5ff;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .brand-drop {
+      color: #fafafa;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .status-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: #e4e4e7;
+      margin-top: 2px;
+    }
+    .status-desc {
+      font-size: 12px;
+      color: #71717a;
+      max-width: 300px;
+      line-height: 1.5;
+    }
+    .action-btn {
+      background: #00e5ff;
+      color: #09090b;
+      border: none;
+      padding: 9px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: 0.02em;
+      transition: all 0.15s ease-out;
+      box-shadow: 0 2px 10px rgba(0, 229, 255, 0.25);
+    }
+    .action-btn:hover {
+      background: #38bdf8;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(0, 229, 255, 0.4);
+    }
+    .action-btn:active {
+      transform: scale(0.96);
+    }
+  </style>
+</head>
+<body>
+  <div id="root-container">
+    <div id="frame-container">
+      <iframe id="serviceFrame" src="about:blank"></iframe>
+      <div id="offline-banner">
+        <div class="pulse-badge">
+          <span class="badge-icon">⚡</span>
+        </div>
+        <div>
+          <div class="app-title-row">
+            <span class="brand-x">X</span>
+            <span class="brand-drop">drop</span>
+          </div>
+          <div id="statusTitle" class="status-text">Connecting to Engine...</div>
+        </div>
+        <p id="statusDesc" class="status-desc">
+          The background media service starts automatically. Once online, your studio workspace will load right here.
+        </p>
+        <button id="actionBtn" class="action-btn" onclick="retryAndStartBackend()">Start Engine</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const PLUGIN_ID = 'com.xdrop.resolve.workflowintegration';
+    const CANDIDATE_PORTS = [8484, 2026];
+    let activeServiceUrl = null;
+    let resolveObj = null;
+    let pollInterval = null;
+    let isConnecting = false;
+
+    // 1. Initialize DaVinci Resolve Studio native WorkflowIntegration module
+    function initResolveStudioBridge() {
+      try {
+        if (typeof require !== 'undefined') {
+          const WorkflowIntegration = require('WorkflowIntegration');
+          if (WorkflowIntegration && typeof WorkflowIntegration.Initialize === 'function') {
+            const success = WorkflowIntegration.Initialize(PLUGIN_ID);
+            if (success) {
+              resolveObj = WorkflowIntegration.GetResolve();
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 2. Discover active Xdrop companion service with auto-start support
+    async function checkConnection(autoStart = false) {
+      if (isConnecting && autoStart) return false;
+      const offlineBanner = document.getElementById('offline-banner');
+      const frame = document.getElementById('serviceFrame');
+      const title = document.getElementById('statusTitle');
+      const desc = document.getElementById('statusDesc');
+
+      for (const port of CANDIDATE_PORTS) {
+        const url = `http://127.0.0.1:${port}`;
+        for (const ep of ['/api/health', '/api/system/health', '/']) {
+          try {
+            const res = await fetch(`${url}${ep}`, { method: 'GET', cache: 'no-store' });
+            if (res.ok) {
+              activeServiceUrl = url;
+              offlineBanner.style.display = 'none';
+              frame.style.display = 'block';
+              if (!frame.src || frame.src === 'about:blank' || !frame.src.startsWith(url)) {
+                frame.src = `${url}/`;
+              }
+              return true;
+            }
+          } catch (_) {}
+        }
+      }
+
+      // Automatically launch background engine headless if offline (only if autoStart is true)
+      if (autoStart && window.resolveAPI && typeof window.resolveAPI.startBackend === 'function') {
+        try {
+          isConnecting = true;
+          if (title) title.textContent = 'Starting Engine...';
+          const started = await window.resolveAPI.startBackend();
+          isConnecting = false;
+          if (started) {
+            return checkConnection(false);
+          }
+        } catch (_) {
+          isConnecting = false;
+        }
+      }
+
+      // Not reachable
+      if (title) title.textContent = 'Engine Offline';
+      if (desc) desc.textContent = 'Launch the Xdrop service or click below to start the local engine.';
+      frame.style.display = 'none';
+      offlineBanner.style.display = 'flex';
+      return false;
+    }
+
+    async function retryAndStartBackend() {
+      const btn = document.getElementById('actionBtn');
+      if (btn) btn.textContent = 'Starting engine...';
+      if (window.resolveAPI && typeof window.resolveAPI.startBackend === 'function') {
+        try { await window.resolveAPI.startBackend(); } catch (_) {}
+      }
+      await checkConnection(true);
+      if (btn) btn.textContent = 'Start Engine';
+    }
+
+    // 3. Import media into active DaVinci Resolve Studio Project
+    window.importMediaToActiveProject = async function(filePaths, targetBinName) {
+      if (window.resolveAPI && typeof window.resolveAPI.addClips === 'function') {
+        const paths = Array.isArray(filePaths) ? filePaths : [filePaths];
+        if (targetBinName && typeof window.resolveAPI.selectBin === 'function') {
+          await window.resolveAPI.selectBin(targetBinName);
+        }
+        return await window.resolveAPI.addClips(paths);
+      }
+      if (!resolveObj) {
+        return { success: false, error: 'DaVinci Resolve Studio API is not available.' };
+      }
+      try {
+        const pm = resolveObj.GetProjectManager();
+        const project = pm ? pm.GetCurrentProject() : null;
+        if (!project) {
+          return { success: false, error: 'No open project in DaVinci Resolve.' };
+        }
+        const mediaPool = project.GetMediaPool();
+        const rootFolder = mediaPool.GetRootFolder();
+
+        let targetFolder = rootFolder;
+        if (targetBinName && targetBinName.trim()) {
+          const subFolders = rootFolder.GetSubFolderList() || [];
+          const found = subFolders.find(f => f.GetName().toLowerCase() === targetBinName.trim().toLowerCase());
+          if (found) {
+            targetFolder = found;
+          } else {
+            targetFolder = mediaPool.AddSubFolder(rootFolder, targetBinName.trim()) || rootFolder;
+          }
+        }
+
+        mediaPool.SetCurrentFolder(targetFolder);
+        const paths = Array.isArray(filePaths) ? filePaths : [filePaths];
+        const importedClips = mediaPool.ImportMedia(paths);
+
+        return {
+          success: Array.isArray(importedClips) && importedClips.length > 0,
+          clipsCount: importedClips ? importedClips.length : 0,
+        };
+      } catch (err) {
+        return { success: false, error: err.message || String(err) };
+      }
+    };
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', () => {
+      initResolveStudioBridge();
+      // Only auto-start ONCE at initial launch
+      checkConnection(true);
+
+      // Periodic check: DO NOT autoStart in interval! Pure passive health check
+      pollInterval = setInterval(() => {
+        checkConnection(false);
+      }, 4000);
+    });
+  </script>
+</body>
+</html>

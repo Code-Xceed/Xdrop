@@ -41,5 +41,15 @@ The automated setup:
 3. Go to the top menu: **Window → Extensions → Xdrop**.
 4. The Xdrop panel appears docked alongside your Project/Source/Composition windows.
 5. Paste any supported URL (YouTube, Instagram, TikTok, X, Reddit, Pinterest, Vimeo, etc.) and click **Download**.
-6. When the download finishes, ExtendScript immediately creates an `"Xdrop"` bin/folder (if not already existing) and imports the file directly into your active project!
+6. When the download finishes, ExtendScript creates an `"Xdrop"` bin/folder (if it does not exist yet) and imports the file into your active project.
+
+The panel must be open for imports to work: the service hands import requests to the
+panel over the WebSocket, and only a panel that is docked can receive them. Xdrop checks
+for this and will not report an import as successful while the panel is closed — the
+import stays pending, and the queue card shows the reason.
+
+After each ExtendScript import the panel reports the real result back to the service, so
+the status you see reflects what actually happened in the project rather than the fact
+that a request was sent. If an import fails (for example, no project is open), the panel
+retries it once the editor is ready, or you can re-run it from the queue.
 

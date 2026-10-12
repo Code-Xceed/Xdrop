@@ -1,5 +1,14 @@
 # Xdrop: System Architecture
 
+> **This document is stale.** It describes the original Resolve-only design. Xdrop now
+> targets **DaVinci Resolve, Adobe Premiere Pro, and Adobe After Effects**, and the
+diagrams and prose below do not yet cover the multi-editor bridges, the Adobe CEP panel,
+> the delivery/import abstraction, or the local HTTP auth boundary. Treat §2 onward as
+> historical until it is rewritten.
+>
+> The current plan of record is [REVAMP_PLAN.md](REVAMP_PLAN.md) — see §2 (Target
+> architecture). Rewriting this document is tracked as **W9.2**.
+
 ## 1. Architectural Philosophy
 
 Xdrop is architected as an **offline-first, desktop-native companion application** designed to integrate with DaVinci Resolve with minimum system overhead and zero cloud account dependencies.

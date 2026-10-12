@@ -94,10 +94,24 @@ export interface DownloadJob {
   errorMessage?: string;
   resolveImported: boolean;
   resolveClipName?: string;
+  resolveBin?: string;
   premiereImported?: boolean;
   premiereBin?: string;
   aftereffectsImported?: boolean;
   aftereffectsBin?: string;
+  auditionImported?: boolean;
+  auditionBin?: string;
+  /** True while an import is still outstanding: the editor was closed, or the Adobe
+   *  panel has not confirmed the ExtendScript result yet. */
+  resolveImportPending?: boolean;
+  premiereImportPending?: boolean;
+  aftereffectsImportPending?: boolean;
+  auditionImportPending?: boolean;
+  /** Why the most recent import attempt for that editor did not land. */
+  resolveImportError?: string | null;
+  premiereImportError?: string | null;
+  aftereffectsImportError?: string | null;
+  auditionImportError?: string | null;
   targetEditor?: SupportedEditor;
   autoImport?: boolean;
   importedEditor?: SupportedEditor;
@@ -106,7 +120,7 @@ export interface DownloadJob {
   completedAt?: string;
 }
 
-export type SupportedEditor = 'resolve' | 'premiere' | 'aftereffects' | 'none';
+export type SupportedEditor = 'resolve' | 'premiere' | 'aftereffects' | 'audition' | 'fcpx' | 'blender' | 'none';
 
 export interface ResolveStatus {
   isAvailable: boolean;
@@ -139,12 +153,23 @@ export interface AfterEffectsStatus {
   lastChecked: string;
 }
 
+export interface AuditionStatus {
+  isAvailable: boolean;
+  productName?: string;
+  currentProject?: string;
+  activeSequence?: string;
+  projectPath?: string;
+  error?: string;
+  lastChecked: string;
+}
+
 export interface EditorsStatus {
   activeEditor: SupportedEditor;
   detectedHost?: SupportedEditor;
   resolve: ResolveStatus;
   premiere: PremiereStatus;
   aftereffects: AfterEffectsStatus;
+  audition?: AuditionStatus;
 }
 
 export interface ResolveImportResult {
@@ -220,4 +245,67 @@ export interface LibraryFilter {
   importedOnly?: boolean;
   page?: number;
   pageSize?: number;
+}
+
+/**
+ * Host integration install/status contract, served by
+ * `GET /api/settings/integrations` and `POST /api/settings/integrations/install`.
+ *
+ * Installs are per-user by default, which is why `requiresAdmin` is expected to be false
+ * everywhere and is surfaced in the UI rather than assumed.
+ */
+export type IntegrationHost = 'resolve' | 'premiere' | 'aftereffects';
+
+export type InstallScope = 'user' | 'system';
+
+export interface IntegrationHostStatus {
+  host: IntegrationHost;
+  label: string;
+  installed: boolean;
+  path: string | null;
+  scope: InstallScope;
+  requiresAdmin: boolean;
+  restartRequired: boolean;
+  notes: string[];
+  checkedPaths: string[];
+}
+
+export interface PlayerDebugModeStatus {
+  enabled: boolean;
+  /** Per CSXS major version: true = on, false = off, null = never configured. */
+  versions: Record<string, boolean | null>;
+  missing: string[];
+}
+
+export interface IntegrationsStatus {
+  platform: 'windows' | 'macos' | 'linux';
+  scope: InstallScope;
+  requiresAdmin: boolean;
+  hosts: IntegrationHostStatus[];
+  playerDebugMode: PlayerDebugModeStatus;
+  installationPaths: {
+    resolveUser: string;
+    resolveSystem: string;
+    adobeUser: string | null;
+  };
+  cepSupported: boolean;
+}
+
+export interface IntegrationInstallResult {
+  host: IntegrationHost | 'adobe';
+  label: string;
+  ok: boolean;
+  message: string;
+  path: string | null;
+  scope: InstallScope;
+  requiresAdmin: boolean;
+  restartRequired: boolean;
+  details: Record<string, unknown>;
+}
+
+export interface InstallIntegrationsResponse {
+  success: boolean;
+  message: string;
+  results: IntegrationInstallResult[];
+  status: IntegrationsStatus;
 }

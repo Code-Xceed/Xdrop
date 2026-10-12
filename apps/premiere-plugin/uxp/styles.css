@@ -1,0 +1,59 @@
+/*
+ * Xdrop UXP panel chrome — unified DaVinci dark aesthetic.
+ *
+ * Only the sliver around the webview is styled here — the panel contents come from Xdrop's
+ * own frontend. Kept to plain CSS with no custom properties and no external fonts, because
+ * UXP's CSS support is a subset of a browser's.
+ */
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #09090b;
+  color: #fafafa;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 11px;
+}
+
+#shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.status {
+  padding: 6px 10px;
+  background: #121214;
+  border-bottom: 1px solid #27272a;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status--checking {
+  color: #a1a1aa;
+}
+
+.status--online {
+  color: #00e5ff;
+}
+
+.status--offline {
+  color: #f87171;
+}
+
+.status--unknown {
+  color: #fbbf24;
+}
+
+#panel {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  background: #09090b;
+}

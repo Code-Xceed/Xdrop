@@ -5,6 +5,133 @@ from datetime import datetime, timezone
 from xdrop.database.connection import get_db_connection
 from xdrop.logger import app_logger, errors_logger
 
+
+class _UnsetType:
+    """Sentinel that distinguishes 'leave this column alone' from an explicit None/False."""
+
+    __slots__ = ()
+
+    def __repr__(self) -> str:
+        return "UNSET"
+
+
+UNSET: Any = _UnsetType()
+
+# Per-editor column names so import state never has to be spelled out at the call site.
+_IMPORT_COLUMNS: Dict[str, Dict[str, Optional[str]]] = {
+    "resolve": {
+        "imported": "resolve_imported",
+        "pending": "resolve_import_pending",
+        "error": "resolve_import_error",
+        "bin": "resolve_bin",
+        "clip": "resolve_clip_name",
+    },
+    "premiere": {
+        "imported": "premiere_imported",
+        "pending": "premiere_import_pending",
+        "error": "premiere_import_error",
+        "bin": "premiere_bin",
+        "clip": None,
+    },
+    "aftereffects": {
+        "imported": "aftereffects_imported",
+        "pending": "aftereffects_import_pending",
+        "error": "aftereffects_import_error",
+        "bin": "aftereffects_bin",
+        "clip": None,
+    },
+    "audition": {
+        "imported": "audition_imported",
+        "pending": "audition_import_pending",
+        "error": "audition_import_error",
+        "bin": "audition_bin",
+        "clip": None,
+    },
+}
+
+
+def update_download_import_state(
+    job_id: str,
+    editor: str,
+    imported: Optional[bool] = None,
+    pending: Optional[bool] = None,
+    error: Any = UNSET,
+    bin_name: Any = UNSET,
+    clip_name: Any = UNSET,
+) -> None:
+    """Records the outcome of one import attempt for one editor on one job.
+
+    Only the arguments actually passed are written, so an import can be marked pending
+    without disturbing a previously confirmed import, and a confirmed import clears that
+    editor's pending flag and failure reason so a stale error never lingers in the UI.
+    """
+    columns = _IMPORT_COLUMNS.get(editor)
+    if not columns:
+        raise ValueError(f"Unknown editor for import state: {editor!r}")
+
+    values: Dict[str, Any] = {}
+
+    if imported is not None:
+        values[columns["imported"]] = 1 if imported else 0
+        if imported:
+            values[columns["pending"]] = 0
+            values[columns["error"]] = None
+
+    # Explicit arguments always win over the values derived above.
+    if pending is not None:
+        values[columns["pending"]] = 1 if pending else 0
+    if error is not UNSET:
+        values[columns["error"]] = error
+    if bin_name is not UNSET and columns["bin"]:
+        values[columns["bin"]] = bin_name
+    if clip_name is not UNSET and columns["clip"]:
+        values[columns["clip"]] = clip_name
+
+    if not values:
+        return
+
+    assignments = ", ".join(f"{col} = ?" for col in values)
+    params: List[Any] = list(values.values())
+    params.append(job_id)
+    with get_db_connection() as conn:
+        conn.execute(f"UPDATE downloads SET {assignments} WHERE id = ?", params)
+
+
+def set_asset_import_flag(file_path: str, editor: str, imported: bool = True) -> None:
+    """Mirrors a confirmed import onto the library asset row for the same file."""
+    column = {
+        "resolve": "resolve_imported",
+        "premiere": "premiere_imported",
+        "aftereffects": "aftereffects_imported",
+        "audition": "audition_imported",
+    }.get(editor)
+    if not column:
+        raise ValueError(f"Unknown editor for asset import flag: {editor!r}")
+    with get_db_connection() as conn:
+        conn.execute(
+            f"UPDATE assets SET {column} = ? WHERE file_path = ?",
+            (1 if imported else 0, file_path),
+        )
+
+
+def get_jobs_pending_import(editor: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Returns downloads whose import into `editor` (or into any editor) has not happened yet."""
+    if editor is not None and editor not in _IMPORT_COLUMNS:
+        raise ValueError(f"Unknown editor for pending imports: {editor!r}")
+
+    editors = [editor] if editor else list(_IMPORT_COLUMNS)
+    conditions = [f"{_IMPORT_COLUMNS[e]['pending']} = 1" for e in editors]
+    with get_db_connection() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT * FROM downloads
+            WHERE output_file_path IS NOT NULL
+              AND ({' OR '.join(conditions)})
+            ORDER BY created_at ASC
+            """
+        ).fetchall()
+        return [_format_download_row(r) for r in rows]
+
 def get_settings_from_db() -> Dict[str, Any]:
     with get_db_connection() as conn:
         cursor = conn.execute("SELECT key, value FROM settings")
@@ -40,9 +167,9 @@ def insert_download(job_data: Dict[str, Any]) -> None:
                 quality_label, asset_id, status, progress, speed, eta, downloaded_bytes,
                 total_bytes, output_file_path, thumbnail_path, error_message,
                 resolve_imported, resolve_clip_name, premiere_imported, premiere_bin,
-                aftereffects_imported, aftereffects_bin, target_editor, auto_import,
-                created_at, completed_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                aftereffects_imported, aftereffects_bin, audition_imported, audition_bin,
+                target_editor, auto_import, created_at, completed_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 job_data["id"],
@@ -69,6 +196,8 @@ def insert_download(job_data: Dict[str, Any]) -> None:
                 job_data.get("premiere_bin"),
                 1 if job_data.get("aftereffects_imported") else 0,
                 job_data.get("aftereffects_bin"),
+                1 if job_data.get("audition_imported") else 0,
+                job_data.get("audition_bin"),
                 job_data.get("target_editor"),
                 1 if job_data.get("auto_import") else 0,
                 job_data.get("created_at", datetime.now(timezone.utc).isoformat()),
@@ -93,6 +222,8 @@ def update_download_progress(
     premiere_bin: Optional[str] = None,
     aftereffects_imported: Optional[bool] = None,
     aftereffects_bin: Optional[str] = None,
+    audition_imported: Optional[bool] = None,
+    audition_bin: Optional[str] = None,
 ) -> None:
     with get_db_connection() as conn:
         updates = ["status = ?", "progress = ?", "downloaded_bytes = ?"]
@@ -134,6 +265,12 @@ def update_download_progress(
         if aftereffects_bin is not None:
             updates.append("aftereffects_bin = ?")
             params.append(aftereffects_bin)
+        if audition_imported is not None:
+            updates.append("audition_imported = ?")
+            params.append(1 if audition_imported else 0)
+        if audition_bin is not None:
+            updates.append("audition_bin = ?")
+            params.append(audition_bin)
         if status in ("completed", "failed", "cancelled"):
             updates.append("completed_at = ?")
             params.append(datetime.now(timezone.utc).isoformat())
@@ -162,12 +299,25 @@ def _format_download_row(r: Any) -> Dict[str, Any]:
     resolve_imp = bool(d.get("resolve_imported", 0))
     prem_imp = bool(d.get("premiere_imported", 0))
     ae_imp = bool(d.get("aftereffects_imported", 0))
+    aud_imp = bool(d.get("audition_imported", 0))
     d["resolve_imported"] = resolve_imp
     d["premiere_imported"] = prem_imp
     d["aftereffects_imported"] = ae_imp
+    d["audition_imported"] = aud_imp
     d["resolveImported"] = resolve_imp
     d["premiereImported"] = prem_imp
     d["aftereffectsImported"] = ae_imp
+    d["auditionImported"] = aud_imp
+
+    # Import work that is still outstanding, and why the last attempt did not land.
+    for _editor in ("resolve", "premiere", "aftereffects", "audition"):
+        _pending = bool(d.get(f"{_editor}_import_pending", 0))
+        _error = d.get(f"{_editor}_import_error")
+        d[f"{_editor}_import_pending"] = _pending
+        d[f"{_editor}ImportPending"] = _pending
+        d[f"{_editor}ImportError"] = _error
+
+    d["resolveBin"] = d.get("resolve_bin")
 
     d["sourceUrl"] = d.get("source_url") or ""
     d["mediaType"] = d.get("media_type") or "video"
@@ -176,11 +326,14 @@ def _format_download_row(r: Any) -> Dict[str, Any]:
     d["downloadedBytes"] = d.get("downloaded_bytes", 0)
     d["totalBytes"] = d.get("total_bytes")
     d["outputFilePath"] = d.get("output_file_path")
+    d["filePath"] = d.get("output_file_path")
+    d["file_path"] = d.get("output_file_path")
     d["thumbnailPath"] = d.get("thumbnail_path")
     d["errorMessage"] = d.get("error_message")
     d["resolveClipName"] = d.get("resolve_clip_name")
     d["premiereBin"] = d.get("premiere_bin")
     d["aftereffectsBin"] = d.get("aftereffects_bin")
+    d["auditionBin"] = d.get("audition_bin")
     d["targetEditor"] = d.get("target_editor")
     d["autoImport"] = bool(d.get("auto_import", 0))
     d["createdAt"] = d.get("created_at") or ""
@@ -211,13 +364,14 @@ def insert_library_item(item: Dict[str, Any]) -> None:
             INSERT INTO assets (
                 id, download_id, source_url, platform, title, author,
                 media_type, format, resolution, duration, file_size_bytes,
-                file_path, thumbnail_path, resolve_imported, premiere_imported, aftereffects_imported, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                file_path, thumbnail_path, resolve_imported, premiere_imported, aftereffects_imported, audition_imported, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(file_path) DO UPDATE SET
                 title = excluded.title,
                 resolve_imported = excluded.resolve_imported,
                 premiere_imported = excluded.premiere_imported,
-                aftereffects_imported = excluded.aftereffects_imported
+                aftereffects_imported = excluded.aftereffects_imported,
+                audition_imported = excluded.audition_imported
             """,
             (
                 item["id"],
@@ -236,6 +390,7 @@ def insert_library_item(item: Dict[str, Any]) -> None:
                 1 if item.get("resolve_imported") else 0,
                 1 if item.get("premiere_imported") else 0,
                 1 if item.get("aftereffects_imported") else 0,
+                1 if item.get("audition_imported") else 0,
                 item.get("created_at", datetime.now(timezone.utc).isoformat()),
             ),
         )
@@ -247,6 +402,7 @@ def get_library_items(
     resolve_imported: Optional[bool] = None,
     premiere_imported: Optional[bool] = None,
     aftereffects_imported: Optional[bool] = None,
+    audition_imported: Optional[bool] = None,
     limit: int = 100,
     offset: int = 0,
 ) -> List[Dict[str, Any]]:
@@ -273,6 +429,9 @@ def get_library_items(
         if aftereffects_imported is not None:
             conditions.append("aftereffects_imported = ?")
             params.append(1 if aftereffects_imported else 0)
+        if audition_imported is not None:
+            conditions.append("audition_imported = ?")
+            params.append(1 if audition_imported else 0)
 
         where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
         query = f"""
@@ -290,12 +449,15 @@ def get_library_items(
             resolve_imp = bool(d.get("resolve_imported", 0))
             prem_imp = bool(d.get("premiere_imported", 0))
             ae_imp = bool(d.get("aftereffects_imported", 0))
+            aud_imp = bool(d.get("audition_imported", 0))
             d["resolve_imported"] = resolve_imp
             d["premiere_imported"] = prem_imp
             d["aftereffects_imported"] = ae_imp
+            d["audition_imported"] = aud_imp
             d["resolveImported"] = resolve_imp
             d["premiereImported"] = prem_imp
             d["aftereffectsImported"] = ae_imp
+            d["auditionImported"] = aud_imp
 
             d["sourceUrl"] = d.get("source_url") or ""
             d["mediaType"] = d.get("media_type") or "video"

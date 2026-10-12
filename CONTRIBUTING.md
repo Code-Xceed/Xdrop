@@ -14,8 +14,8 @@ Xdrop strictly adheres to platform policies and legal frameworks:
 
 1. **Clone & Install**:
    ```bash
-   git clone https://github.com/your-org/xdrop.git
-   cd xdrop
+   git clone https://github.com/Code-Xceed/Xdrop.git
+   cd Xdrop
    npm install
    ```
 
@@ -30,11 +30,15 @@ Xdrop strictly adheres to platform policies and legal frameworks:
    npm run start:service
    ```
 
-4. **Running Tests**:
-   Before submitting changes, ensure all tests pass:
+4. **Before Submitting**:
    ```bash
-   npm test
+   python -m pytest tests -v   # backend tests
+   npm run build:ui            # frontend typecheck + production build
    ```
+   Note: `npm test` is an alias for `npm run build:ui` — it does **not** run JavaScript
+   unit tests (there is no JS test runner yet). The backend suite is also still small;
+   a real one is milestone **M2** in [docs/REVAMP_PLAN.md](docs/REVAMP_PLAN.md). Do not
+   assume untested code works.
 
 5. **Submitting a Provider**:
-   Follow [docs/PROVIDER_GUIDE.md](docs/PROVIDER_GUIDE.md) to add new platform providers. Always include unit tests in `tests/test_providers.py`.
+   Follow [docs/PROVIDER_GUIDE.md](docs/PROVIDER_GUIDE.md) to add new platform providers, and include unit tests for URL matching and inspection.

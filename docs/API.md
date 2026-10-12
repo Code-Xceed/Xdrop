@@ -2,6 +2,19 @@
 
 The Xdrop Local Service runs on `http://127.0.0.1:8484` by default.
 
+> **Status and accuracy.** The authoritative, always-current reference is the OpenAPI
+> schema the running service generates at `/docs` (Swagger UI) and `/openapi.json`.
+> This page is a hand-maintained summary and is **not exhaustive** — the Adobe-specific
+> import routes (`/api/downloads/{id}/import-premiere`, `…/import-aftereffects`,
+> `/api/library/{id}/import-premiere`, `…/import-aftereffects`) and
+> `POST /api/settings/install-aftereffects-extension` are omitted below.
+>
+> **Authentication:** as of this revision the local API has **no authentication** and
+> permits any origin. Read [SECURITY.md](SECURITY.md) §2 before relying on it.
+>
+> `GET /api/analyze/thumbnail-proxy` still exists but is scheduled for removal
+> ([REVAMP_PLAN.md](REVAMP_PLAN.md) AD-1 / W2.4) because it is an SSRF risk.
+
 ---
 
 ## 1. Analysis Endpoints
@@ -157,13 +170,36 @@ Directly imports specified paths into a target Media Pool bin.
 Returns live status and receives CEP panel heartbeats from Adobe Premiere Pro.
 
 ### `POST /api/premiere/import`
-Broadcasts an import command to the Adobe Premiere Pro CEP panel.
+Broadcasts an import command to the Adobe Premiere Pro CEP panel. Refused with
+`success: false` and an explanation when the panel is not open, because nothing would
+receive the command.
+
+### `POST /api/premiere/import-result`
+Receives the real ExtendScript outcome of an import from the CEP panel, which is what
+marks a job (and its library asset) as imported.
+```json
+{ "requestId": "imp_1a2b3c4d5e", "success": true, "clipName": "clip.mp4", "binName": "Xdrop", "error": null }
+```
 
 ### `GET /api/aftereffects/status` & `POST /api/aftereffects/heartbeat`
 Returns live status and receives CEP panel heartbeats from Adobe After Effects.
 
 ### `POST /api/aftereffects/import`
-Broadcasts an import command to the Adobe After Effects CEP panel.
+Broadcasts an import command to the Adobe After Effects CEP panel. Refused the same way
+as the Premiere endpoint when the panel is not open.
+
+### `POST /api/aftereffects/import-result`
+Receives the real ExtendScript outcome of an import from the After Effects CEP panel.
+Same body as the Premiere endpoint.
+
+### `GET /api/editors/pending-imports`
+Lists downloads whose import is still waiting on an editor, grouped by editor
+(`resolve`, `premiere`, `aftereffects`).
+
+### `POST /api/editors/flush-imports?force={boolean}`
+Attempts every outstanding import against the editors that are currently available. The
+service also does this automatically every few seconds, so this endpoint is for forcing
+a retry (pass `force=true` to ignore the once-per-run retry guard).
 
 ---
 
@@ -209,9 +245,28 @@ Connect to `ws://127.0.0.1:8484/ws`.
 - `INITIAL_STATE`: Sent upon connection with active jobs and Resolve status.
 - `JOB_CREATED`: Emitted when a new download job is created.
 - `JOB_PROGRESS`: Real-time download progress updates (progress, speed, eta, bytes).
-- `JOB_COMPLETED`: Emitted when download, processing, and Resolve import succeed.
+- `JOB_COMPLETED`: Emitted when download and processing finish. The payload also carries
+  an `imports` array describing, per editor, whether the import was confirmed, deferred,
+  or failed with a reason.
 - `JOB_FAILED`: Emitted when download or import encounters an error.
+- `JOB_IMPORT_STATE`: Emitted when an import is confirmed, rejected, or completed later by
+  the deferred-import flush. Payload includes the refreshed `job` so panels show the
+  current per-editor state.
 - `RESOLVE_STATUS_CHANGED`: Emitted when Resolve connection state changes.
+
+### Import state on a job
+
+Each job tracks its import state per editor:
+
+| Field | Meaning |
+| --- | --- |
+| `resolveImported` / `premiereImported` / `aftereffectsImported` | Confirmed present in that editor's project. |
+| `resolveImportPending` / `premiereImportPending` / `aftereffectsImportPending` | Import is outstanding: the editor was closed, or the Adobe panel has not confirmed the ExtendScript result yet. |
+| `resolveImportError` / `premiereImportError` / `aftereffectsImportError` | Why the most recent attempt for that editor did not land; cleared on success. |
+
+A successful import response carries `confirmed`: `true` means the clip is in the project
+(always the case for Resolve, which imports synchronously). `false` means the request was
+delivered to the Adobe panel and is awaiting its confirmation.
 
 ### Client-to-Server Commands
 ```json

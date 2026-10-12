@@ -1,6 +1,11 @@
 # Node & Web
 node_modules/
-/dist/
+/dist/*
+!dist/Xdrop - Starter Bin.drb
+!dist/xdrop-uxp-premiere-1.0.0.ccx
+!dist/xdrop-uxp-aftereffects-1.0.0.ccx
+!dist/xdrop_blender_addon.zip
+!dist/xdrop.ico
 dist-installer/
 .npm/
 .turbo/

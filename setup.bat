@@ -115,6 +115,9 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b %ERRORLEVEL%
 )
 
+:: 4. Run Deep Extension Installer
+"!PYTHON_EXE!" tools\installer.py --non-interactive
+
 echo.
 echo ========================================================================
 echo   Setup Complete! Starting Xdrop now...

@@ -323,17 +323,50 @@ class YtDlpBaseProvider(PlatformProvider):
                     "key": "FFmpegExtractAudio",
                     "preferredcodec": fmt,
                     "preferredquality": qual,
-                }]
+                }],
+                "postprocessor_args": {
+                    "ffmpeg": ["-ar", "48000"] if fmt == "wav" else ["-threads", "0"]
+                }
             })
         else:
-            # Format selection: extract format_id from asset_id if available.
-            # Prioritize native H.264 (avc1) video and AAC (mp4a) audio for 100% native NLE compatibility
-            # in Adobe Premiere Pro and DaVinci Resolve, with fallback to best available.
-            format_spec = "bestvideo[vcodec^=avc1]+bestaudio[acodec^=mp4a]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best"
+            # Format selection: prioritize native H.264 (avc1) video and AAC (mp4a) audio
+            # for 100% native NLE compatibility in DaVinci Resolve and Adobe Premiere Pro,
+            # respecting user-selected resolution boundaries for lightning-fast downloads and zero re-encode lag.
+            height_filter = None
+            if "2160" in asset_id or "4k" in asset_id.lower():
+                height_filter = 2160
+            elif "1440" in asset_id or "2k" in asset_id.lower():
+                height_filter = 1440
+            elif "1080" in asset_id:
+                height_filter = 1080
+            elif "720" in asset_id:
+                height_filter = 720
+            elif "480" in asset_id:
+                height_filter = 480
+            elif "360" in asset_id:
+                height_filter = 360
+
             parts = asset_id.split("_", 2)
             if len(parts) >= 3 and parts[2] and not parts[2].startswith("mov"):
                 fmt_id = parts[2]
                 format_spec = f"{fmt_id}+bestaudio[acodec^=mp4a]/{fmt_id}+bestaudio/{fmt_id}/bestvideo+bestaudio/best"
+            elif height_filter:
+                format_spec = (
+                    f"bestvideo[height<={height_filter}][vcodec^=avc1]+bestaudio[acodec^=mp4a]/"
+                    f"bestvideo[height<={height_filter}][ext=mp4]+bestaudio[ext=m4a]/"
+                    f"bestvideo[height<={height_filter}]+bestaudio[acodec^=mp4a]/"
+                    f"bestvideo[height<={height_filter}]+bestaudio/"
+                    f"best[height<={height_filter}]/"
+                    f"bestvideo+bestaudio/best"
+                )
+            else:
+                format_spec = (
+                    "bestvideo[vcodec^=avc1]+bestaudio[acodec^=mp4a]/"
+                    "bestvideo[ext=mp4]+bestaudio[ext=m4a]/"
+                    "bestvideo+bestaudio[acodec^=mp4a]/"
+                    "bestvideo+bestaudio/best"
+                )
+
             ydl_opts.update({
                 "format": format_spec,
                 "merge_output_format": "mp4"
@@ -364,6 +397,28 @@ class YtDlpBaseProvider(PlatformProvider):
                 )
 
         except Exception as e:
+            err_str = str(e)
+            if "403" in err_str or "Forbidden" in err_str:
+                try:
+                    fallback_opts = dict(ydl_opts)
+                    fallback_opts["format"] = "bestvideo+bestaudio/best" if not is_audio else "bestaudio/best"
+                    fallback_opts.pop("http_chunk_size", None)
+                    fallback_opts.pop("concurrent_fragment_downloads", None)
+                    fallback_opts.setdefault("extractor_args", {}).setdefault("youtube", {
+                        "player_client": ["android", "ios", "web"]
+                    })
+                    with yt_dlp.YoutubeDL(fallback_opts) as fallback_ydl:
+                        fallback_ydl.download([url])
+                    candidates = list(dest_path.parent.glob(f"{dest_path.stem}.*"))
+                    if candidates and candidates[0].exists() and candidates[0].stat().st_size > 0:
+                        return DownloadResult(
+                            success=True,
+                            output_file_path=str(candidates[0]),
+                            downloaded_bytes=candidates[0].stat().st_size
+                        )
+                except Exception as fb_err:
+                    errors_logger.error(f"Fallback download exception for {url}: {fb_err}")
+
             errors_logger.error(f"Download exception for {url}: {e}", exc_info=True)
             return DownloadResult(
                 success=False,

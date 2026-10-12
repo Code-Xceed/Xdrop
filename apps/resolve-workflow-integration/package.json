@@ -1,0 +1,16 @@
+{
+  "name": "com.xdrop.resolve.workflowintegration",
+  "version": "1.0.0",
+  "description": "DaVinci Resolve Studio Workflow Integration panel for Xdrop",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [
+    "davinci-resolve",
+    "workflow-integration",
+    "xdrop"
+  ],
+  "author": "Xdrop",
+  "license": "MIT"
+}

@@ -15,15 +15,6 @@ import urllib.request
 import json
 from pathlib import Path
 
-import os
-import sys
-import shutil
-import platform
-import subprocess
-import urllib.request
-import json
-from pathlib import Path
-
 # Fix Windows terminal encoding to avoid UnicodeEncodeError on cp1252
 if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     try:
@@ -246,31 +237,48 @@ def detect_and_configure_editors() -> dict:
     resolve_installed = any(p.exists() for p in resolve_paths)
     if resolve_installed or platform.system() == "Windows":
         try:
+            # Installs into Resolve's per-user Scripts folder, so no administrator
+            # rights are needed. `xdrop.resolve.installer` is a shim over
+            # `xdrop.integrations.resolve`.
             from xdrop.resolve.installer import install_resolve_script
             success, msg = install_resolve_script()
             if success:
                 detected["resolve"] = True
-                print(f"      {GREEN}[+] DaVinci Resolve: Integration script installed!{RESET}")
+                print(f"      {GREEN}[+] DaVinci Resolve: Integration script installed (App Window mode)!{RESET}")
                 print(f"          Appears inside Resolve: Workspace -> Scripts -> Utility -> Xdrop")
             else:
                 print(f"      {YELLOW}[i] DaVinci Resolve: {msg}{RESET}")
+
+            # Also install DaVinci Resolve Studio Workflow Integration plugin
+            try:
+                from xdrop.integrations.resolve_studio import install_resolve_studio_plugin
+                studio_res = install_resolve_studio_plugin()
+                if studio_res.ok:
+                    print(f"      {GREEN}[+] DaVinci Resolve Studio: Workflow Integration docked panel installed!{RESET}")
+                    print(f"          Appears inside Studio: Workspace -> Workflow Integrations -> Xdrop")
+            except Exception as e:
+                pass
         except Exception as e:
             print(f"      {YELLOW}[!] DaVinci Resolve integration check: {e}{RESET}")
     else:
         print(f"      {CYAN}[i] DaVinci Resolve: Not installed on this system.{RESET}")
 
-    # 2. Adobe Premiere Pro & After Effects Detection & CEP Extension Installation
+    # 2. Adobe Premiere Pro, After Effects & Audition Detection & CEP Extension Installation
     if platform.system() == "Windows":
         prem_paths = list(Path("C:/Program Files/Adobe").glob("Adobe Premiere Pro*")) if Path("C:/Program Files/Adobe").exists() else []
         ae_paths = list(Path("C:/Program Files/Adobe").glob("Adobe After Effects*")) if Path("C:/Program Files/Adobe").exists() else []
+        aud_paths = list(Path("C:/Program Files/Adobe").glob("Adobe Audition*")) if Path("C:/Program Files/Adobe").exists() else []
         prem_found = len(prem_paths) > 0
         ae_found = len(ae_paths) > 0
+        aud_found = len(aud_paths) > 0
     elif platform.system() == "Darwin":
         prem_found = Path("/Applications/Adobe Premiere Pro").exists() or len(list(Path("/Applications").glob("Adobe Premiere Pro*"))) > 0
         ae_found = Path("/Applications/Adobe After Effects").exists() or len(list(Path("/Applications").glob("Adobe After Effects*"))) > 0
+        aud_found = Path("/Applications/Adobe Audition").exists() or len(list(Path("/Applications").glob("Adobe Audition*"))) > 0
     else:
         prem_found = False
         ae_found = False
+        aud_found = False
 
     # Always install CEP panel if Adobe folder exists or on Windows/Mac
     try:
@@ -306,10 +314,18 @@ def detect_and_configure_editors() -> dict:
             shutil.copytree(source_dir, legacy_dir, dirs_exist_ok=True)
 
             # Write dynamic config.json for CEP panel auto-starting
+            engine_vbs = (
+                Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local")) / "Xdrop" / "start_engine.vbs"
+                if platform.system() == "Windows"
+                else Path.home() / ".xdrop" / "run.sh"
+            )
+            pythonw_candidate = Path(sys.executable).parent / ("pythonw.exe" if platform.system() == "Windows" else "python3")
             config_payload = {
                 "runBat": str(ROOT_DIR / "run.bat"),
                 "runSh": str(ROOT_DIR / "run.sh"),
                 "pythonExe": sys.executable,
+                "pythonwExe": str(pythonw_candidate if pythonw_candidate.exists() else ""),
+                "startEngineVbs": str(engine_vbs),
                 "mainPy": str(DESKTOP_SERVICE_DIR / "xdrop" / "main.py"),
                 "serviceUrl": "http://127.0.0.1:8484"
             }
@@ -321,14 +337,21 @@ def detect_and_configure_editors() -> dict:
             except Exception:
                 pass
 
-            # Enable CEP Developer Mode in Registry on Windows
-            if platform.system() == "Windows":
-                for ver in ["9", "10", "11", "12", "13", "14", "15", "16"]:
-                    subprocess.run(
-                        ["reg", "add", f"HKCU\\Software\\Adobe\\CSXS.{ver}", "/v", "PlayerDebugMode", "/t", "REG_SZ", "/d", "1", "/f"],
-                        capture_output=True,
-                        check=False
-                    )
+            # Enable CEP developer mode for this user, on every CSXS version. Windows uses
+            # HKCU and macOS uses `defaults write`; both paths live in one shared
+            # implementation so this script cannot drift from the in-app installer. Every
+            # child process is started headlessly, so nothing flashes on screen.
+            from xdrop.integrations import apply_player_debug_mode
+            from xdrop.integrations.paths import current_system
+
+            debug_state = apply_player_debug_mode(current_system())
+            if debug_state["failed"]:
+                versions_failed = ", ".join(str(f["version"]) for f in debug_state["failed"])
+                print(f"      {YELLOW}[i] CEP developer mode could not be enabled for CSXS {versions_failed}{RESET}")
+            elif debug_state["enabled"]:
+                print(f"      {GREEN}[+] CEP developer mode enabled for this user (no admin needed){RESET}")
+            else:
+                print(f"      {CYAN}[i] CEP developer mode is not applicable on this platform.{RESET}")
 
             if prem_found:
                 detected["premiere"] = True
@@ -344,8 +367,29 @@ def detect_and_configure_editors() -> dict:
             else:
                 print(f"      {CYAN}[i] Adobe After Effects: Extension ready{RESET}")
 
+            if aud_found:
+                detected["audition"] = True
+                print(f"      {GREEN}[+] Adobe Audition: Extension installed!{RESET}")
+                print(f"          Appears inside Audition: Window -> Extensions -> Xdrop")
+            else:
+                print(f"      {CYAN}[i] Adobe Audition: Extension ready{RESET}")
+
     except Exception as e:
         print(f"      {YELLOW}[!] Adobe CEP installation check: {e}{RESET}")
+
+    # 3. Blender Addon Packaging & Installation
+    try:
+        from tools.package_blender import build_blender_addon_zip, install_blender_addon
+        zip_path = build_blender_addon_zip()
+        installed_addons = install_blender_addon()
+        if installed_addons:
+            detected["blender"] = True
+            print(f"      {GREEN}[+] Blender: VSE Addon installed into {len(installed_addons)} version(s)!{RESET}")
+            print(f"          Appears inside Blender: Sequencer -> Sidebar (N-Panel) -> Xdrop")
+        else:
+            print(f"      {CYAN}[i] Blender: Addon package ready in {zip_path.name}{RESET}")
+    except Exception as e:
+        pass
 
     return detected
 

@@ -88,6 +88,15 @@ export const App: React.FC = () => {
             )
           );
         }
+      } else if (type === 'JOB_IMPORT_STATE') {
+        // A deferred import landed, or an editor panel confirmed (or rejected) one.
+        const stateJob = payload?.job;
+        if (stateJob) {
+          setDownloads((prev) => prev.map((j) => (j.id === stateJob.id ? stateJob : j)));
+        }
+        if (payload?.success === false && payload?.error) {
+          showToast(`${payload.editor}: ${payload.error}`, 'error');
+        }
       } else if (type === 'JOB_COMPLETED') {
         const compJob = payload?.job;
         if (compJob) {

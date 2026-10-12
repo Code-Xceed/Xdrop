@@ -10,6 +10,8 @@
             <Host Name="PPRO" Version="[14.0,99.9]" />
             <!-- AEFT = Adobe After Effects -->
             <Host Name="AEFT" Version="[14.0,99.9]" />
+            <!-- AUDT = Adobe Audition -->
+            <Host Name="AUDT" Version="[13.0,99.9]" />
         </HostList>
         <LocaleList>
             <Locale Code="All" />
@@ -46,6 +48,7 @@
                             <Height>400</Height>
                             <Width>340</Width>
                         </MinSize>
+                    </Geometry>
                     <Icons>
                         <Icon Type="Normal">./icons/iconNormal.png</Icon>
                         <Icon Type="RollOver">./icons/iconHover.png</Icon>

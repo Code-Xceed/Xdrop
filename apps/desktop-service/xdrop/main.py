@@ -1,11 +1,46 @@
 import os
 import sys
 from pathlib import Path
+from typing import Optional
 
 # Ensure apps/desktop-service is at the beginning of sys.path
 service_root = Path(__file__).resolve().parent.parent
 if str(service_root) not in sys.path:
     sys.path.insert(0, str(service_root))
+
+# Safe stream redirection for background / detached daemon processes (pythonw, wscript, Electron)
+def _ensure_safe_stream(stream_name, mode="a"):
+    log_dir = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local")) / "Xdrop"
+    try:
+        log_dir.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
+    cur = getattr(sys, stream_name, None)
+    safe = False
+    try:
+        if cur is not None and not getattr(cur, "closed", True):
+            if "w" in mode or "a" in mode:
+                cur.write("")
+                cur.flush()
+            safe = True
+    except Exception:
+        safe = False
+
+    if not safe:
+        try:
+            if "r" in mode:
+                setattr(sys, stream_name, open(os.devnull, "r"))
+            else:
+                setattr(sys, stream_name, open(log_dir / "engine.log", "a", encoding="utf-8"))
+        except Exception:
+            pass
+
+_ensure_safe_stream("stdin", "r")
+_ensure_safe_stream("stdout", "a")
+_ensure_safe_stream("stderr", "a")
+
+from xdrop.process_util import install_silent_subprocess_hook
+install_silent_subprocess_hook()
 
 import argparse
 import asyncio
@@ -59,23 +94,39 @@ app.include_router(api_router)
 if THUMBNAILS_DIR.exists():
     app.mount("/thumbnails", StaticFiles(directory=str(THUMBNAILS_DIR)), name="thumbnails")
 
+@app.get("/api/system/health")
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint used by NLE launcher scripts and panels."""
     return {
-        "status": "healthy",
+        "status": "ok",
+        "healthy": True,
         "service": "Xdrop",
         "version": "1.0.0"
     }
 
 # Serve React frontend build if present
-if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
-    DIST_DIR = Path(sys._MEIPASS) / "apps" / "resolve-plugin" / "dist"
-else:
-    DIST_DIR = Path(__file__).resolve().parent.parent.parent / "resolve-plugin" / "dist"
+def find_dist_dir() -> Optional[Path]:
+    candidates = [
+        Path(sys._MEIPASS) / "apps" / "resolve-plugin" / "dist" if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS") else None,
+        Path(sys._MEIPASS) / "dist" if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS") else None,
+        # LocalAppData installation
+        Path(__file__).resolve().parent.parent / "dist",
+        # Local monorepo paths
+        Path(__file__).resolve().parent.parent.parent / "resolve-plugin" / "dist",
+        Path(__file__).resolve().parent.parent.parent.parent / "dist",
+        Path(__file__).resolve().parent.parent.parent / "dist",
+    ]
+    for c in candidates:
+        if c and c.is_dir() and (c / "index.html").is_file():
+            return c
+    return None
 
-if DIST_DIR.exists():
-    app.mount("/assets", StaticFiles(directory=str(DIST_DIR / "assets")), name="static_assets")
+DIST_DIR = find_dist_dir()
+
+if DIST_DIR and DIST_DIR.exists():
+    if (DIST_DIR / "assets").is_dir():
+        app.mount("/assets", StaticFiles(directory=str(DIST_DIR / "assets")), name="static_assets")
 
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
@@ -91,40 +142,24 @@ def run_service(host: str = "127.0.0.1", port: int = 8484):
     server.run()
 
 def run_gui(host: str = "127.0.0.1", port: int = 8484):
-    """Launches the service alongside a pywebview native desktop companion window or falls back to default browser."""
+    """Launches the service alongside a dedicated standalone desktop app window."""
     import threading
     import time
-    import webbrowser
+    from xdrop.app_window import launch_app_window
 
     service_thread = threading.Thread(target=run_service, args=(host, port), daemon=True)
     service_thread.start()
 
+    time.sleep(0.5)
     url = f"http://{host}:{port}"
-    try:
-        import webview
-        window = webview.create_window(
-            title="Xdrop - Video Asset Importer",
-            url=url,
-            width=1020,
-            height=720,
-            min_size=(780, 520),
-            background_color="#08090d"
-        )
-        webview.start()
-    except Exception as e:
-        app_logger.warning(f"Native desktop window unavailable ({e}). Opening in default browser instead.")
-        webbrowser.open(url)
-        try:
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            pass
+    launch_app_window(url, title="Xdrop — Media Importer", width=1080, height=740, wait=True)
 
 def main():
     parser = argparse.ArgumentParser(description="Xdrop Desktop Service")
     parser.add_argument("--host", default="127.0.0.1", help="Host to bind (default 127.0.0.1)")
     parser.add_argument("--port", type=int, default=8484, help="Port to bind (default 8484)")
     parser.add_argument("--gui", action="store_true", help="Launch native companion desktop window")
+    parser.add_argument("--background", action="store_true", help="Run headlessly as background daemon")
     args = parser.parse_args()
 
     if args.gui:
