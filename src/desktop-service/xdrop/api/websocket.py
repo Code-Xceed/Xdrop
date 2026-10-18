@@ -26,9 +26,20 @@ class ConnectionManager:
         await websocket.accept()
         self.active_connections.add(websocket)
         self.ensure_queue_listener()
+        try:
+            from xdrop.session import get_session_manager
+            get_session_manager().register_session("websocket_client")
+        except Exception:
+            pass
 
     def disconnect(self, websocket: WebSocket):
         self.active_connections.discard(websocket)
+        if not self.active_connections:
+            try:
+                from xdrop.session import get_session_manager
+                get_session_manager().close_session("websocket_client")
+            except Exception:
+                pass
 
     async def broadcast(self, message: dict):
         if not self.active_connections:

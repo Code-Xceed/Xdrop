@@ -67,29 +67,43 @@ enable_windows_ansi()
 def get_base_dir() -> Path:
     """Returns the base directory containing Xdrop asset folders."""
     if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
-        meipass = Path(sys._MEIPASS)
-        if (meipass / "apps").is_dir():
-            return meipass
+        return Path(sys._MEIPASS)
     
     # Check next to executable
     if getattr(sys, "frozen", False):
-        exe_parent = Path(sys.executable).resolve().parent
-        if (exe_parent / "apps").is_dir():
-            return exe_parent
+        return Path(sys.executable).resolve().parent
     
     # Check current working directory
     cwd = Path.cwd()
-    if (cwd / "apps").is_dir():
+    if (cwd / "src").is_dir() or (cwd / "apps").is_dir():
         return cwd
 
     # Running from source repository
     current = Path(__file__).resolve().parent
-    if (current.parent / "apps").is_dir():
+    if (current.parent.parent / "src").is_dir() or (current.parent.parent / "apps").is_dir():
+        return current.parent.parent
+    if (current.parent / "src").is_dir() or (current.parent / "apps").is_dir():
         return current.parent
     return current
 
 
 BASE_DIR = get_base_dir()
+
+
+def find_source_dir(rel_path: str) -> Path:
+    """Finds a source module or plugin directory across src/ and apps/ structures."""
+    candidates = [
+        BASE_DIR / "src" / rel_path,
+        BASE_DIR / "apps" / rel_path,
+        BASE_DIR / rel_path,
+        Path(__file__).resolve().parent.parent / rel_path,
+        Path(__file__).resolve().parent.parent / "src" / rel_path,
+        Path(__file__).resolve().parent.parent / "apps" / rel_path,
+    ]
+    for c in candidates:
+        if c.exists():
+            return c
+    return BASE_DIR / "src" / rel_path
 
 
 def log_header(text: str):
@@ -561,14 +575,14 @@ class ExtensionInstaller:
         target_dir.mkdir(parents=True, exist_ok=True)
 
         # 1. Copy xdrop core package
-        source_pkg = BASE_DIR / "apps" / "desktop-service" / "xdrop"
+        source_pkg = find_source_dir("desktop-service") / "xdrop"
         target_pkg = target_dir / "xdrop"
         if source_pkg.is_dir():
             shutil.copytree(source_pkg, target_pkg, dirs_exist_ok=True)
             log_success(f"Xdrop engine core copied to: {target_pkg}")
 
         # 2. Copy run_engine.py entry point
-        run_engine_src = BASE_DIR / "apps" / "desktop-service" / "xdrop" / "run_engine.py"
+        run_engine_src = find_source_dir("desktop-service") / "xdrop" / "run_engine.py"
         run_engine_tgt = target_dir / "run_engine.py"
         if run_engine_src.is_file():
             shutil.copy2(run_engine_src, run_engine_tgt)
@@ -582,7 +596,7 @@ class ExtensionInstaller:
             )
 
         # 3. Copy web assets if present
-        source_dist = BASE_DIR / "apps" / "resolve-plugin" / "dist"
+        source_dist = find_source_dir("resolve-plugin") / "dist"
         if not source_dist.is_dir():
             source_dist = BASE_DIR / "dist"
         if source_dist.is_dir():
@@ -702,7 +716,7 @@ powershell -Command "Get-NetTCPConnection -LocalPort 8484 -ErrorAction SilentlyC
 
     def install_davinci_resolve(self):
         log_header("DaVinci Resolve Native Extension (Comp Script)")
-        source_studio = BASE_DIR / "apps" / "resolve-workflow-integration"
+        source_studio = find_source_dir("resolve-workflow-integration")
         installed_studio = False
 
         # 1. Install Workflow Integration for Studio
@@ -730,7 +744,7 @@ powershell -Command "Get-NetTCPConnection -LocalPort 8484 -ErrorAction SilentlyC
             log_info("  Access inside Studio: Top menu -> Workspace -> Workflow Integrations -> Xdrop")
 
         # 2. Install Native DaVinci Resolve Fusion UI Lua Plugin (Xdrop.lua) - CANONICAL: ONLY IN Scripts/Comp/
-        lua_source = BASE_DIR / "apps" / "resolve-plugin" / "Xdrop.lua"
+        lua_source = find_source_dir("resolve-plugin") / "Xdrop.lua"
         if lua_source.is_file():
             comp_dir = None
             if sys.platform == "win32":
@@ -749,7 +763,7 @@ powershell -Command "Get-NetTCPConnection -LocalPort 8484 -ErrorAction SilentlyC
                     log_success(f"DaVinci Resolve Native Lua Extension installed: {target_lua}")
 
                     # Copy companion DRB starter bin
-                    drb_source = BASE_DIR / "apps" / "resolve-plugin" / "Xdrop - Starter Bin.drb"
+                    drb_source = find_source_dir("resolve-plugin") / "Xdrop - Starter Bin.drb"
                     if not drb_source.is_file():
                         drb_source = BASE_DIR / "dist" / "Xdrop - Starter Bin.drb"
                     if drb_source.is_file():
@@ -765,7 +779,7 @@ powershell -Command "Get-NetTCPConnection -LocalPort 8484 -ErrorAction SilentlyC
 
     def install_adobe_creative_cloud(self):
         log_header("Adobe Creative Cloud (Premiere Pro, After Effects, Audition)")
-        source_dir = BASE_DIR / "apps" / "premiere-plugin"
+        source_dir = find_source_dir("premiere-plugin")
 
         if sys.platform == "win32":
             cep_dir = Path(os.environ.get("APPDATA", "")) / "Adobe" / "CEP" / "extensions"
@@ -798,7 +812,7 @@ powershell -Command "Get-NetTCPConnection -LocalPort 8484 -ErrorAction SilentlyC
                         "pythonExe": str(python_exe or sys.executable),
                         "pythonwExe": str(pythonw_exe or ""),
                         "startEngineVbs": str(engine_vbs),
-                        "mainPy": str(BASE_DIR / "apps" / "desktop-service" / "xdrop" / "main.py"),
+                        "mainPy": str(find_source_dir("desktop-service") / "xdrop" / "main.py"),
                         "serviceUrl": "http://127.0.0.1:8484",
                     }
                     try:
@@ -829,7 +843,7 @@ powershell -Command "Get-NetTCPConnection -LocalPort 8484 -ErrorAction SilentlyC
 
         # Compile UXP packages
         try:
-            uxp_src = BASE_DIR / "apps" / "premiere-plugin" / "uxp"
+            uxp_src = find_source_dir("premiere-plugin") / "uxp"
             dist_dir = BASE_DIR / "dist"
             dist_dir.mkdir(parents=True, exist_ok=True)
             if uxp_src.is_dir():
@@ -857,7 +871,7 @@ powershell -Command "Get-NetTCPConnection -LocalPort 8484 -ErrorAction SilentlyC
                                 sf = uxp_src / sfile
                                 if sf.is_file():
                                     z.write(sf, sfile)
-                            icons_dir = BASE_DIR / "apps" / "premiere-plugin" / "icons"
+                            icons_dir = find_source_dir("premiere-plugin") / "icons"
                             if icons_dir.is_dir():
                                 for ic in icons_dir.glob("*.png"):
                                     z.write(ic, f"icons/{ic.name}")
@@ -867,7 +881,7 @@ powershell -Command "Get-NetTCPConnection -LocalPort 8484 -ErrorAction SilentlyC
 
     def install_blender_addon(self):
         log_header("Blender Video Sequence Editor (VSE) Addon")
-        addon_src = BASE_DIR / "apps" / "blender-addon" / "xdrop"
+        addon_src = find_source_dir("blender-addon") / "xdrop"
         dist_dir = BASE_DIR / "dist"
         dist_dir.mkdir(parents=True, exist_ok=True)
         zip_path = dist_dir / "xdrop_blender_addon.zip"
@@ -923,7 +937,7 @@ powershell -Command "Get-NetTCPConnection -LocalPort 8484 -ErrorAction SilentlyC
 
     def configure_fcpxml_drag_and_drop(self):
         log_header("Universal Timeline Drag-and-Drop & FCPXML 1.11")
-        fcpxml_mod = BASE_DIR / "apps" / "desktop-service" / "xdrop" / "processor" / "fcpxml.py"
+        fcpxml_mod = find_source_dir("desktop-service") / "xdrop" / "processor" / "fcpxml.py"
         if fcpxml_mod.is_file():
             log_success("FCPXML 1.11 sidecar generator verified.")
             log_info("  Automatic .fcpxml sidecar files generated alongside all downloads.")

@@ -8,6 +8,7 @@ from .routes_premiere import router as premiere_router
 from .routes_aftereffects import router as aftereffects_router
 from .routes_audition import router as audition_router
 from .routes_editors import router as editors_router
+from .routes_session import router as session_router
 from .websocket import router as ws_router
 
 api_router = APIRouter()
@@ -20,6 +21,7 @@ api_router.include_router(premiere_router)
 api_router.include_router(aftereffects_router)
 api_router.include_router(audition_router)
 api_router.include_router(editors_router)
+api_router.include_router(session_router)
 api_router.include_router(ws_router)
 
 __all__ = ["api_router"]

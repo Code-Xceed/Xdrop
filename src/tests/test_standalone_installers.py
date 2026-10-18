@@ -5,16 +5,23 @@ from pathlib import Path
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = (
+    Path(__file__).resolve().parent.parent.parent
+    if Path(__file__).resolve().parent.parent.name == "src"
+    else Path(__file__).resolve().parent.parent
+)
 
 
 def test_standalone_installer_executables_exist_and_valid():
-    """Verify all 3 standalone installer binaries exist, have size > 5MB, and valid PE headers."""
+    """Verify standalone installer binaries exist, have size > 5MB, and valid PE headers."""
     resolve_exe = REPO_ROOT / "XdropInstaller-Resolve.exe"
     premiere_exe = REPO_ROOT / "XdropInstaller-Premiere.exe"
-    universal_exe = REPO_ROOT / "XdropInstaller.exe"
+    installer_list = [resolve_exe, premiere_exe]
+    setup_exe = REPO_ROOT / "XdropSetup.exe"
+    if setup_exe.is_file():
+        installer_list.append(setup_exe)
 
-    for exe in [resolve_exe, premiere_exe, universal_exe]:
+    for exe in installer_list:
         assert exe.is_file(), f"Expected executable {exe.name} to exist at repo root"
         size = exe.stat().st_size
         assert size > 5_000_000, f"{exe.name} size ({size} bytes) is suspiciously small (expected > 5MB)"

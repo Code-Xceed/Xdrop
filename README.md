@@ -12,14 +12,15 @@
 
 ---
 
-## ⚡ 1-Click Standalone Installers
+## ⚡ 1-Click Installers (Zero CLI)
 
 Download the installer for your video editor. **No Python, Git, or command-line setup is required.**
 
 | Installer Executable | Target Host & Extension Architecture | Status |
 | :--- | :--- | :--- |
-| [**`XdropInstaller-Resolve.exe`**](XdropInstaller-Resolve.exe) | **DaVinci Resolve (Free & Studio)**<br>• Native Fusion UI Comp Script (`Xdrop.lua`)<br>• Color-Coded Starter Bin (`Xdrop - Starter Bin.drb`)<br>• Studio Workflow Integration panel | **Ready (`11 MB`)** |
-| [**`XdropInstaller-Premiere.exe`**](XdropInstaller-Premiere.exe) | **Adobe Creative Cloud (CC 2019–2026+)**<br>• Premiere Pro CEP Docked Extension (`com.xdrop.panel`)<br>• Automated `PlayerDebugMode` Registry Setup<br>• After Effects & Audition Extension Panels<br>• Modern Creative Cloud UXP Bundle (`.ccx`) | **Ready (`11 MB`)** |
+| [**`XdropSetup.exe`**](XdropSetup.exe) | **Unified Modern GUI Setup (Recommended)**<br>• Full Dark-Mode GUI with auto-detection of both editors<br>• Configures DaVinci Resolve & Adobe Creative Cloud in 1-click<br>• Sets up zero-trace, on-demand headless engine | **Ready (`14 MB`)** |
+| [**`XdropInstaller-Resolve.exe`**](XdropInstaller-Resolve.exe) | **DaVinci Resolve Dedicated (Free & Studio)**<br>• Native Fusion UI Comp Script (`Xdrop.lua`)<br>• Color-Coded Starter Bin (`Xdrop - Starter Bin.drb`)<br>• Studio Workflow Integration panel | **Ready (`11 MB`)** |
+| [**`XdropInstaller-Premiere.exe`**](XdropInstaller-Premiere.exe) | **Adobe Creative Cloud Dedicated (CC 2019–2026+)**<br>• Premiere Pro CEP Docked Extension (`com.xdrop.panel`)<br>• Automated `PlayerDebugMode` Registry Setup<br>• After Effects & Audition Extension Panels<br>• Modern Creative Cloud UXP Bundle (`.ccx`) | **Ready (`11 MB`)** |
 
 📖 **For detailed instructions and FAQs, see the [Installation Guide](src/docs/INSTALLATION_GUIDE.md).**
 

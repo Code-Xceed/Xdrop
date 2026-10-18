@@ -308,6 +308,23 @@ local function ExtractJsonNumber(jsonStr, key)
     return val and tonumber(val) or nil
 end
 
+local SESSIONS_DIR = IPC_DIR .. PATH_SEP .. "sessions"
+
+local function TouchSessionLease()
+    EnsureDir(SESSIONS_DIR)
+    local leaseFile = SESSIONS_DIR .. PATH_SEP .. "resolve.lease"
+    WriteFileContent(leaseFile, tostring(os.time()))
+end
+
+local function ReleaseSessionLease()
+    local leaseFile = SESSIONS_DIR .. PATH_SEP .. "resolve.lease"
+    if platform == "Windows" then
+        os.execute('del /f /q "' .. leaseFile .. '" 2>nul')
+    else
+        os.execute('rm -f "' .. leaseFile .. '" 2>/dev/null')
+    end
+end
+
 local function IsEngineOnline()
     -- Check IPC heartbeat file with 0 subprocesses and 0 CMD windows
     local hbFile = IPC_DIR .. PATH_SEP .. "heartbeat.json"
@@ -317,9 +334,11 @@ local function IsEngineOnline()
         if ts then
             local now = os.time()
             if math.abs(now - ts) <= 6 then
+                TouchSessionLease()
                 return true
             end
         elseif hb:find('"ok"') ~= nil or hb:find('"healthy"') ~= nil then
+            TouchSessionLease()
             return true
         end
     end
@@ -846,7 +865,7 @@ local function CreateXdropWindow()
             statusLabel.StyleSheet = STATUS_DISCONNECTED_CSS
         end
     end
-    UpdateEngineStatus(false)
+    UpdateEngineStatus(true)
 
     -- Tab Switching
     local function SwitchTab(tabName)
@@ -1070,12 +1089,15 @@ local function CreateXdropWindow()
     end
 
     function win.On.XdropResolveWin.Close(ev)
+        ReleaseSessionLease()
         disp:ExitLoop()
     end
 
+    TouchSessionLease()
     win:RecalcLayout()
     win:Show()
     disp:RunLoop()
+    ReleaseSessionLease()
     win:Hide()
 end
 

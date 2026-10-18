@@ -10,8 +10,12 @@ import json
 import xml.dom.minidom
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-MANIFEST_PATH = REPO_ROOT / "apps" / "premiere-plugin" / "CSXS" / "manifest.xml"
+SRC_ROOT = Path(__file__).resolve().parent.parent
+MANIFEST_PATH = (
+    SRC_ROOT / "premiere-plugin" / "CSXS" / "manifest.xml"
+    if (SRC_ROOT / "premiere-plugin").is_dir()
+    else SRC_ROOT / "apps" / "premiere-plugin" / "CSXS" / "manifest.xml"
+)
 
 
 def test_shipped_cep_manifest_is_valid_xml():

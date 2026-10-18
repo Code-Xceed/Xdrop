@@ -40,9 +40,25 @@ from pathlib import Path
 from typing import Dict, List, Optional, Sequence
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_SOURCE = REPO_ROOT / "apps" / "premiere-plugin" / "uxp"
-DEFAULT_ICONS = REPO_ROOT / "apps" / "premiere-plugin" / "icons"
-DEFAULT_OUT_DIR = REPO_ROOT / "dist"
+DEFAULT_SOURCE = (
+    REPO_ROOT / "premiere-plugin" / "uxp"
+    if (REPO_ROOT / "premiere-plugin").is_dir()
+    else (
+        REPO_ROOT / "src" / "premiere-plugin" / "uxp"
+        if (REPO_ROOT / "src" / "premiere-plugin").is_dir()
+        else REPO_ROOT / "apps" / "premiere-plugin" / "uxp"
+    )
+)
+DEFAULT_ICONS = (
+    REPO_ROOT / "premiere-plugin" / "icons"
+    if (REPO_ROOT / "premiere-plugin").is_dir()
+    else (
+        REPO_ROOT / "src" / "premiere-plugin" / "icons"
+        if (REPO_ROOT / "src" / "premiere-plugin").is_dir()
+        else REPO_ROOT / "apps" / "premiere-plugin" / "icons"
+    )
+)
+DEFAULT_OUT_DIR = REPO_ROOT.parent / "dist" if REPO_ROOT.name == "src" else REPO_ROOT / "dist"
 
 #: The CEP bundle id in use today. A UXP package must not reuse it, and must not reuse the
 #: Marketplace id either — see rule 2 in the module docstring.

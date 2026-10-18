@@ -56,6 +56,10 @@ class DownloadQueueManager:
         self._flush_task: Optional[asyncio.Task] = None
         self._ipc_task: Optional[asyncio.Task] = None
 
+    def is_busy(self) -> bool:
+        """Returns True if any downloads or processing tasks are currently active or queued."""
+        return len(self._active_tasks) > 0 or self._queue.qsize() > 0
+
     def _get_ipc_dir(self) -> Path:
         if sys.platform == "win32":
             base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local")) / "Xdrop" / "ipc"

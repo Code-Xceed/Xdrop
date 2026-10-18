@@ -54,6 +54,7 @@ import uvicorn
 
 from xdrop.database import init_db
 from xdrop.download_queue import get_queue_manager
+from xdrop.session import get_session_manager
 from xdrop.api import api_router
 from xdrop.logger import app_logger
 from xdrop.config import THUMBNAILS_DIR
@@ -66,9 +67,13 @@ async def lifespan(app: FastAPI):
     qm = get_queue_manager()
     await qm.start()
     app_logger.info("Xdrop queue manager started.")
+    sm = get_session_manager()
+    await sm.start()
+    app_logger.info("Xdrop session manager and zero-trace watchdog started.")
     yield
     # Shutdown
     app_logger.info("Xdrop service shutting down...")
+    await sm.stop()
     await qm.stop()
 
 app = FastAPI(
@@ -160,7 +165,11 @@ def main():
     parser.add_argument("--port", type=int, default=8484, help="Port to bind (default 8484)")
     parser.add_argument("--gui", action="store_true", help="Launch native companion desktop window")
     parser.add_argument("--background", action="store_true", help="Run headlessly as background daemon")
+    parser.add_argument("--no-auto-shutdown", action="store_true", help="Disable automatic zero-trace idle shutdown")
     args = parser.parse_args()
+
+    if args.no_auto_shutdown:
+        get_session_manager().enable_auto_shutdown = False
 
     if args.gui:
         run_gui(args.host, args.port)

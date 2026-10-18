@@ -3,13 +3,15 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 
+def _get_studio_dir() -> Path:
+    base = Path(__file__).resolve().parents[1]
+    if (base / "resolve-workflow-integration").is_dir():
+        return base / "resolve-workflow-integration"
+    return base / "apps" / "resolve-workflow-integration"
+
+
 def test_resolve_studio_manifest_is_valid_xml():
-    manifest_path = (
-        Path(__file__).resolve().parents[1]
-        / "apps"
-        / "resolve-workflow-integration"
-        / "manifest.xml"
-    )
+    manifest_path = _get_studio_dir() / "manifest.xml"
     assert manifest_path.is_file(), f"Expected manifest at {manifest_path}"
 
     tree = ET.parse(manifest_path)
@@ -31,12 +33,7 @@ def test_resolve_studio_manifest_is_valid_xml():
 
 
 def test_resolve_studio_package_json():
-    pkg_path = (
-        Path(__file__).resolve().parents[1]
-        / "apps"
-        / "resolve-workflow-integration"
-        / "package.json"
-    )
+    pkg_path = _get_studio_dir() / "package.json"
     assert pkg_path.is_file()
 
     data = json.loads(pkg_path.read_text(encoding="utf-8"))
@@ -45,12 +42,7 @@ def test_resolve_studio_package_json():
 
 
 def test_resolve_studio_index_html_has_bridge_and_fallback():
-    index_path = (
-        Path(__file__).resolve().parents[1]
-        / "apps"
-        / "resolve-workflow-integration"
-        / "index.html"
-    )
+    index_path = _get_studio_dir() / "index.html"
     assert index_path.is_file()
 
     content = index_path.read_text(encoding="utf-8")

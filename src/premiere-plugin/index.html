@@ -641,6 +641,41 @@
             }
         });
 
+        function notifySessionClose() {
+            try {
+                const url = 'http://127.0.0.1:8484/api/system/session/close?client=' + encodeURIComponent(currentHost);
+                if (navigator && navigator.sendBeacon) {
+                    navigator.sendBeacon(url);
+                } else {
+                    fetch(url, { method: 'POST', keepalive: true }).catch(function() {});
+                }
+            } catch (_) {}
+        }
+
+        window.addEventListener('beforeunload', notifySessionClose);
+        window.addEventListener('unload', notifySessionClose);
+
+        if (typeof csInterface !== 'undefined' && csInterface.addEventListener) {
+            try {
+                csInterface.addEventListener('com.adobe.csxs.events.WindowClose', notifySessionClose);
+            } catch (_) {}
+        }
+
+        function registerSessionOpen() {
+            fetch('http://127.0.0.1:8484/api/system/session/open?client=' + encodeURIComponent(currentHost), {
+                method: 'POST'
+            }).catch(function() {});
+        }
+
+        // Heartbeat to keep session lease active
+        setInterval(function() {
+            if (isEngineOnline) {
+                fetch('http://127.0.0.1:8484/api/system/session/heartbeat?client=' + encodeURIComponent(currentHost), {
+                    method: 'POST'
+                }).catch(function() {});
+            }
+        }, 8000);
+
         // Initialize on window load: probe health; if offline, auto-start immediately
         window.onload = function() {
             checkServiceHealth(function(online) {
@@ -648,6 +683,7 @@
                     isEngineOnline = true;
                     showApp();
                     connectWebSocket();
+                    registerSessionOpen();
                     setupStarterBins();
                 } else {
                     tryAutoStartEngine();

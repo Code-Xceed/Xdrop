@@ -2,12 +2,16 @@ import zipfile
 from pathlib import Path
 from tools.package_drb import build_xdrop_starter_drb
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+SRC_ROOT = Path(__file__).resolve().parent.parent
 
 
 def test_xdrop_lua_file_structure_and_syntax():
-    lua_file = REPO_ROOT / "apps" / "resolve-plugin" / "Xdrop.lua"
-    assert lua_file.is_file(), "apps/resolve-plugin/Xdrop.lua must exist"
+    lua_file = (
+        SRC_ROOT / "resolve-plugin" / "Xdrop.lua"
+        if (SRC_ROOT / "resolve-plugin").is_dir()
+        else SRC_ROOT / "apps" / "resolve-plugin" / "Xdrop.lua"
+    )
+    assert lua_file.is_file(), "resolve-plugin/Xdrop.lua must exist"
 
     content = lua_file.read_text(encoding="utf-8")
     # Verify Fusion UIManager tokens matching Snap Captions architecture
@@ -55,6 +59,10 @@ def test_xdrop_starter_drb_packaging(tmp_path):
 
 
 def test_dist_drb_exists_and_valid():
-    dist_drb = REPO_ROOT / "dist" / "Xdrop - Starter Bin.drb"
-    assert dist_drb.is_file(), "dist/Xdrop - Starter Bin.drb must exist"
-    assert zipfile.is_zipfile(dist_drb)
+    drb_path = (
+        SRC_ROOT / "resolve-plugin" / "Xdrop - Starter Bin.drb"
+        if (SRC_ROOT / "resolve-plugin" / "Xdrop - Starter Bin.drb").is_file()
+        else SRC_ROOT.parent / "dist" / "Xdrop - Starter Bin.drb"
+    )
+    assert drb_path.is_file(), "Xdrop - Starter Bin.drb must exist"
+    assert zipfile.is_zipfile(drb_path)
