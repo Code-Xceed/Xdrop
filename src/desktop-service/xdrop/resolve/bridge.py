@@ -162,11 +162,15 @@ class ResolveBridge:
     def import_media(
         self,
         file_paths: List[str],
-        target_bin_name: str = "Xdrop"
+        target_bin_name: str = "Xdrop",
+        insert_timeline: bool = False,
+        *args,
+        **kwargs
     ) -> Dict[str, Any]:
         """
         Imports specified file paths into the active DaVinci Resolve project's Media Pool.
         Creates or targets the specified folder/bin.
+        Optionally appends imported clips to the active timeline.
         """
         resolve = self.get_resolve_app()
         if not resolve:
@@ -226,6 +230,16 @@ class ResolveBridge:
                         clip_names.append(item.GetName())
                     except Exception:
                         clip_names.append("Imported Clip")
+
+                # If timeline insertion requested, append to active timeline
+                if insert_timeline:
+                    try:
+                        current_timeline = project.GetCurrentTimeline()
+                        if current_timeline:
+                            media_pool.AppendToTimeline(imported_items)
+                            resolve_logger.info(f"Appended {len(imported_items)} clips to active timeline.")
+                    except Exception as terr:
+                        resolve_logger.warning(f"Error appending clips to timeline: {terr}")
 
                 resolve_logger.info(f"Successfully imported {len(clip_names)} clips into Resolve: {clip_names}")
                 return {

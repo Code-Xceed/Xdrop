@@ -320,7 +320,7 @@ local function LaunchStudioApp()
         local f = io.open(launchVbs, "w")
         if f then
             local cmd = string.format(
-                '""%s"" --app=""%s"" --window-size=480,760 --app-id=Xdrop --disable-features=Translate --disable-default-apps',
+                '""%s"" --app=""%s"" --window-size=390,640 --app-id=Xdrop --disable-features=Translate --disable-default-apps',
                 browser, SERVICE_URL
             )
             f:write('Set WshShell = CreateObject("WScript.Shell")\r\n')
@@ -330,11 +330,11 @@ local function LaunchStudioApp()
             return true
         end
     elseif platform == "Mac" and browser then
-        local cmd = string.format('"%s" --app="%s" --window-size=480,760 &', browser, SERVICE_URL)
+        local cmd = string.format('"%s" --app="%s" --window-size=390,640 &', browser, SERVICE_URL)
         os.execute(cmd)
         return true
     elseif platform == "Linux" and browser then
-        local cmd = string.format('"%s" --app="%s" --window-size=480,760 &', browser, SERVICE_URL)
+        local cmd = string.format('"%s" --app="%s" --window-size=390,640 &', browser, SERVICE_URL)
         os.execute(cmd)
         return true
     end

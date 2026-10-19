@@ -157,7 +157,7 @@ def run_gui(host: str = "127.0.0.1", port: int = 8484):
 
     time.sleep(0.5)
     url = f"http://{host}:{port}"
-    launch_app_window(url, title="Xdrop — Media Importer", width=1080, height=740, wait=True)
+    launch_app_window(url, title="Xdrop — Media Importer", width=390, height=640, wait=True)
 
 def main():
     parser = argparse.ArgumentParser(description="Xdrop Desktop Service")

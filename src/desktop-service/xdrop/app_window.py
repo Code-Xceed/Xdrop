@@ -72,8 +72,8 @@ def find_app_mode_browsers() -> List[str]:
 def launch_app_window(
     url: str,
     title: str = "Xdrop",
-    width: int = 1080,
-    height: int = 740,
+    width: int = 390,
+    height: int = 640,
     wait: bool = False,
 ) -> bool:
     """
@@ -88,7 +88,7 @@ def launch_app_window(
             url=url,
             width=width,
             height=height,
-            min_size=(420, 560),
+            min_size=(340, 500),
             background_color="#090a0f"
         )
         webview.start()

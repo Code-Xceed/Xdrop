@@ -224,10 +224,10 @@ function registerResolveEventHandlers() {
 
 function createWindow() {
     mainWindow = new BrowserWindow({
-        width: 440,
-        height: 720,
-        minWidth: 360,
-        minHeight: 520,
+        width: 390,
+        height: 640,
+        minWidth: 340,
+        minHeight: 480,
         title: 'Xdrop',
         icon: path.join(__dirname, 'icon.png'),
         backgroundColor: '#09090b',
