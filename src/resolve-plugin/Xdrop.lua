@@ -278,6 +278,20 @@ local function WriteFileContent(filePath, content)
     return true
 end
 
+local function FileExists(filePath)
+    if not filePath or filePath == "" then return false end
+    if bmd and bmd.fileexists then
+        local ok, exists = pcall(bmd.fileexists, filePath)
+        if ok and exists then return true end
+    end
+    local f = io.open(filePath, "rb")
+    if f then
+        f:close()
+        return true
+    end
+    return false
+end
+
 local function EnsureDir(dirPath)
     if not dirPath or dirPath == "" then return false end
     if bmd and bmd.direxists and bmd.direxists(dirPath) then
