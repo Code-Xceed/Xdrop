@@ -105,7 +105,7 @@ def print_resolve_banner():
 ========================================================================{RESET}
 {BOLD}        DAVINCI RESOLVE NATIVE EXTENSION INSTALLER{RESET}
   Supports: DaVinci Resolve Free & Studio (18, 19, 20+)
-  Architecture: Native Lua UI Dialog + Studio Workflow Integration
+  Architecture: Unified React Studio UI (Standalone Window) + Studio Workflow Integration
 """)
 
 
@@ -116,10 +116,10 @@ def print_resolve_guide(discovered: List[DiscoveredApp]):
 
     print(f"\n{BOLD}How to Launch Xdrop inside DaVinci Resolve:{RESET}\n")
 
-    print(f"1. {BOLD}DaVinci Resolve Free & Studio (Recommended Native UI):{RESET}")
+    print(f"1. {BOLD}DaVinci Resolve Free & Studio (Unified Studio UI):{RESET}")
     print(f"   {CYAN}Top Menu -> Workspace -> Scripts -> Comp -> Xdrop{RESET}")
-    print(f"   * Built on the exact same native Fusion UI architecture as Snap Captions.")
-    print(f"   * Zero browser tabs or popup windows.")
+    print(f"   * Launches the exact same modern React Studio UI as a dedicated standalone window.")
+    print(f"   * 100% Zero-Flicker: Zero CMD or console window flashes.")
     print(f"   * Pre-loads the canonical '000_Xdrop Assets' bin and sub-bins automatically.")
 
     print(f"\n2. {BOLD}DaVinci Resolve Studio (Workflow Integrations):{RESET}")

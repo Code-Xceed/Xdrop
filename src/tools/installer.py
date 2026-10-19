@@ -782,7 +782,7 @@ powershell -Command "Get-NetTCPConnection -LocalPort 8484 -ErrorAction SilentlyC
 
                     self.results["resolve_lua"] = True
                     log_info("  Access inside Resolve: Workspace -> Scripts -> Comp -> Xdrop")
-                    log_info("  (100% native Fusion UI dialog - exact same architecture as Snap Captions!)")
+                    log_info("  (Unified Studio UI launcher - opens dedicated standalone app window)")
                 except Exception as e:
                     log_error(f"Failed to install Xdrop.lua: {e}")
 
@@ -982,9 +982,9 @@ def print_summary_and_guide(discovered: List[DiscoveredApp]):
 
     editor_ids = {a.app_id for a in discovered}
 
-    print(f"1. {BOLD}DaVinci Resolve Free & Studio (Native Lua Extension):{RESET}")
+    print(f"1. {BOLD}DaVinci Resolve Free & Studio (Native Script Launcher):{RESET}")
     print(f"   {CYAN}Workspace -> Scripts -> Comp -> Xdrop{RESET}")
-    print(f"   (Native Lua panel matching Snap Captions - downloads & auto-imports to Media Pool)")
+    print(f"   (Launches unified modern React Studio UI in standalone window with zero CMD flicker)")
 
     print(f"\n2. {BOLD}DaVinci Resolve Studio (Workflow Integration):{RESET}")
     print(f"   {CYAN}Workspace -> Workflow Integrations -> Xdrop{RESET}")
