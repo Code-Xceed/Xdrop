@@ -547,7 +547,7 @@ class ExtensionInstaller:
                 fname = item.name.lower()
                 is_canonical_comp_file = (
                     item.parent.name.lower() == "comp"
-                    and fname in ["xdrop.lua", "xdrop - starter bin.drb"]
+                    and fname in ["xdrop.lua", "xdrop - starter bin.drb", "xdroplogo.png"]
                 )
                 if "resolvefetch" in fname or ("xdrop" in fname and not is_canonical_comp_file):
                     # CRITICAL: Preserve Snap Captions and third-party files!
@@ -770,6 +770,15 @@ powershell -Command "Get-NetTCPConnection -LocalPort 8484 -ErrorAction SilentlyC
                         target_drb = comp_dir / "Xdrop - Starter Bin.drb"
                         shutil.copy2(drb_source, target_drb)
                         log_success(f"DaVinci Resolve Companion DRB Starter Bin deployed: {target_drb}")
+
+                    # Copy companion UI Logo for Fusion Scripts UI
+                    logo_source = find_source_dir("resolve-plugin") / "XdropLogo.png"
+                    if not logo_source.is_file():
+                        logo_source = BASE_DIR / "src" / "assets" / "logo.png"
+                    if logo_source.is_file():
+                        target_logo = comp_dir / "XdropLogo.png"
+                        shutil.copy2(logo_source, target_logo)
+                        log_success(f"DaVinci Resolve Companion UI Logo deployed: {target_logo}")
 
                     self.results["resolve_lua"] = True
                     log_info("  Access inside Resolve: Workspace -> Scripts -> Comp -> Xdrop")

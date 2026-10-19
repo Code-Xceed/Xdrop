@@ -1,6 +1,7 @@
 import React from 'react';
 import { RefreshCw, Sparkles, Film, Layers } from 'lucide-react';
 import { useEditorContext } from '../context/EditorContext';
+import logoImg from '../assets/logo.png';
 
 export const Header: React.FC = () => {
   const {
@@ -58,22 +59,16 @@ export const Header: React.FC = () => {
       >
         {/* Brand & Connected Editor Status */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flexShrink: 0 }}>
-          <div
+          <img
+            src={logoImg}
+            alt="Xdrop"
             style={{
               width: '22px',
               height: '22px',
-              borderRadius: 'var(--radius-xs)',
-              background: 'var(--bg-tertiary)',
-              border: '1px solid var(--border-default)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--text-primary)',
+              objectFit: 'contain',
               flexShrink: 0,
             }}
-          >
-            <Sparkles size={12} strokeWidth={2} />
-          </div>
+          />
 
           <span
             style={{

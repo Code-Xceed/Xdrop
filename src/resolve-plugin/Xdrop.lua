@@ -606,6 +606,25 @@ local function InstallScriptSelf()
         end
     end
 
+    -- Also copy companion UI Logo if present next to the script
+    local logoSrc = srcDir .. "XdropLogo.png"
+    local logo_in = io.open(logoSrc, "rb")
+    if logo_in then
+        local logoContent = logo_in:read("*a")
+        logo_in:close()
+        for _, tgt in ipairs(targets) do
+            local pdir = tgt:match("(.*[/\\])")
+            if pdir then
+                local logoTgt = pdir .. "XdropLogo.png"
+                local logo_out = io.open(logoTgt, "wb")
+                if logo_out then
+                    logo_out:write(logoContent)
+                    logo_out:close()
+                end
+            end
+        end
+    end
+
     return successCount > 0
 end
 
@@ -614,7 +633,59 @@ end
 -- =============================================================================
 
 local function CreateXdropWindow()
-    local win = disp:AddWindow({
+    local scriptSource = debug.getinfo(1, "S").source
+    local scriptDir = ""
+    if scriptSource and scriptSource:sub(1, 1) == "@" then
+        scriptDir = scriptSource:sub(2):match("(.*[/\\])") or ""
+    end
+
+    local logoCandidates = {}
+    if scriptDir ~= "" then
+        table.insert(logoCandidates, scriptDir .. "XdropLogo.png")
+        table.insert(logoCandidates, scriptDir .. "XdropLogo-32.png")
+    end
+
+    if platform == "Windows" then
+        local appData = os.getenv("APPDATA") or ""
+        if appData ~= "" then
+            table.insert(logoCandidates, appData .. "\\Blackmagic Design\\DaVinci Resolve\\Support\\Fusion\\Scripts\\Comp\\XdropLogo.png")
+            table.insert(logoCandidates, appData .. "\\Blackmagic Design\\DaVinci Resolve\\Support\\Fusion\\Scripts\\Comp\\XdropLogo-32.png")
+        end
+    elseif platform == "Mac" then
+        local home = os.getenv("HOME") or ""
+        if home ~= "" then
+            table.insert(logoCandidates, home .. "/Library/Application Support/Blackmagic Design/DaVinci Resolve/Fusion/Scripts/Comp/XdropLogo.png")
+        end
+    end
+
+    local resolvedLogo = ""
+    for _, cand in ipairs(logoCandidates) do
+        if FileExists(cand) then
+            resolvedLogo = cand
+            break
+        end
+    end
+
+    local headerItems = {
+        Weight = 0,
+        Spacing = 6,
+    }
+    if resolvedLogo ~= "" then
+        table.insert(headerItems, ui:Label {
+            ID = "AppLogoLabel",
+            Pixmap = resolvedLogo,
+            FixedSize = { 24, 24 },
+            ScaledContents = true,
+            Weight = 0,
+        })
+    end
+    table.insert(headerItems, ui:Label { Text = "X", StyleSheet = LOGO_X_CSS, Weight = 0 })
+    table.insert(headerItems, ui:Label { Text = "drop", StyleSheet = LOGO_DROP_CSS, Weight = 0 })
+    table.insert(headerItems, ui:VGap(0, 1))
+    table.insert(headerItems, ui:Label { ID = "proj_badge", Text = "Resolve Studio", StyleSheet = SUBTITLE_CSS, Alignment = { AlignVCenter = true }, Weight = 1 })
+    table.insert(headerItems, ui:Label { ID = "engine_status", Text = "● Online", StyleSheet = STATUS_CONNECTED_CSS, Weight = 0 })
+
+    local winConfig = {
         ID = winID,
         WindowTitle = "Xdrop",
         FixedSize = { WINDOW_WIDTH, WINDOW_HEIGHT },
@@ -626,15 +697,7 @@ local function CreateXdropWindow()
             ID = "RootLayout",
 
             -- 1. UNIFIED BRAND HEADER
-            ui:HGroup {
-                Weight = 0,
-                Spacing = 6,
-                ui:Label { Text = "X", StyleSheet = LOGO_X_CSS, Weight = 0 },
-                ui:Label { Text = "drop", StyleSheet = LOGO_DROP_CSS, Weight = 0 },
-                ui:VGap(0, 1),
-                ui:Label { ID = "proj_badge", Text = "Resolve Studio", StyleSheet = SUBTITLE_CSS, Alignment = { AlignVCenter = true }, Weight = 1 },
-                ui:Label { ID = "engine_status", Text = "● Online", StyleSheet = STATUS_CONNECTED_CSS, Weight = 0 },
-            },
+            ui:HGroup(headerItems),
 
             -- 2. TAB NAVIGATION BAR
             ui:HGroup {
@@ -810,7 +873,13 @@ local function CreateXdropWindow()
                 },
             },
         },
-    })
+    }
+
+    if resolvedLogo ~= "" then
+        winConfig.WindowIcon = resolvedLogo
+    end
+
+    local win = disp:AddWindow(winConfig)
 
     if not win then
         return

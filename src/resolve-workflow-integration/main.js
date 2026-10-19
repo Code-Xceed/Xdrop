@@ -229,6 +229,7 @@ function createWindow() {
         minWidth: 360,
         minHeight: 520,
         title: 'Xdrop',
+        icon: path.join(__dirname, 'icon.png'),
         backgroundColor: '#09090b',
         autoHideMenuBar: true,
         useContentSize: true,

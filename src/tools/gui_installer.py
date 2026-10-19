@@ -64,6 +64,17 @@ class XdropGuiInstaller(tk.Tk):
         self.minsize(580, 680)
         self.configure(bg=COLOR_BG)
 
+        # Windows AppUserModelID for crisp taskbar grouping with custom icon
+        if sys.platform == "win32":
+            try:
+                import ctypes
+                ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("com.xdrop.setup.installer.1.0")
+            except Exception:
+                pass
+
+        # Load window icon and taskbar icon
+        self._load_app_icons()
+
         # Center on screen
         self._center_window()
 
@@ -88,6 +99,54 @@ class XdropGuiInstaller(tk.Tk):
         # Start asynchronous deep scan
         threading.Thread(target=self._run_initial_scan, daemon=True).start()
 
+    def _load_app_icons(self):
+        # 1. Search for xdrop.ico
+        candidates_ico = [
+            SCRIPT_DIR / "assets" / "xdrop.ico",
+            REPO_ROOT / "src" / "assets" / "xdrop.ico",
+            REPO_ROOT / "src" / "tools" / "assets" / "xdrop.ico",
+        ]
+        if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+            meipass = Path(sys._MEIPASS)
+            candidates_ico.extend([
+                meipass / "src" / "tools" / "assets" / "xdrop.ico",
+                meipass / "src" / "assets" / "xdrop.ico",
+                meipass / "assets" / "xdrop.ico",
+            ])
+
+        for c in candidates_ico:
+            if c.is_file():
+                try:
+                    self.iconbitmap(default=str(c))
+                    break
+                except Exception:
+                    pass
+
+        # 2. Search for logo-40.png or logo.png for header and iconphoto
+        candidates_png = [
+            SCRIPT_DIR / "assets" / "logo-40.png",
+            REPO_ROOT / "src" / "tools" / "assets" / "logo-40.png",
+            SCRIPT_DIR / "assets" / "logo.png",
+            REPO_ROOT / "src" / "assets" / "logo.png",
+        ]
+        if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+            meipass = Path(sys._MEIPASS)
+            candidates_png.extend([
+                meipass / "src" / "tools" / "assets" / "logo-40.png",
+                meipass / "src" / "assets" / "logo.png",
+                meipass / "assets" / "logo.png",
+            ])
+
+        self._logo_photo = None
+        for c in candidates_png:
+            if c.is_file():
+                try:
+                    self._logo_photo = tk.PhotoImage(file=str(c))
+                    self.iconphoto(False, self._logo_photo)
+                    break
+                except Exception:
+                    pass
+
     def _center_window(self):
         self.update_idletasks()
         w = 620
@@ -103,6 +162,10 @@ class XdropGuiInstaller(tk.Tk):
         # Branding Row
         title_row = tk.Frame(header_frame, bg=COLOR_BG)
         title_row.pack(anchor="w")
+
+        if getattr(self, "_logo_photo", None):
+            lbl_logo = tk.Label(title_row, image=self._logo_photo, bg=COLOR_BG)
+            lbl_logo.pack(side=tk.LEFT, padx=(0, 12))
 
         lbl_x = tk.Label(title_row, text="X", font=("Segoe UI", 26, "bold"), fg=COLOR_PRIMARY, bg=COLOR_BG)
         lbl_x.pack(side=tk.LEFT)
