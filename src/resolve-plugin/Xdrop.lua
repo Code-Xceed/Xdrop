@@ -684,15 +684,13 @@ local function CreateXdropWindow()
         Weight = 0,
         Spacing = 6,
     }
-    if resolvedLogo ~= "" then
-        table.insert(headerItems, ui:Label {
-            ID = "AppLogoLabel",
-            Pixmap = resolvedLogo,
-            FixedSize = { 24, 24 },
-            ScaledContents = true,
-            Weight = 0,
-        })
-    end
+    local logoDataUri = "data:image/png;base64,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"
+    local logoImgTag = "<img src='" .. logoDataUri .. "' width='22' height='22'>"
+    table.insert(headerItems, ui:Label {
+        ID = "AppLogoLabel",
+        Text = logoImgTag,
+        Weight = 0,
+    })
     table.insert(headerItems, ui:Label { Text = "X", StyleSheet = LOGO_X_CSS, Weight = 0 })
     table.insert(headerItems, ui:Label { Text = "drop", StyleSheet = LOGO_DROP_CSS, Weight = 0 })
     table.insert(headerItems, ui:VGap(0, 1))
