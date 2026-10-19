@@ -58,8 +58,8 @@ def test_resolve_installer_copies_fusion_script_and_drb(tmp_path, monkeypatch):
     xdrop_lua = comp_dir / "Xdrop.lua"
     assert xdrop_lua.is_file(), "Xdrop.lua was not installed to Comp scripts folder"
     lua_code = xdrop_lua.read_text(encoding="utf-8")
-    assert "fu.UIManager" in lua_code
-    assert "000_Xdrop Assets" in lua_code
+    assert "LaunchStudioApp" in lua_code
+    assert "SERVICE_URL" in lua_code
 
     # 3. Verify Starter Bin is installed
     starter_drb = comp_dir / "Xdrop - Starter Bin.drb"

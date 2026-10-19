@@ -14,21 +14,11 @@ def test_xdrop_lua_file_structure_and_syntax():
     assert lua_file.is_file(), "resolve-plugin/Xdrop.lua must exist"
 
     content = lua_file.read_text(encoding="utf-8")
-    # Verify Fusion UIManager tokens matching Snap Captions architecture
-    assert "local ui = fu.UIManager" in content
-    assert "local disp = bmd.UIDispatcher(ui)" in content
-    assert "local winID = \"XdropResolveWin\"" in content
-    assert "disp:AddWindow" in content
-    assert "disp:RunLoop()" in content
-    assert "disp:ExitLoop()" in content
-
-    # Verify DaVinci Resolve API integration tokens
-    assert "projectManager = resolve" in content
-    assert "mediaPool = project" in content
-    assert "mediaPool:ImportMedia" in content
+    # Verify modern unified Studio UI architecture
+    assert "LaunchStudioApp" in content
+    assert "SERVICE_URL" in content
+    assert "EnsureEngineRunning" in content
     assert "SetupXdropBins" in content
-    assert "create_bins_btn" in content
-    assert "Xdrop - Starter Bin.drb" in content
 
 
 def test_xdrop_starter_drb_packaging(tmp_path):

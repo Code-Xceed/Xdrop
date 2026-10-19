@@ -74,12 +74,12 @@ export const Header: React.FC = () => {
             style={{
               fontSize: '12px',
               fontWeight: 700,
-              letterSpacing: '0.04em',
+              letterSpacing: '0.02em',
               color: 'var(--text-primary)',
               whiteSpace: 'nowrap',
             }}
           >
-            XDROP
+            Xdrop
           </span>
 
           {/* Auto-detected Editor Status Pill (Monochromatic Minimalist) */}

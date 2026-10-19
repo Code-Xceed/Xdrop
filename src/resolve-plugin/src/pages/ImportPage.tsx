@@ -538,14 +538,16 @@ export const ImportPage: React.FC<ImportPageProps> = ({
           </button>
         </div>
 
-        {/* 2. Platform Detection Chips Strip */}
+        {/* 2. Platform Chips (Compact horizontal scroll without wrapping) */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '4px',
-            marginTop: '10px',
-            flexWrap: 'wrap',
+            marginTop: '8px',
+            overflowX: 'auto',
+            scrollbarWidth: 'none',
+            paddingBottom: '2px',
           }}
         >
           {SUPPORTED_PLATFORMS.map((plat) => {
@@ -564,11 +566,11 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                   backgroundColor: isMatched ? 'rgba(255, 255, 255, 0.12)' : 'var(--bg-tertiary)',
                   color: isMatched ? '#ffffff' : 'var(--text-muted)',
                   boxShadow: 'none',
-                  transform: 'none',
                   cursor: 'pointer',
                   transition: 'all 0.12s ease',
                   whiteSpace: 'nowrap',
                   lineHeight: '1.4',
+                  flexShrink: 0,
                 }}
                 title={isMatched ? `${plat.name} link auto-detected` : `Supported: ${plat.name}`}
               >
@@ -578,43 +580,24 @@ export const ImportPage: React.FC<ImportPageProps> = ({
           })}
         </div>
 
-        {/* 3. Analyzing / Inspecting State Notification */}
+        {/* 3. Analyzing State */}
         {isAnalyzing && (
           <div
             style={{
-              marginTop: '10px',
-              padding: '12px 14px',
+              marginTop: '8px',
+              padding: '9px 12px',
               backgroundColor: 'var(--bg-tertiary)',
               border: '1px solid var(--border-default)',
               borderRadius: 'var(--radius-sm)',
               display: 'flex',
               alignItems: 'center',
-              gap: '12px',
+              gap: '8px',
+              fontSize: '11px',
+              color: 'var(--text-secondary)',
             }}
           >
-            <div className="spin" style={{ color: 'var(--text-secondary)', fontSize: '16px', flexShrink: 0 }}>⟳</div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                Analyzing Media Streams & Quality Presets...
-              </div>
-              <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                Probing video codecs, audio sample rates, resolutions, and direct platform stream links
-              </div>
-            </div>
-            <span
-              style={{
-                fontSize: '9px',
-                fontWeight: 600,
-                color: '#ffffff',
-                backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid rgba(255, 255, 255, 0.18)',
-                padding: '2px 6px',
-                borderRadius: 'var(--radius-xs)',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              PROBE ACTIVE
-            </span>
+            <div className="spin" style={{ color: 'var(--text-primary)', fontSize: '12px', flexShrink: 0 }}>⟳</div>
+            <span>Fetching media...</span>
           </div>
         )}
 
@@ -723,7 +706,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
               >
                 <Film size={22} strokeWidth={2} />
                 <span style={{ fontSize: '9px', fontWeight: 600, color: 'var(--text-muted)' }}>
-                  {(mediaInfo.platform || 'MEDIA').toUpperCase()}
+                  {mediaInfo.platformName || mediaInfo.platform || 'Media'}
                 </span>
               </div>
             )}
@@ -736,9 +719,10 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                     backgroundColor: 'rgba(255, 255, 255, 0.08)',
                     color: '#ffffff',
                     border: '1px solid rgba(255, 255, 255, 0.16)',
+                    textTransform: 'none',
                   }}
                 >
-                  {(mediaInfo.platformName || mediaInfo.platform || 'MEDIA').toUpperCase()}
+                  {mediaInfo.platformName || mediaInfo.platform || 'Media'}
                 </span>
                 {mediaInfo.author && (
                   <span style={{ fontSize: '11px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -846,18 +830,14 @@ export const ImportPage: React.FC<ImportPageProps> = ({
               <span
                 style={{
                   fontSize: '9.5px',
-                  color: 'var(--text-secondary)',
+                  color: 'var(--text-muted)',
                   fontWeight: 500,
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px',
-                  backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                  padding: '3px 7px',
-                  borderRadius: 'var(--radius-xs)',
-                  border: '1px solid var(--border-default)',
                 }}
               >
-                <ShieldCheck size={11} strokeWidth={2} /> NLE Compatible (H.264 / AAC / ProRes)
+                <ShieldCheck size={11} strokeWidth={2} /> Timeline ready
               </span>
             </div>
 
@@ -1044,8 +1024,8 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
                   {/* Dropdown 1: Media Type */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <label style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                      1. Media Type
+                    <label style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                      Format
                     </label>
                     <select
                       className="input"
@@ -1062,15 +1042,15 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                       }}
                     >
                       <option value="video">Video & Audio</option>
-                      <option value="audio">Audio Only (Stem / Score)</option>
-                      {imageAssets.length > 0 && <option value="image">Artwork / Thumbnail</option>}
+                      <option value="audio">Audio Only</option>
+                      {imageAssets.length > 0 && <option value="image">Artwork / Cover</option>}
                     </select>
                   </div>
 
                   {/* Dropdown 2: Stream Quality / Resolution */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <label style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                      2. Stream Quality
+                    <label style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                      Quality
                     </label>
                     <select
                       className="input"
@@ -1100,7 +1080,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                           })
                         ) : (
                           <>
-                            <option value="best_video">Best Quality Video</option>
+                            <option value="best_video">Best Quality</option>
                             <option value="1080p">1080p Full HD</option>
                             <option value="720p">720p HD</option>
                           </>
@@ -1119,9 +1099,9 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                           })
                         ) : (
                           <>
-                            <option value="audio_wav">Broadcast WAV (48kHz Uncompressed)</option>
-                            <option value="audio_mp3_320">MP3 (320kbps High Quality)</option>
-                            <option value="audio_aac">AAC / M4A (320kbps Audio)</option>
+                            <option value="audio_wav">WAV (48kHz Uncompressed)</option>
+                            <option value="audio_mp3_320">MP3 (320kbps)</option>
+                            <option value="audio_aac">AAC / M4A (320kbps)</option>
                           </>
                         ))}
 
@@ -1137,15 +1117,15 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                             );
                           })
                         ) : (
-                          <option value="thumbnail_image">Full Resolution Cover Artwork</option>
+                          <option value="thumbnail_image">Full Resolution Cover</option>
                         ))}
                     </select>
                   </div>
 
                   {/* Dropdown 3: Target Output Codec / Format */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <label style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                      3. Output Format / Codec
+                    <label style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                      Codec
                     </label>
                     <select
                       className="input"
@@ -1163,26 +1143,26 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                     >
                       {customMediaType === 'video' && (
                         <>
-                          <option value="mp4">MP4 (H.264 / AAC) — Universal NLE</option>
-                          <option value="mov">MOV (Apple ProRes 422) — Post-Master</option>
-                          <option value="webm">WebM (VP9 / Opus) — Original Stream</option>
+                          <option value="mp4">MP4 (H.264 / AAC)</option>
+                          <option value="mov">MOV (Apple ProRes 422)</option>
+                          <option value="webm">WebM (VP9 / Opus)</option>
                         </>
                       )}
 
                       {customMediaType === 'audio' && (
                         <>
-                          <option value="wav">WAV (48kHz PCM) — Studio Standard</option>
-                          <option value="mp3">MP3 (320kbps CBR) — High Quality</option>
-                          <option value="m4a">M4A / AAC (320kbps) — Native Streaming</option>
-                          <option value="flac">FLAC — Lossless Audio</option>
+                          <option value="wav">WAV (48kHz PCM)</option>
+                          <option value="mp3">MP3 (320kbps)</option>
+                          <option value="m4a">M4A (320kbps)</option>
+                          <option value="flac">FLAC (Lossless)</option>
                         </>
                       )}
 
                       {customMediaType === 'image' && (
                         <>
-                          <option value="jpg">JPG — Standard Photo</option>
-                          <option value="png">PNG — Lossless RGB</option>
-                          <option value="webp">WebP — Web Format</option>
+                          <option value="jpg">JPG</option>
+                          <option value="png">PNG (Lossless)</option>
+                          <option value="webp">WebP</option>
                         </>
                       )}
                     </select>
@@ -1197,29 +1177,23 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                     justifyContent: 'space-between',
                     flexWrap: 'wrap',
                     gap: '8px',
-                    padding: '8px 10px',
+                    padding: '6px 10px',
                     borderRadius: 'var(--radius-xs)',
                     backgroundColor: 'var(--bg-secondary)',
                     border: '1px solid var(--border-subtle)',
                     fontSize: '10px',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Active Pipeline:</span>
-                    <span style={{ color: 'var(--text-muted)' }}>
-                      {customMediaType === 'video' && customFormat === 'mov'
-                        ? 'FFmpeg ProRes 422 Master Transcoder'
-                        : customMediaType === 'audio' && customFormat === 'wav'
-                        ? 'FFmpeg 48kHz PCM Audio Extractor'
-                        : customMediaType === 'audio' && customFormat === 'mp3'
-                        ? 'FFmpeg LAME 320kbps MP3 Encoder'
-                        : 'Direct NLE-Optimized Stream Remux'}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)' }}>
+                    <span>Ready for timeline:</span>
+                    <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>
+                      {customFormat.toUpperCase()} ({customMediaType})
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--success)', fontWeight: 600 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--success)', fontWeight: 500 }}>
                     <CheckCircle size={11} strokeWidth={2} />
-                    <span>NLE Import Ready ({customFormat.toUpperCase()})</span>
+                    <span>NLE ready</span>
                   </div>
                 </div>
               </div>
@@ -1310,7 +1284,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                 )}
                 <span>
                   {autoImport
-                    ? `Auto-import ${qualityMode === 'custom' ? `Custom ${customFormat.toUpperCase()} ` : ''}to ${
+                    ? `Import to ${
                         autoImportEditor === 'resolve'
                           ? 'DaVinci Resolve'
                           : autoImportEditor === 'premiere'
@@ -1319,7 +1293,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                           ? 'After Effects'
                           : 'Audition'
                       }`
-                    : `Download ${qualityMode === 'custom' ? `Custom ${customFormat.toUpperCase()}` : 'Asset Only'}`}
+                    : 'Download'}
                 </span>
                 <ArrowRight size={12} strokeWidth={2} />
               </button>

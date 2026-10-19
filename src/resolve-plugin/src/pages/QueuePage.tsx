@@ -205,8 +205,8 @@ export const QueuePage: React.FC<QueuePageProps> = ({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.04em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-            DOWNLOAD QUEUE
+          <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+            Queue
           </span>
           <span
             style={{
@@ -378,13 +378,13 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                 transition: 'border-color 0.12s ease',
                 cursor: canDrag ? 'grab' : 'default',
               }}
-              title={canDrag ? 'Completed! Drag card to drop media into any editor timeline (CapCut, Premiere, Resolve, Final Cut Pro)' : undefined}
+              title={canDrag ? 'Drag to timeline' : undefined}
             >
               {/* Row 1: Icon, Title & Status Badge */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
                   {canDrag && (
-                    <div style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', cursor: 'grab' }} title="Drag onto timeline">
+                    <div style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', cursor: 'grab' }} title="Drag to timeline">
                       <GripVertical size={13} strokeWidth={2} />
                     </div>
                   )}
@@ -423,33 +423,33 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                 {/* Status Indicator */}
                 <div style={{ flexShrink: 0 }}>
                   {job.status === 'downloading' && (
-                    <span className="badge badge-info" style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px' }}>
-                      <span className="spin">⟳</span> DOWNLOADING
+                    <span className="badge badge-info" style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px', textTransform: 'none' }}>
+                      <span className="spin">⟳</span> Downloading
                     </span>
                   )}
                   {job.status === 'processing' && (
-                    <span className="badge badge-warning" style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px' }}>
-                      <span className="spin">⟳</span> PROCESSING
+                    <span className="badge badge-warning" style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px', textTransform: 'none' }}>
+                      <span className="spin">⟳</span> Processing
                     </span>
                   )}
                   {job.status === 'importing' && (
-                    <span className="badge badge-info" style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px' }}>
-                      <span className="spin">⟳</span> IMPORTING
+                    <span className="badge badge-info" style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px', textTransform: 'none' }}>
+                      <span className="spin">⟳</span> Importing
                     </span>
                   )}
                   {job.status === 'queued' && (
-                    <span className="badge badge-neutral" style={{ fontSize: '8.5px', padding: '1px 6px' }}>
-                      QUEUED
+                    <span className="badge badge-neutral" style={{ fontSize: '8.5px', padding: '1px 6px', textTransform: 'none' }}>
+                      Queued
                     </span>
                   )}
                   {isCompleted && pendingImport && (
                     <span
                       className="badge badge-warning"
-                      style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px' }}
+                      style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px', textTransform: 'none' }}
                       title={pendingImport.error || `Waiting for ${pendingImport.editor}`}
                     >
                       <span className="spin">⟳</span>
-                      {`WAITING FOR ${pendingImport.editor.toUpperCase()}`}
+                      {`Waiting for ${pendingImport.editor}`}
                     </span>
                   )}
                   {isCompleted && !pendingImport && (
@@ -459,26 +459,27 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                         fontSize: '8.5px',
                         padding: '1px 6px',
                         gap: '3px',
+                        textTransform: 'none',
                       }}
                     >
                       <CheckCircle2 size={10} strokeWidth={2} />
                       {isAutoImportedComplete
                         ? targetEditor === 'premiere'
-                          ? 'IMPORTED TO PREMIERE'
+                          ? 'Imported to Premiere'
                           : targetEditor === 'aftereffects'
-                          ? 'IMPORTED TO AE'
-                          : 'IMPORTED TO RESOLVE'
-                        : 'READY'}
+                          ? 'Imported to AE'
+                          : 'Imported to Resolve'
+                        : 'Ready'}
                     </span>
                   )}
                   {isFailed && (
-                    <span className="badge badge-danger" style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px' }}>
-                      <AlertCircle size={10} strokeWidth={2} /> ERROR
+                    <span className="badge badge-danger" style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px', textTransform: 'none' }}>
+                      <AlertCircle size={10} strokeWidth={2} /> Error
                     </span>
                   )}
                   {isCancelled && (
-                    <span className="badge badge-neutral" style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px' }}>
-                      <XCircle size={10} strokeWidth={2} /> CANCELLED
+                    <span className="badge badge-neutral" style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px', textTransform: 'none' }}>
+                      <XCircle size={10} strokeWidth={2} /> Cancelled
                     </span>
                   )}
                 </div>
@@ -543,15 +544,15 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                   ) : job.status === 'processing' ? (
                     <span style={{ color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                       <span className="spin" style={{ fontSize: '9px' }}>⟳</span>
-                      <span>Transcoding stream for NLE timeline playback & compatibility...</span>
+                      <span>Preparing stream for timeline...</span>
                     </span>
                   ) : job.status === 'importing' ? (
                     <span style={{ color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                       <span className="spin" style={{ fontSize: '9px' }}>⟳</span>
-                      <span>Importing media into {targetEditor === 'premiere' ? 'Premiere Pro' : targetEditor === 'aftereffects' ? 'After Effects' : 'DaVinci Resolve'}...</span>
+                      <span>Importing into {targetEditor === 'premiere' ? 'Premiere Pro' : targetEditor === 'aftereffects' ? 'After Effects' : 'DaVinci Resolve'}...</span>
                     </span>
                   ) : job.status === 'queued' ? (
-                    <span>Queued in line waiting for worker...</span>
+                    <span>Queued...</span>
                   ) : isCompleted ? (
                     <span style={{ color: 'var(--text-secondary)' }}>
                       {pendingImport ? (
@@ -567,7 +568,7 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                         </span>
                       ) : isAutoImportedComplete ? (
                         <span style={{ color: 'var(--success)', fontWeight: 600 }}>
-                          ✓ Available in Bin '{job.premiereBin || job.aftereffectsBin || job.resolveBin || (job as any).premiere_bin || (job as any).target_media_pool_bin || 'Xdrop'}' •{' '}
+                          ✓ In Bin: '{job.premiereBin || job.aftereffectsBin || job.resolveBin || (job as any).premiere_bin || (job as any).target_media_pool_bin || 'Xdrop'}' •{' '}
                         </span>
                       ) : null}
                       {formatStr} {job.qualityLabel ? `• ${job.qualityLabel}` : ''} • {formatBytes(downloadedBytes)}
@@ -645,7 +646,7 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                         title="Media was automatically imported into project workspace upon download completion."
                       >
                         <Check size={11} strokeWidth={2.5} />
-                        Auto-imported to {
+                        Imported to {
                           targetEditor === 'aftereffects' || isAfterEffectsImported
                             ? 'After Effects'
                             : targetEditor === 'premiere' || isPremiereImported

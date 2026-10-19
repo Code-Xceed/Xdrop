@@ -6,12 +6,12 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@xdrop/shared-types': path.resolve(__dirname, '../../packages/shared-types/src/index.ts'),
-      '@xdrop/protocol': path.resolve(__dirname, '../../packages/protocol/src/index.ts'),
-      '@xdrop/utilities': path.resolve(__dirname, '../../packages/utilities/src/index.ts'),
-      '@resolvefetch/shared-types': path.resolve(__dirname, '../../packages/shared-types/src/index.ts'),
-      '@resolvefetch/protocol': path.resolve(__dirname, '../../packages/protocol/src/index.ts'),
-      '@resolvefetch/utilities': path.resolve(__dirname, '../../packages/utilities/src/index.ts'),
+      '@xdrop/shared-types': path.resolve(__dirname, 'src/shared/types.ts'),
+      '@xdrop/protocol': path.resolve(__dirname, 'src/shared/protocol.ts'),
+      '@xdrop/utilities': path.resolve(__dirname, 'src/shared/utilities.ts'),
+      '@resolvefetch/shared-types': path.resolve(__dirname, 'src/shared/types.ts'),
+      '@resolvefetch/protocol': path.resolve(__dirname, 'src/shared/protocol.ts'),
+      '@resolvefetch/utilities': path.resolve(__dirname, 'src/shared/utilities.ts'),
     },
   },
   server: {

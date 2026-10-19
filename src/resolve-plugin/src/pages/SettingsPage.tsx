@@ -99,7 +99,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ showToast }) => {
     return (
       <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>
         <span className="spin" style={{ display: 'inline-block', fontSize: '18px', marginBottom: '8px' }}>⟳</span>
-        <p style={{ fontWeight: 500, fontSize: '11px', letterSpacing: '0.04em' }}>LOADING SETTINGS...</p>
+        <p style={{ fontWeight: 500, fontSize: '11px' }}>Loading settings...</p>
       </div>
     );
   }
@@ -113,8 +113,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ showToast }) => {
         <div className="panel" style={{ backgroundColor: 'var(--bg-secondary)', padding: '14px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
             <Layers size={14} strokeWidth={2} color="var(--text-secondary)" />
-            <h4 style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Target Editor Bins
+            <h4 style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
+              Editor bins
             </h4>
           </div>
 
@@ -134,7 +134,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ showToast }) => {
                 </span>
               </div>
               <label style={{ fontSize: '10px', fontWeight: 500, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
-                Media Pool Bin
+                Media Pool bin
               </label>
               <input
                 type="text"
@@ -170,7 +170,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ showToast }) => {
                 </span>
               </div>
               <label style={{ fontSize: '10px', fontWeight: 500, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
-                Project Panel Bin
+                Project panel bin
               </label>
               <input
                 type="text"
@@ -206,7 +206,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ showToast }) => {
                 </span>
               </div>
               <label style={{ fontSize: '10px', fontWeight: 500, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
-                Project Panel Bin / Folder
+                Project panel folder
               </label>
               <input
                 type="text"
@@ -233,15 +233,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ showToast }) => {
         <div className="panel" style={{ backgroundColor: 'var(--bg-secondary)', padding: '14px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
             <ShieldCheck size={14} strokeWidth={2} color="var(--text-secondary)" />
-            <h4 style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Transcode & Codec Preferences
+            <h4 style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
+              Transcoding & format
             </h4>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '10px' }}>
             <div>
-              <label style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
-                VIDEO PRESET
+              <label style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+                Video format
               </label>
               <select
                 className="input"
@@ -251,16 +251,16 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ showToast }) => {
               >
                 <option value="mp4">Universal MP4 (H.264 / AAC)</option>
                 <option value="mov">Apple ProRes 422 (MOV)</option>
-                <option value="original">Original Stream Format</option>
+                <option value="original">Original format</option>
               </select>
               <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>
-                Transcodes AV1/VP9 to H.264 for crash-free timeline playback across all NLEs.
+                Transcodes VP9/AV1 to H.264 for smooth timeline playback.
               </span>
             </div>
 
             <div>
-              <label style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
-                AUDIO FORMAT
+              <label style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+                Audio format
               </label>
               <select
                 className="input"
@@ -269,7 +269,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ showToast }) => {
                 style={{ backgroundColor: 'var(--bg-primary)', height: '32px', fontSize: '11px' }}
               >
                 <option value="wav">WAV (Lossless 24-bit PCM)</option>
-                <option value="mp3">MP3 (320 kbps High Bitrate)</option>
+                <option value="mp3">MP3 (320 kbps)</option>
                 <option value="aac">AAC (Stereo)</option>
               </select>
             </div>
@@ -280,15 +280,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ showToast }) => {
         <div className="panel" style={{ backgroundColor: 'var(--bg-secondary)', padding: '14px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
             <Folder size={14} strokeWidth={2} color="var(--text-secondary)" />
-            <h4 style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Storage & Naming
+            <h4 style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
+              Storage & naming
             </h4>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <div>
-              <label style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
-                DOWNLOAD DIRECTORY
+              <label style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+                Download folder
               </label>
               <input
                 type="text"
@@ -300,8 +300,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ showToast }) => {
             </div>
 
             <div>
-              <label style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
-                NAMING TEMPLATE
+              <label style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+                Naming template
               </label>
               <input
                 type="text"
@@ -332,20 +332,19 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ showToast }) => {
           </div>
         </div>
 
-        {/* 4. Editor Integrations — one click, per-user, no admin, no console window */}
+        {/* 4. Editor Integrations */}
         <div className="panel" style={{ backgroundColor: 'var(--bg-secondary)', padding: '14px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
             <Wrench size={14} strokeWidth={2} color="var(--text-secondary)" />
-            <h4 style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Editor Integrations
+            <h4 style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
+              Integrations
             </h4>
-            <span className="badge badge-success" style={{ fontSize: '8.5px', padding: '1px 5px', marginLeft: 'auto' }}>
-              NO ADMIN NEEDED
+            <span className="badge badge-success" style={{ fontSize: '8.5px', padding: '1px 5px', marginLeft: 'auto', textTransform: 'none' }}>
+              No admin needed
             </span>
           </div>
           <p style={{ fontSize: '10px', color: 'var(--text-muted)', margin: '0 0 10px' }}>
-            Installs into this user's own editor folders and enables Adobe developer mode
-            silently — nothing to run, no password prompt.
+            Installs into your local user folders and configures Adobe developer mode automatically.
           </p>
 
           <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
@@ -359,7 +358,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ showToast }) => {
               <ShieldCheck size={12} strokeWidth={2} />
               <span>
                 {isInstallingAll
-                  ? 'Installing everything...'
+                  ? 'Installing...'
                   : integrations?.hosts.every((h) => h.installed)
                   ? 'Re-install all integrations'
                   : 'Install all integrations'}
@@ -393,17 +392,17 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ showToast }) => {
                     {host.label}
                   </span>
                   {host.installed ? (
-                    <span className="badge badge-success" style={{ fontSize: '8.5px', padding: '1px 5px', gap: '3px' }}>
-                      <CheckCircle2 size={9} strokeWidth={2.5} /> READY
+                    <span className="badge badge-success" style={{ fontSize: '8.5px', padding: '1px 5px', gap: '3px', textTransform: 'none' }}>
+                      <CheckCircle2 size={9} strokeWidth={2.5} /> Ready
                     </span>
                   ) : (
-                    <span className="badge badge-warning" style={{ fontSize: '8.5px', padding: '1px 5px', gap: '3px' }}>
-                      <AlertCircle size={9} strokeWidth={2.5} /> NOT INSTALLED
+                    <span className="badge badge-warning" style={{ fontSize: '8.5px', padding: '1px 5px', gap: '3px', textTransform: 'none' }}>
+                      <AlertCircle size={9} strokeWidth={2.5} /> Not installed
                     </span>
                   )}
                   {host.requiresAdmin && (
-                    <span className="badge badge-danger" style={{ fontSize: '8.5px', padding: '1px 5px' }}>
-                      NEEDS ADMIN
+                    <span className="badge badge-danger" style={{ fontSize: '8.5px', padding: '1px 5px', textTransform: 'none' }}>
+                      Needs admin
                     </span>
                   )}
                   <button
@@ -487,12 +486,12 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ showToast }) => {
               }}
             >
               <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                FFmpeg HW Engine
+                FFmpeg engine
               </span>
               {toolsStatus?.ffmpeg?.isAvailable ? (
-                <span className="badge badge-success" style={{ fontSize: '8.5px', padding: '1px 4px' }}>ACTIVE</span>
+                <span className="badge badge-success" style={{ fontSize: '8.5px', padding: '1px 4px', textTransform: 'none' }}>Active</span>
               ) : (
-                <span className="badge badge-danger" style={{ fontSize: '8.5px', padding: '1px 4px' }}>OFFLINE</span>
+                <span className="badge badge-danger" style={{ fontSize: '8.5px', padding: '1px 4px', textTransform: 'none' }}>Offline</span>
               )}
               <span
                 style={{

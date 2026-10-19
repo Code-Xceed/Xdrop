@@ -17,12 +17,12 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@xdrop/shared-types": ["../../packages/shared-types/src/index.ts"],
-      "@xdrop/protocol": ["../../packages/protocol/src/index.ts"],
-      "@xdrop/utilities": ["../../packages/utilities/src/index.ts"],
-      "@resolvefetch/shared-types": ["../../packages/shared-types/src/index.ts"],
-      "@resolvefetch/protocol": ["../../packages/protocol/src/index.ts"],
-      "@resolvefetch/utilities": ["../../packages/utilities/src/index.ts"]
+      "@xdrop/shared-types": ["src/shared/types.ts"],
+      "@xdrop/protocol": ["src/shared/protocol.ts"],
+      "@xdrop/utilities": ["src/shared/utilities.ts"],
+      "@resolvefetch/shared-types": ["src/shared/types.ts"],
+      "@resolvefetch/protocol": ["src/shared/protocol.ts"],
+      "@resolvefetch/utilities": ["src/shared/utilities.ts"]
     }
   },
   "include": ["src"]
