@@ -158,7 +158,7 @@ class DeepEditorScanner:
                         editor.is_running = True
                         break
             elif "resolve" in editor.editor_id:
-                if "resolve.exe" in self.running_processes:
+                if "resolve.exe" in self.running_processes or "resolve" in self.running_processes:
                     editor.is_running = True
             elif editor.editor_id == "blender":
                 if "blender.exe" in self.running_processes or "blender" in self.running_processes:

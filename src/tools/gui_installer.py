@@ -442,7 +442,7 @@ class XdropGuiInstaller(tk.Tk):
 
             # Step 1: Headless Engine Service
             if self.install_engine_var.get():
-                self._set_status("Installing zero-trace background engine (%LOCALAPPDATA%\\Xdrop)...", 25)
+                self._set_status("Installing zero-trace background engine service...", 25)
                 installer.install_desktop_service()
                 time.sleep(0.4)
 
@@ -455,7 +455,7 @@ class XdropGuiInstaller(tk.Tk):
 
             # Step 3: Adobe Creative Cloud
             if self.install_adobe_var.get():
-                self._set_status("Deploying Adobe CEP extension & configuring Windows Registry...", 80)
+                self._set_status("Deploying Adobe CEP extension & developer configuration...", 80)
                 installer.install_adobe_creative_cloud()
                 time.sleep(0.4)
 

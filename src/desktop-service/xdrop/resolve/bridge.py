@@ -23,7 +23,7 @@ class ResolveBridge:
             return self._last_process_running
 
         from xdrop.process_util import is_process_running
-        running = is_process_running("Resolve.exe")
+        running = is_process_running(["Resolve.exe", "Resolve", "resolve"])
         self._last_process_running = running
         self._last_process_check_time = now
         return running
@@ -47,8 +47,14 @@ class ResolveBridge:
                     os.environ["RESOLVE_SCRIPT_LIB"] = lib_path
             elif sys.platform.startswith("darwin"):
                 modules_path = "/Library/Application Support/Blackmagic Design/DaVinci Resolve/Developer/Scripting/Modules"
+                lib_path = "/Applications/DaVinci Resolve/DaVinci Resolve.app/Contents/Libraries/Fusion/fusionscript.so"
+                if os.path.exists(lib_path):
+                    os.environ["RESOLVE_SCRIPT_LIB"] = lib_path
             else:
                 modules_path = "/opt/resolve/Developer/Scripting/Modules"
+                lib_path = "/opt/resolve/libs/Fusion/fusionscript.so"
+                if os.path.exists(lib_path):
+                    os.environ["RESOLVE_SCRIPT_LIB"] = lib_path
 
             if os.path.exists(modules_path) and modules_path not in sys.path:
                 sys.path.append(modules_path)

@@ -445,11 +445,24 @@ class DeepAppScanner:
 
 
 def find_system_python() -> Tuple[Path, Path]:
-    """Finds real system python.exe and pythonw.exe, even when running inside a frozen PyInstaller bundle."""
+    """Finds real system python and pythonw executable across Windows, macOS, and Linux."""
     if not getattr(sys, "frozen", False):
         py = Path(sys.executable)
-        pyw = py.parent / "pythonw.exe"
-        return py, (pyw if pyw.is_file() else py)
+        if sys.platform == "win32":
+            pyw = py.parent / "pythonw.exe"
+            return py, (pyw if pyw.is_file() else py)
+        return py, py
+
+    if sys.platform != "win32":
+        for cand in ("python3", "python"):
+            found = shutil.which(cand)
+            if found:
+                p = Path(found)
+                return p, p
+        for p in [Path("/opt/homebrew/bin/python3"), Path("/usr/local/bin/python3"), Path("/usr/bin/python3"), Path("/usr/bin/python")]:
+            if p.is_file():
+                return p, p
+        return Path(sys.executable), Path(sys.executable)
 
     for cand in ("pythonw", "python"):
         found = shutil.which(cand)
@@ -606,44 +619,121 @@ class ExtensionInstaller:
         python_exe, pythonw_exe = find_system_python()
         log_info(f"Using system Python interpreter: {python_exe} (silent: {pythonw_exe})")
 
-        # 5. Generate start_engine.vbs (100% silent, 0 window popup)
-        vbs_path = target_dir / "start_engine.vbs"
-        target_win = str(target_dir).replace("/", "\\")
-        pythonw_win = str(pythonw_exe).replace("/", "\\")
-        vbs_content = f'''Set WshShell = CreateObject("WScript.Shell")
+        # 5. Generate start/stop launcher scripts
+        if sys.platform == "win32":
+            vbs_path = target_dir / "start_engine.vbs"
+            target_win = str(target_dir).replace("/", "\\")
+            pythonw_win = str(pythonw_exe).replace("/", "\\")
+            vbs_content = f'''Set WshShell = CreateObject("WScript.Shell")
 WshShell.CurrentDirectory = "{target_win}"
 WshShell.Run Chr(34) & "{pythonw_win}" & Chr(34) & " " & Chr(34) & "{target_win}\\run_engine.py" & Chr(34) & " --background", 0, False
 '''
-        vbs_path.write_text(vbs_content, encoding="utf-8")
+            vbs_path.write_text(vbs_content, encoding="utf-8")
 
-        # 6. Generate start_engine.bat
-        bat_path = target_dir / "start_engine.bat"
-        bat_content = f'''@echo off
+            bat_path = target_dir / "start_engine.bat"
+            bat_content = f'''@echo off
 cd /d "{target_win}"
 start "" "{pythonw_win}" "{target_win}\\run_engine.py" --background
 '''
-        bat_path.write_text(bat_content, encoding="utf-8")
+            bat_path.write_text(bat_content, encoding="utf-8")
 
-        # 7. Generate stop_engine.bat
-        stop_bat = target_dir / "stop_engine.bat"
-        stop_content = '''@echo off
+            stop_bat = target_dir / "stop_engine.bat"
+            stop_content = '''@echo off
 powershell -Command "Get-NetTCPConnection -LocalPort 8484 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"
 '''
-        stop_bat.write_text(stop_content, encoding="utf-8")
+            stop_bat.write_text(stop_content, encoding="utf-8")
 
-        # 8. Register in Windows Registry Run key (user level, no admin required)
-        if winreg and sys.platform == "win32":
+            # Register in Windows Registry Run key (user level, no admin required)
+            if winreg:
+                try:
+                    with winreg.OpenKey(
+                        winreg.HKEY_CURRENT_USER,
+                        r"Software\Microsoft\Windows\CurrentVersion\Run",
+                        0,
+                        winreg.KEY_SET_VALUE
+                    ) as key:
+                        winreg.SetValueEx(key, "XdropService", 0, winreg.REG_SZ, f'wscript.exe "{vbs_path}"')
+                    log_success("Registered Xdrop background service in Windows User Startup.")
+                except Exception as e:
+                    log_warn(f"Could not register startup key: {e}")
+        else:
+            # POSIX: Generate start_engine.sh and stop_engine.sh
+            sh_start = target_dir / "start_engine.sh"
+            sh_start_content = f'''#!/bin/sh
+cd "{target_dir}"
+nohup "{python_exe}" "{run_engine_tgt}" --background >/dev/null 2>&1 &
+'''
+            sh_start.write_text(sh_start_content, encoding="utf-8")
             try:
-                with winreg.OpenKey(
-                    winreg.HKEY_CURRENT_USER,
-                    r"Software\Microsoft\Windows\CurrentVersion\Run",
-                    0,
-                    winreg.KEY_SET_VALUE
-                ) as key:
-                    winreg.SetValueEx(key, "XdropService", 0, winreg.REG_SZ, f'wscript.exe "{vbs_path}"')
-                log_success("Registered Xdrop background service in Windows User Startup.")
-            except Exception as e:
-                log_warn(f"Could not register startup key: {e}")
+                sh_start.chmod(0o755)
+            except Exception:
+                pass
+
+            sh_stop = target_dir / "stop_engine.sh"
+            sh_stop_content = '''#!/bin/sh
+pkill -f "run_engine.py" 2>/dev/null || true
+'''
+            sh_stop.write_text(sh_stop_content, encoding="utf-8")
+            try:
+                sh_stop.chmod(0o755)
+            except Exception:
+                pass
+
+            # macOS: Register LaunchAgent for background service
+            if sys.platform == "darwin":
+                launch_agents_dir = Path.home() / "Library" / "LaunchAgents"
+                try:
+                    launch_agents_dir.mkdir(parents=True, exist_ok=True)
+                    plist_path = launch_agents_dir / "com.xdrop.service.plist"
+                    plist_content = f'''<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.xdrop.service</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>{python_exe}</string>
+        <string>{run_engine_tgt}</string>
+        <string>--background</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <false/>
+    <key>StandardErrorPath</key>
+    <string>{target_dir}/engine_error.log</string>
+    <key>StandardOutPath</key>
+    <string>{target_dir}/engine.log</string>
+</dict>
+</plist>
+'''
+                    plist_path.write_text(plist_content, encoding="utf-8")
+                    log_success(f"Registered macOS LaunchAgent: {plist_path}")
+                except Exception as e:
+                    log_warn(f"Could not register macOS LaunchAgent: {e}")
+
+            # Linux: Register XDG Autostart desktop entry
+            elif sys.platform.startswith("linux"):
+                autostart_dir = Path.home() / ".config" / "autostart"
+                try:
+                    autostart_dir.mkdir(parents=True, exist_ok=True)
+                    desktop_entry = autostart_dir / "xdrop.desktop"
+                    desktop_content = f'''[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Xdrop Service
+Comment=Xdrop Background Engine for DaVinci Resolve and Adobe NLEs
+Exec={python_exe} {run_engine_tgt} --background
+Terminal=false
+Hidden=false
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
+'''
+                    desktop_entry.write_text(desktop_content, encoding="utf-8")
+                    log_success(f"Registered Linux autostart desktop entry: {desktop_entry}")
+                except Exception as e:
+                    log_warn(f"Could not register Linux autostart: {e}")
 
         # 9. Start the engine now!
         log_info("Checking / starting Xdrop background engine...")
@@ -695,7 +785,13 @@ powershell -Command "Get-NetTCPConnection -LocalPort 8484 -ErrorAction SilentlyC
                         except Exception:
                             pass
                 else:
-                    subprocess.Popen([str(python_exe), str(run_engine_tgt), "--background"], cwd=target_dir)
+                    subprocess.Popen(
+                        [str(python_exe), str(run_engine_tgt), "--background"],
+                        cwd=target_dir,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        start_new_session=True
+                    )
 
                 for _ in range(15):
                     time.sleep(0.4)
@@ -837,7 +933,7 @@ powershell -Command "Get-NetTCPConnection -LocalPort 8484 -ErrorAction SilentlyC
             except Exception as e:
                 log_error(f"Adobe CEP installation notice: {e}")
 
-        # Enable CSXS PlayerDebugMode in Registry
+        # Enable CSXS PlayerDebugMode in Registry (Windows) or via defaults write (macOS)
         if sys.platform == "win32" and winreg:
             enabled_count = 0
             for ver in ["9", "10", "11", "12", "13", "14", "15", "16"]:
@@ -849,6 +945,21 @@ powershell -Command "Get-NetTCPConnection -LocalPort 8484 -ErrorAction SilentlyC
                     pass
             if enabled_count > 0:
                 log_success(f"Adobe CEP Developer Mode enabled across CSXS 9..16 (in Registry, no admin required)")
+        elif sys.platform == "darwin":
+            enabled_count = 0
+            for ver in ["9", "10", "11", "12", "13", "14", "15", "16"]:
+                try:
+                    subprocess.run(
+                        ["defaults", "write", f"com.adobe.CSXS.{ver}", "PlayerDebugMode", "1"],
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        check=False,
+                    )
+                    enabled_count += 1
+                except Exception:
+                    pass
+            if enabled_count > 0:
+                log_success("Adobe CEP Developer Mode enabled across CSXS 9..16 (via defaults write)")
 
         # Compile UXP packages
         try:
@@ -932,6 +1043,20 @@ powershell -Command "Get-NetTCPConnection -LocalPort 8484 -ErrorAction SilentlyC
                         if vdir.is_dir() and vdir.name[0].isdigit():
                             target = vdir / "scripts" / "addons" / "xdrop"
                             try:
+                                shutil.copytree(addon_src, target, dirs_exist_ok=True)
+                                log_success(f"Auto-installed into Blender {vdir.name}: {target}")
+                                installed_profiles += 1
+                            except Exception:
+                                pass
+            elif sys.platform.startswith("linux"):
+                b_root = Path.home() / ".config" / "blender"
+                if b_root.is_dir():
+                    for vdir in b_root.iterdir():
+                        if vdir.is_dir() and vdir.name[0].isdigit():
+                            target = vdir / "scripts" / "addons" / "xdrop"
+                            try:
+                                if target.exists():
+                                    shutil.rmtree(target, ignore_errors=True)
                                 shutil.copytree(addon_src, target, dirs_exist_ok=True)
                                 log_success(f"Auto-installed into Blender {vdir.name}: {target}")
                                 installed_profiles += 1

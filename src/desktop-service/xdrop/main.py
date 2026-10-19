@@ -10,7 +10,11 @@ if str(service_root) not in sys.path:
 
 # Safe stream redirection for background / detached daemon processes (pythonw, wscript, Electron)
 def _ensure_safe_stream(stream_name, mode="a"):
-    log_dir = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local")) / "Xdrop"
+    appdata = os.environ.get("LOCALAPPDATA")
+    if appdata:
+        log_dir = Path(appdata) / "Xdrop"
+    else:
+        log_dir = Path.home() / ".xdrop"
     try:
         log_dir.mkdir(parents=True, exist_ok=True)
     except Exception:

@@ -8,8 +8,8 @@ class AfterEffectsBridge(AdobePanelBridge):
 
     editor_id = "aftereffects"
     product_name = "Adobe After Effects"
-    # After Effects ships as AfterFX.exe on Windows; the second name covers newer builds.
-    process_candidates = ("AfterFX.exe", "After Effects.exe")
+    # After Effects ships as AfterFX.exe on Windows; on macOS it runs as After Effects or Adobe After Effects.
+    process_candidates = ("AfterFX.exe", "After Effects.exe", "Adobe After Effects", "After Effects")
     process_grep = "After Effects"
     import_event = "AFTEREFFECTS_IMPORT_REQUEST"
 

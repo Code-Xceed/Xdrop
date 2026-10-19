@@ -184,7 +184,7 @@ def open_desktop_window(url):
         for exe in candidates:
             if os.path.isfile(exe):
                 try:
-                    subprocess.Popen([exe, f"--app={{url}}", "--window-size=1080,740", "--app-id=Xdrop"])
+                    subprocess.Popen([exe, f"--app={{url}}", "--window-size=390,640", "--app-id=Xdrop"])
                     return True
                 except Exception:
                     pass
@@ -193,11 +193,22 @@ def open_desktop_window(url):
             "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
             "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
             "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            os.path.expanduser("~/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
         ]
         for app in mac_apps:
             if os.path.isfile(app):
                 try:
-                    subprocess.Popen([app, f"--app={{url}}", "--window-size=1080,740"])
+                    subprocess.Popen([app, f"--app={{url}}", "--window-size=390,640"])
+                    return True
+                except Exception:
+                    pass
+    else:
+        import shutil
+        for name in ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "microsoft-edge", "brave"):
+            bin_path = shutil.which(name)
+            if bin_path:
+                try:
+                    subprocess.Popen([bin_path, f"--app={{url}}", "--window-size=390,640"])
                     return True
                 except Exception:
                     pass

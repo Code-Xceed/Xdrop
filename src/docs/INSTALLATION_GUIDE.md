@@ -140,7 +140,36 @@ XdropInstaller-Premiere.exe
 
 ---
 
-## 3. Headless Background Engine Architecture
+## 3. macOS Installation Guide
+
+### 1-Click Setup on macOS
+1. Double-click **`XdropSetup.command`** in Finder (or run `./setup_mac.sh` in Terminal).
+2. The installer provisions:
+   - **DaVinci Resolve Comp Script**: `~/Library/Application Support/Blackmagic Design/DaVinci Resolve/Fusion/Scripts/Comp/Xdrop.lua` and Starter Bin.
+   - **DaVinci Studio Workflow Integration**: `~/Library/Application Support/Blackmagic Design/DaVinci Resolve/Workflow Integration Plugins/com.xdrop.resolve.workflowintegration`
+   - **Adobe Creative Cloud CEP**: `~/Library/Application Support/Adobe/CEP/extensions/com.xdrop.panel`
+   - **PlayerDebugMode**: Enables CEP debug mode for versions 9..16 via macOS `defaults write`.
+   - **Blender VSE Add-on**: `~/Library/Application Support/Blender/<ver>/scripts/addons/xdrop`.
+   - **Background Daemon LaunchAgent**: `~/Library/LaunchAgents/com.xdrop.service.plist` (launches headless engine on login with zero Dock icon).
+
+---
+
+## 4. Linux Installation Guide
+
+### 1-Click Setup on Linux
+1. Open a terminal and run:
+   ```bash
+   ./setup_linux.sh
+   ```
+2. The installer provisions:
+   - **DaVinci Resolve Comp Script**: `~/.local/share/DaVinciResolve/Fusion/Scripts/Comp/Xdrop.lua` and Starter Bin.
+   - **Blender VSE Add-on**: `~/.config/blender/<ver>/scripts/addons/xdrop`.
+   - **Background Autostart**: `~/.config/autostart/xdrop.desktop`.
+   - **Zero Root Needed**: All installations are in the user directory and require zero `sudo` elevation.
+
+---
+
+## 5. Headless Background Engine Architecture
 
 ### Why No Terminal Windows or Flickering?
 Older tools often spawn a `cmd.exe` or `python.exe` console window that flashes on your screen every time an operation runs or in recurring intervals. 

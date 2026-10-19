@@ -5,22 +5,32 @@
 >  
 > *Paste URL → Detect Platform → Inspect Quality → Download & Transcode → Instantly Drop into Timelines & Bins.*
 
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-blue.svg)]()
-[![Editors](https://img.shields.io/badge/editors-DaVinci%20Resolve%20%7C%20Premiere%20Pro%20%7C%20After%20Effects-purple.svg)]()
-[![Tests](https://img.shields.io/badge/tests-88%20passed-brightgreen.svg)]()
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue.svg)]()
+[![Editors](https://img.shields.io/badge/editors-DaVinci%20Resolve%20%7C%20Premiere%20Pro%20%7C%20After%20Effects%20%7C%20Blender-purple.svg)]()
+[![Tests](https://img.shields.io/badge/tests-92%20passed-brightgreen.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-purple.svg)](LICENSE)
 
 ---
 
-## ⚡ 1-Click Installers (Zero CLI)
+## ⚡ 1-Click Installers Across Operating Systems
 
-Download the installer for your video editor. **No Python, Git, or command-line setup is required.**
+Install Xdrop for your operating system without complex setup or administrator/root prompts:
 
+### Windows
 | Installer Executable | Target Host & Extension Architecture | Status |
 | :--- | :--- | :--- |
-| [**`XdropSetup.exe`**](XdropSetup.exe) | **Unified Modern GUI Setup (Recommended)**<br>• Full Dark-Mode GUI with auto-detection of both editors<br>• Configures DaVinci Resolve & Adobe Creative Cloud in 1-click<br>• Sets up zero-trace, on-demand headless engine | **Ready (`14 MB`)** |
+| [**`XdropSetup.exe`**](XdropSetup.exe) | **Unified Modern GUI Setup (Recommended)**<br>• Full Dark-Mode GUI with auto-detection of all editors<br>• Configures DaVinci Resolve & Adobe Creative Cloud in 1 click<br>• Sets up zero-trace, on-demand headless engine | **Ready (`14 MB`)** |
 | [**`XdropInstaller-Resolve.exe`**](XdropInstaller-Resolve.exe) | **DaVinci Resolve Dedicated (Free & Studio)**<br>• Native Fusion UI Comp Script (`Xdrop.lua`)<br>• Color-Coded Starter Bin (`Xdrop - Starter Bin.drb`)<br>• Studio Workflow Integration panel | **Ready (`11 MB`)** |
 | [**`XdropInstaller-Premiere.exe`**](XdropInstaller-Premiere.exe) | **Adobe Creative Cloud Dedicated (CC 2019–2026+)**<br>• Premiere Pro CEP Docked Extension (`com.xdrop.panel`)<br>• Automated `PlayerDebugMode` Registry Setup<br>• After Effects & Audition Extension Panels<br>• Modern Creative Cloud UXP Bundle (`.ccx`) | **Ready (`11 MB`)** |
+
+### macOS
+- **1-Click Finder Runner**: Double-click [**`XdropSetup.command`**](XdropSetup.command).
+- **Terminal Runner**: Run `./setup_mac.sh`
+- Automatically configures DaVinci Resolve (`~/Library/Application Support/...`), Adobe Creative Cloud CEP (`~/Library/Application Support/Adobe/CEP/extensions/com.xdrop.panel`), `defaults write com.adobe.CSXS.<ver> PlayerDebugMode 1`, Blender VSE, and background LaunchAgent (`~/Library/LaunchAgents/com.xdrop.service.plist`).
+
+### Linux
+- **Terminal Runner**: Run `./setup_linux.sh`
+- Automatically configures DaVinci Resolve (`~/.local/share/DaVinciResolve/Fusion/Scripts/Comp/`), Blender VSE (`~/.config/blender/`), and desktop autostart (`~/.config/autostart/xdrop.desktop`). No root or sudo required.
 
 📖 **For detailed instructions and FAQs, see the [Installation Guide](src/docs/INSTALLATION_GUIDE.md).**
 

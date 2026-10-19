@@ -8,7 +8,7 @@ class AuditionBridge(AdobePanelBridge):
 
     editor_id = "audition"
     product_name = "Adobe Audition"
-    process_candidates = ("Adobe Audition.exe", "Audition.exe")
+    process_candidates = ("Adobe Audition.exe", "Audition.exe", "Adobe Audition", "Audition")
     process_grep = "Adobe Audition"
     import_event = "AUDITION_IMPORT_REQUEST"
 

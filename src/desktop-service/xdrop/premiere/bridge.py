@@ -8,7 +8,7 @@ class PremiereBridge(AdobePanelBridge):
 
     editor_id = "premiere"
     product_name = "Adobe Premiere Pro"
-    process_candidates = ("Adobe Premiere Pro.exe",)
+    process_candidates = ("Adobe Premiere Pro.exe", "Adobe Premiere Pro", "Premiere")
     process_grep = "Adobe Premiere Pro"
     import_event = "PREMIERE_IMPORT_REQUEST"
 
