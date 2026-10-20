@@ -1,8 +1,9 @@
 # Build outputs & installers
-dist/
 build/
 *.spec
 dist-installer/
+dist/*.exe
+dist/*.ccx
 
 # Python
 __pycache__/

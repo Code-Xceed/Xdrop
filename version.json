@@ -1,7 +1,7 @@
 {
-  "version": "1.2.0",
-  "name": "Xdrop v1.2.0",
+  "version": "1.2.1",
+  "name": "Xdrop v1.2.1",
   "releaseDate": "2026-10-20",
-  "changelog": "Added full Adobe Creative Cloud parity (Premiere Pro, After Effects, Audition), dedicated 1-click launchers for Windows and macOS, and universal auto-update system.",
+  "changelog": "Auto-detect highest quality media (4K/1080p) by default, full custom quality tiers, and optimized YouTube stream extraction across all video editors.",
   "archiveUrl": "https://github.com/Code-Xceed/Xdrop/archive/refs/heads/master.zip"
 }
