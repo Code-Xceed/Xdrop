@@ -13,6 +13,8 @@ import {
   InstallScope,
   IntegrationsStatus,
   InstallIntegrationsResponse,
+  UpdateInfo,
+  UpdateProgress,
 } from '@xdrop/shared-types';
 
 const API_BASE = '/api';
@@ -283,3 +285,37 @@ export async function importJobToAudition(id: string): Promise<{ success: boolea
   const resp = await fetch(`${API_BASE}/downloads/${id}/import-audition`, { method: 'POST' });
   return resp.json();
 }
+
+export async function checkForUpdates(force: boolean = false): Promise<UpdateInfo> {
+  const url = `${API_BASE}/system/update/check${force ? '?force=true' : ''}`;
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error('Failed to check for updates.');
+  return resp.json();
+}
+
+export async function installUpdate(downloadUrl?: string): Promise<{ status: string; message: string }> {
+  const resp = await fetch(`${API_BASE}/system/update/install`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ downloadUrl }),
+  });
+  if (!resp.ok) throw new Error('Failed to start update.');
+  return resp.json();
+}
+
+export async function getUpdateStatus(): Promise<UpdateProgress> {
+  const resp = await fetch(`${API_BASE}/system/update/status`);
+  if (!resp.ok) throw new Error('Failed to get update status.');
+  return resp.json();
+}
+
+export async function dismissUpdate(version: string): Promise<{ success: boolean }> {
+  const resp = await fetch(`${API_BASE}/system/update/dismiss`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ version }),
+  });
+  if (!resp.ok) throw new Error('Failed to dismiss update.');
+  return resp.json();
+}
+

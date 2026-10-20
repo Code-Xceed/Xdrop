@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { DownloadJob } from '@xdrop/shared-types';
+import { DownloadJob, UpdateInfo, UpdateProgress } from '@xdrop/shared-types';
 import { wsService } from './services/ws';
-import { listDownloads } from './services/api';
+import { listDownloads, checkForUpdates, installUpdate, dismissUpdate } from './services/api';
 import { EditorProvider } from './context/EditorContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { Header } from './components/Header';
+import { UpdateNotification } from './components/UpdateNotification';
 import { Navigation, TabId } from './components/Navigation';
 import { ImportPage } from './pages/ImportPage';
 import { QueuePage } from './pages/QueuePage';
@@ -18,6 +19,9 @@ export const App: React.FC = () => {
   const [visitedTabs, setVisitedTabs] = useState<Set<TabId>>(() => new Set<TabId>(['import']));
   const [downloads, setDownloads] = useState<DownloadJob[]>([]);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
+  const [updateProgress, setUpdateProgress] = useState<UpdateProgress | null>(null);
+  const [isInstallingUpdate, setIsInstallingUpdate] = useState(false);
 
   const handleSelectTab = (tab: TabId) => {
     setVisitedTabs((prev) => {
@@ -48,9 +52,32 @@ export const App: React.FC = () => {
     } catch (_) {}
   };
 
+  const handleInstallUpdate = async () => {
+    setIsInstallingUpdate(true);
+    try {
+      await installUpdate(updateInfo?.downloadUrl);
+      showToast('Downloading and installing update...', 'info');
+    } catch (e: any) {
+      setIsInstallingUpdate(false);
+      showToast(e.message || 'Could not initiate update.', 'error');
+    }
+  };
+
+  const handleDismissUpdate = async () => {
+    if (updateInfo?.latestVersion) {
+      try {
+        await dismissUpdate(updateInfo.latestVersion);
+      } catch (_) {}
+      setUpdateInfo((prev) => (prev ? { ...prev, isDismissed: true } : null));
+    }
+  };
+
   useEffect(() => {
     // Initial fetch
     refreshDownloads();
+    checkForUpdates(false)
+      .then((info) => setUpdateInfo(info))
+      .catch(() => {});
 
     // Connect WebSocket
     wsService.connect();
@@ -61,6 +88,24 @@ export const App: React.FC = () => {
 
       if (type === 'INITIAL_STATE') {
         if (payload?.downloads) setDownloads(payload.downloads);
+        if (payload?.updateInfo) setUpdateInfo(payload.updateInfo);
+        if (payload?.updateStatus) setUpdateProgress(payload.updateStatus);
+      } else if (type === 'UPDATE_AVAILABLE' || type === 'UPDATE_CHECK_RESULT') {
+        if (payload) setUpdateInfo(payload);
+      } else if (type === 'UPDATE_PROGRESS') {
+        if (payload) {
+          setUpdateProgress(payload);
+          if (payload.stage === 'completed') {
+            setIsInstallingUpdate(false);
+            showToast(payload.message || 'Updated successfully!', 'success');
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
+          } else if (payload.stage === 'failed') {
+            setIsInstallingUpdate(false);
+            showToast(payload.error || payload.message || 'Update failed.', 'error');
+          }
+        }
       } else if (type === 'JOB_CREATED') {
         if (payload?.job) {
           setDownloads((prev) => [payload.job, ...prev.filter((j) => j.id !== payload.job.id)]);
@@ -158,6 +203,14 @@ export const App: React.FC = () => {
       <ThemeProvider>
         <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: 'var(--bg-void)' }}>
           <Header />
+
+          <UpdateNotification
+            updateInfo={updateInfo}
+            updateProgress={updateProgress}
+            isInstalling={isInstallingUpdate}
+            onInstall={handleInstallUpdate}
+            onDismiss={handleDismissUpdate}
+          />
 
           <Navigation
             currentTab={currentTab}

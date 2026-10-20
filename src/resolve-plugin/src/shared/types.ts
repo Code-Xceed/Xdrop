@@ -298,3 +298,33 @@ export interface InstallIntegrationsResponse {
   results: IntegrationInstallResult[];
   status: IntegrationsStatus;
 }
+
+export interface UpdateInfo {
+  updateAvailable: boolean;
+  currentVersion: string;
+  latestVersion: string;
+  releaseName?: string;
+  changelog?: string;
+  publishedAt?: string;
+  downloadUrl?: string;
+  isDismissed?: boolean;
+}
+
+export type UpdateStage =
+  | 'idle'
+  | 'checking'
+  | 'downloading'
+  | 'extracting'
+  | 'installing'
+  | 'completed'
+  | 'failed';
+
+export interface UpdateProgress {
+  stage: UpdateStage;
+  percent: number;
+  message: string;
+  error?: string | null;
+  currentVersion: string;
+  latestVersion: string;
+}
+

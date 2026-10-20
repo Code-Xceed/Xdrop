@@ -66,11 +66,17 @@ async def websocket_endpoint(websocket: WebSocket):
         # Send initial sync state on connection
         resolve_stat = bridge.get_status()
         downloads = get_all_downloads()
+        from xdrop.updater import get_update_manager
+        up_mgr = get_update_manager()
+        update_info = up_mgr._cached_info.to_dict() if up_mgr._cached_info else None
+
         await websocket.send_text(json.dumps({
             "type": "INITIAL_STATE",
             "payload": {
                 "resolveStatus": resolve_stat,
-                "downloads": downloads
+                "downloads": downloads,
+                "updateInfo": update_info,
+                "updateStatus": up_mgr.current_status,
             }
         }))
 
@@ -105,6 +111,20 @@ async def websocket_endpoint(websocket: WebSocket):
                     job_id = msg.get("jobId")
                     if job_id:
                         await qm.import_existing_to_resolve(job_id)
+                elif msg_type == "CHECK_UPDATE":
+                    force = bool(msg.get("force", False))
+                    info = await up_mgr.check_for_updates(force=force)
+                    await websocket.send_text(json.dumps({
+                        "type": "UPDATE_CHECK_RESULT",
+                        "payload": info.to_dict()
+                    }))
+                elif msg_type == "INSTALL_UPDATE":
+                    download_url = msg.get("downloadUrl")
+                    asyncio.create_task(up_mgr.install_update(download_url=download_url))
+                elif msg_type == "DISMISS_UPDATE":
+                    ver = msg.get("version")
+                    if ver:
+                        up_mgr.dismiss_version(ver)
             except json.JSONDecodeError:
                 pass
             except Exception as e:

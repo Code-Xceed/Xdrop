@@ -7,7 +7,7 @@
 
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue.svg)]()
 [![Editors](https://img.shields.io/badge/editors-DaVinci%20Resolve%20%7C%20Premiere%20Pro%20%7C%20After%20Effects%20%7C%20Blender-purple.svg)]()
-[![Tests](https://img.shields.io/badge/tests-92%20passed-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-104%20passed-brightgreen.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-purple.svg)](LICENSE)
 
 ---
@@ -74,6 +74,7 @@ Install Xdrop for your operating system without complex setup or administrator/r
   - **Broadcast Audio**: 48.0 kHz 16-bit PCM WAV and 192k AAC conversion.
   - **FastStart Header**: `moov` atom placement at file start for instant timeline scrubbing.
 - **Universal Provider Support**: One-click downloads from YouTube, TikTok, Instagram, Twitter/X, Reddit, Vimeo, and direct media URLs (`.mp4`, `.mov`, `.wav`, `.mp3`).
+- **1-Click Auto-Update System**: Integrated GitHub updater automatically notifies users of new releases inside any video editor, silently downloads & unpacks update packages, and provisions updated extensions without manual re-installation.
 - **Color-Coded Starter Bins**: Pre-configured folder hierarchy for organized video editing workflows.
 - **Apple FCPXML 1.11 Sidecars**: Companion `.fcpxml` sidecars generated for universal timeline drag-and-drop.
 

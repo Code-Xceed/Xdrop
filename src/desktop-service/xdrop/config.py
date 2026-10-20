@@ -133,6 +133,8 @@ class AppSettingsModel(BaseModel):
     retry_count: int = 3
     local_only: bool = True
     telemetry_enabled: bool = False
+    auto_check_updates: bool = True
+    dismissed_update_version: str = ""
 
 DATA_DIR = get_base_data_dir()
 DB_PATH = DATA_DIR / "xdrop.db"

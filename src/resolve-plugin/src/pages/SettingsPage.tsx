@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { AppSettings, IntegrationsStatus, IntegrationHost } from '@xdrop/shared-types';
+import { AppSettings, IntegrationsStatus, IntegrationHost, UpdateInfo } from '@xdrop/shared-types';
 import {
   getSettings,
   updateSettings,
   getToolsStatus,
   getIntegrationsStatus,
   installIntegrations,
+  checkForUpdates,
+  installUpdate,
 } from '../services/api';
 import {
   Folder,
@@ -16,6 +18,7 @@ import {
   CheckCircle2,
   AlertCircle,
   RefreshCw,
+  ArrowUpCircle,
 } from 'lucide-react';
 
 interface SettingsPageProps {
@@ -27,7 +30,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ showToast }) => {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [toolsStatus, setToolsStatus] = useState<any>(null);
   const [integrations, setIntegrations] = useState<IntegrationsStatus | null>(null);
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [isInstallingUpdate, setIsInstallingUpdate] = useState(false);
   const [isInstallingAll, setIsInstallingAll] = useState(false);
   const [installingHost, setInstallingHost] = useState<IntegrationHost | null>(null);
 
@@ -37,16 +43,46 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ showToast }) => {
 
   const loadSettings = async () => {
     try {
-      const [s, t, i] = await Promise.all([
+      const [s, t, i, u] = await Promise.all([
         getSettings(),
         getToolsStatus(),
         getIntegrationsStatus(),
+        checkForUpdates(false).catch(() => null),
       ]);
       setSettings(s);
       setToolsStatus(t);
       setIntegrations(i);
+      if (u) setUpdateInfo(u);
     } catch (e: any) {
       showToast(e.message, 'error');
+    }
+  };
+
+  const handleCheckUpdate = async () => {
+    setIsCheckingUpdate(true);
+    try {
+      const res = await checkForUpdates(true);
+      setUpdateInfo(res);
+      if (res.updateAvailable) {
+        showToast(`Update available: v${res.latestVersion}`, 'info');
+      } else {
+        showToast('Xdrop is fully up to date!', 'success');
+      }
+    } catch (e: any) {
+      showToast('Could not check for updates right now.', 'error');
+    } finally {
+      setIsCheckingUpdate(false);
+    }
+  };
+
+  const handleInstallUpdate = async () => {
+    setIsInstallingUpdate(true);
+    try {
+      await installUpdate(updateInfo?.downloadUrl);
+      showToast('Downloading and installing update...', 'info');
+    } catch (e: any) {
+      setIsInstallingUpdate(false);
+      showToast(e.message || 'Could not initiate update.', 'error');
     }
   };
 
@@ -508,6 +544,114 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ showToast }) => {
                 {toolsStatus?.ffmpeg?.info || 'Hardware Acceleration Engine'}
               </span>
             </div>
+          </div>
+        </div>
+
+        {/* Updates & Versions Card */}
+        <div className="card">
+          <div className="card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <ArrowUpCircle size={13} strokeWidth={2} color="#34d399" />
+              <span className="card-title">Updates & System</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleCheckUpdate}
+              disabled={isCheckingUpdate}
+              className="btn btn-ghost"
+              style={{ fontSize: '10.5px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}
+            >
+              <RefreshCw size={11} className={isCheckingUpdate ? 'animate-spin' : ''} />
+              <span>{isCheckingUpdate ? 'Checking...' : 'Check for Updates'}</span>
+            </button>
+          </div>
+
+          <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '11px',
+              }}
+            >
+              <span style={{ color: 'var(--text-secondary)' }}>Installed Version</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                  v{updateInfo?.currentVersion || '1.2.0'}
+                </span>
+                {updateInfo?.updateAvailable ? (
+                  <span
+                    style={{
+                      fontSize: '9px',
+                      padding: '1px 5px',
+                      borderRadius: '4px',
+                      backgroundColor: 'rgba(52, 211, 153, 0.15)',
+                      color: '#34d399',
+                      border: '1px solid rgba(52, 211, 153, 0.3)',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Update v{updateInfo.latestVersion} Available
+                  </span>
+                ) : (
+                  <span
+                    style={{
+                      fontSize: '9px',
+                      padding: '1px 5px',
+                      borderRadius: '4px',
+                      backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                      color: 'var(--text-muted)',
+                      border: '1px solid var(--border-default)',
+                    }}
+                  >
+                    Up to date
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {updateInfo?.updateAvailable && (
+              <div
+                style={{
+                  padding: '8px 10px',
+                  borderRadius: '6px',
+                  backgroundColor: 'rgba(52, 211, 153, 0.08)',
+                  border: '1px solid rgba(52, 211, 153, 0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px',
+                }}
+              >
+                <div style={{ fontSize: '10.5px', color: 'var(--text-primary)' }}>
+                  <strong>v{updateInfo.latestVersion}</strong> is ready to install.
+                  {updateInfo.changelog && (
+                    <div style={{ fontSize: '9.5px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                      {updateInfo.changelog}
+                    </div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleInstallUpdate}
+                  disabled={isInstallingUpdate}
+                  style={{
+                    backgroundColor: '#10b981',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '5px',
+                    padding: '4px 10px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {isInstallingUpdate ? 'Installing...' : 'Install Update'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

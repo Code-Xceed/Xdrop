@@ -270,3 +270,22 @@ Some heuristic antivirus scanners flag custom standalone executables built with 
 | `tools/installer_resolve.py` | Python source installer for DaVinci Resolve |
 | `tools/installer_premiere.py` | Python source installer for Premiere Pro |
 | `start_engine.vbs` | Silent zero-flicker background engine launcher |
+
+---
+
+## 7. Integrated Auto-Update Mechanism
+
+Xdrop features a zero-friction auto-update engine directly connected to GitHub (`Code-Xceed/Xdrop`):
+
+1. **Automatic Background Check**:
+   - Every time Xdrop starts (and periodically every 4 hours), the background engine checks GitHub for newer releases.
+   - Checks GitHub Releases and `https://raw.githubusercontent.com/Code-Xceed/Xdrop/master/version.json`.
+2. **Universal Notification Prompt in All Editors**:
+   - When an update is pushed, a non-intrusive update card appears inside the plugin UI across **DaVinci Resolve**, **Adobe Premiere Pro**, **Adobe After Effects**, and **Adobe Audition**.
+   - Displays the new version number, release notes, and an **"Update Now"** button.
+3. **1-Click Silent Deployment**:
+   - Clicking **Update Now** silently downloads the update package, unpacks it into the engine directory, and automatically re-provisions extension files across DaVinci Resolve and Adobe Creative Cloud.
+   - Real-time progress is streamed via WebSocket into an animated progress bar.
+   - On completion, the interface reloads to run the newly updated version immediately.
+4. **Manual Update Check**:
+   - In any editor panel, navigate to **Settings → Updates & System** and click **Check for Updates** to verify or install updates on demand.

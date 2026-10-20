@@ -74,16 +74,43 @@ async def lifespan(app: FastAPI):
     sm = get_session_manager()
     await sm.start()
     app_logger.info("Xdrop session manager and zero-trace watchdog started.")
+
+    async def auto_update_loop():
+        await asyncio.sleep(5)
+        try:
+            from xdrop.updater import get_update_manager
+            from xdrop.database import get_settings_from_db
+
+            settings = get_settings_from_db()
+            if settings.get("auto_check_updates", True):
+                await get_update_manager().check_for_updates()
+        except Exception as e:
+            app_logger.debug(f"[Updater] Startup update check notice: {e}")
+
+        while True:
+            await asyncio.sleep(4 * 3600)
+            try:
+                from xdrop.updater import get_update_manager
+                from xdrop.database import get_settings_from_db
+
+                settings = get_settings_from_db()
+                if settings.get("auto_check_updates", True):
+                    await get_update_manager().check_for_updates(force=True)
+            except Exception as e:
+                app_logger.debug(f"[Updater] Periodic update check notice: {e}")
+
+    update_task = asyncio.create_task(auto_update_loop())
     yield
     # Shutdown
     app_logger.info("Xdrop service shutting down...")
+    update_task.cancel()
     await sm.stop()
     await qm.stop()
 
 app = FastAPI(
     title="Xdrop Desktop Service",
     description="Cross-NLE Universal Social Media & Web Asset Importer for DaVinci Resolve, Premiere Pro & After Effects",
-    version="1.0.0",
+    version="1.2.0",
     lifespan=lifespan
 )
 
@@ -111,7 +138,7 @@ async def health_check():
         "status": "ok",
         "healthy": True,
         "service": "Xdrop",
-        "version": "1.0.0"
+        "version": "1.2.0"
     }
 
 # Serve React frontend build if present
