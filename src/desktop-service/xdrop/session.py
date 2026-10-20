@@ -33,7 +33,7 @@ class SessionManager:
         self,
         idle_timeout_seconds: float = 1800.0,
         startup_grace_seconds: float = 600.0,
-        enable_auto_shutdown: bool = True,
+        enable_auto_shutdown: bool = False,
     ):
         self._active_sessions: Dict[str, float] = {}
         self._idle_timeout: float = idle_timeout_seconds
