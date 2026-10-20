@@ -224,8 +224,30 @@
         }
 
         function checkServiceHealth(callback) {
+            // Vector A: Node.js direct HTTP request if available (zero CORS / Private Network restrictions)
+            try {
+                const req = (typeof window.require === 'function') ? window.require : (typeof require === 'function' ? require : null);
+                if (req) {
+                    const http = req('http');
+                    if (http && typeof http.get === 'function') {
+                        const reqObj = http.get('http://127.0.0.1:8484/api/health', { timeout: 1500 }, function(res) {
+                            callback(res.statusCode === 200);
+                        });
+                        reqObj.on('error', function() {
+                            callback(false);
+                        });
+                        reqObj.on('timeout', function() {
+                            reqObj.destroy();
+                            callback(false);
+                        });
+                        return;
+                    }
+                }
+            } catch (_) {}
+
+            // Vector B: Standard browser fetch
             const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-            const timeoutId = controller ? setTimeout(function() { controller.abort(); }, 1200) : null;
+            const timeoutId = controller ? setTimeout(function() { controller.abort(); }, 1500) : null;
             const options = { method: 'GET', cache: 'no-store' };
             if (controller) options.signal = controller.signal;
 
@@ -236,7 +258,24 @@
                 })
                 .catch(function() {
                     if (timeoutId) clearTimeout(timeoutId);
-                    callback(false);
+                    // Vector C: Fallback XMLHttpRequest
+                    try {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('GET', 'http://127.0.0.1:8484/api/health', true);
+                        xhr.timeout = 1500;
+                        xhr.onload = function() {
+                            callback(xhr.status === 200);
+                        };
+                        xhr.onerror = function() {
+                            callback(false);
+                        };
+                        xhr.ontimeout = function() {
+                            callback(false);
+                        };
+                        xhr.send();
+                    } catch (_) {
+                        callback(false);
+                    }
                 });
         }
 
@@ -250,6 +289,11 @@
                 : '';
 
             const candidates = [];
+
+            // 0. Explicit pythonwExe from config.json
+            if (config && config.pythonwExe) {
+                candidates.push(config.pythonwExe);
+            }
 
             // 1. Next to config python executable
             if (config && config.pythonExe) {
@@ -270,7 +314,7 @@
             }
 
             for (let c of candidates) {
-                if (c && fs.existsSync(c)) {
+                if (c && fs && fs.existsSync && fs.existsSync(c)) {
                     return c;
                 }
             }
@@ -282,9 +326,18 @@
             if (isAutoStarting) return;
             isAutoStarting = true;
 
-            setStatus("Starting Xdrop Engine...", "Launching silent background download service...", true, false);
+            setStatus("Starting Xdrop Engine...", "Initializing background service...", true, false);
 
             let started = false;
+
+            // Strategy 1: Native ExtendScript execution via host application (Premiere, After Effects, Audition)
+            if (typeof csInterface !== 'undefined' && csInterface.evalScript) {
+                csInterface.evalScript('launchXdropEngine()', function(res) {
+                    console.log("[Xdrop CEP] launchXdropEngine host result:", res);
+                });
+            }
+
+            // Strategy 2: Node.js process spawning (when Node integration is active in CEP)
             try {
                 const req = (typeof window.require === 'function') ? window.require : (typeof require === 'function' ? require : null);
                 if (req) {
@@ -312,8 +365,11 @@
                     const isWin = (window.process && window.process.platform === 'win32') || navigator.platform.indexOf('Win') > -1;
                     const localAppData = (window.process && window.process.env && window.process.env.LOCALAPPDATA) || '';
 
-                    // Strategy A: start_engine.vbs via wscript.exe (100% headless, ZERO window flicker on Windows)
+                    // 2A: start_engine.vbs via wscript.exe (100% headless, ZERO window flicker on Windows)
                     const vbsCandidates = [];
+                    if (config && config.startEngineVbs) {
+                        vbsCandidates.push(config.startEngineVbs);
+                    }
                     if (localAppData) {
                         vbsCandidates.push(path.join(localAppData, 'Xdrop', 'start_engine.vbs'));
                     }
@@ -323,7 +379,7 @@
                     }
 
                     for (let vbs of vbsCandidates) {
-                        if (fs.existsSync(vbs)) {
+                        if (vbs && fs.existsSync(vbs)) {
                             console.log("[Xdrop CEP] Launching headless via wscript:", vbs);
                             cp.spawn('wscript.exe', ['//B', vbs], {
                                 detached: true,
@@ -336,18 +392,23 @@
                         }
                     }
 
-                    // Strategy B: pythonw.exe + run_engine.py / main.py --background (Zero console window)
+                    // 2B: pythonw.exe + run_engine.py / main.py --background (Zero console window)
                     if (!started && isWin) {
                         const pythonw = findSilentPythonw(fs, path, config);
                         const scriptCandidates = [];
+                        if (config && config.runEnginePy) {
+                            scriptCandidates.push(config.runEnginePy);
+                        }
                         if (localAppData) {
                             scriptCandidates.push(path.join(localAppData, 'Xdrop', 'run_engine.py'));
+                            scriptCandidates.push(path.join(localAppData, 'Xdrop', 'xdrop', 'main.py'));
                         }
                         if (config && config.mainPy) {
                             scriptCandidates.push(config.mainPy);
                         }
                         if (extDir) {
                             scriptCandidates.push(path.resolve(extDir, '..', '..', 'apps', 'desktop-service', 'xdrop', 'main.py'));
+                            scriptCandidates.push(path.resolve(extDir, '..', '..', 'src', 'desktop-service', 'xdrop', 'main.py'));
                         }
 
                         let targetScript = null;
@@ -370,15 +431,17 @@
                         }
                     }
 
-                    // Strategy C: macOS / Linux daemon spawn
+                    // 2C: macOS / Linux daemon spawn
                     if (!started && !isWin) {
                         const homeDir = (window.process && window.process.env && window.process.env.HOME) || '';
                         const candidates = [];
                         if (homeDir) {
                             candidates.push(path.join(homeDir, '.xdrop', 'start_engine.sh'));
                             candidates.push(path.join(homeDir, '.xdrop', 'run_engine.py'));
+                            candidates.push(path.join(homeDir, '.xdrop', 'xdrop', 'main.py'));
                         }
                         if (config && config.startEngineSh) candidates.push(config.startEngineSh);
+                        if (config && config.runEnginePy) candidates.push(config.runEnginePy);
                         if (config && config.engineScript) candidates.push(config.engineScript);
                         if (config && config.mainPy) candidates.push(config.mainPy);
                         if (extDir) {
@@ -414,11 +477,20 @@
                 console.warn("[Xdrop CEP] Silent auto-start notice:", err);
             }
 
-            // Poll for service health up to 10 seconds (20 iterations * 500ms)
+            // Poll for service health up to 35 seconds (70 iterations * 500ms)
             let attempts = 0;
-            const maxAttempts = 20;
+            const maxAttempts = 70;
             const pollInterval = setInterval(function() {
                 attempts++;
+
+                if (attempts === 10) {
+                    setStatus("Starting Xdrop Engine...", "Loading core services...", true, false);
+                } else if (attempts === 24) {
+                    setStatus("Starting Xdrop Engine...", "Preparing workspace & connectors...", true, false);
+                } else if (attempts === 45) {
+                    setStatus("Starting Xdrop Engine...", "Finalizing engine startup...", true, false);
+                }
+
                 checkServiceHealth(function(online) {
                     if (online) {
                         clearInterval(pollInterval);
@@ -427,6 +499,7 @@
                         showApp();
                         connectWebSocket();
                         setupStarterBins();
+                        registerSessionOpen();
                     } else if (attempts >= maxAttempts) {
                         clearInterval(pollInterval);
                         isAutoStarting = false;
@@ -442,6 +515,7 @@
         }
 
         function manualRetry() {
+            isAutoStarting = false;
             setStatus("Starting Engine...", "Attempting connection...", true, false);
             tryAutoStartEngine();
         }

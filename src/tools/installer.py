@@ -906,20 +906,27 @@ X-GNOME-Autostart-enabled=true
                     shutil.copytree(source_dir, dest, dirs_exist_ok=True)
 
                     python_exe, pythonw_exe = find_system_python()
-                    engine_vbs = (
-                        Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local")) / "Xdrop" / "start_engine.vbs"
-                        if sys.platform == "win32"
-                        else Path.home() / ".xdrop" / "run.sh"
-                    )
+                    if sys.platform == "win32":
+                        installed_engine_dir = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local")) / "Xdrop"
+                        engine_vbs = installed_engine_dir / "start_engine.vbs"
+                        engine_script = installed_engine_dir / "run_engine.py"
+                        main_py = installed_engine_dir / "xdrop" / "main.py"
+                    else:
+                        installed_engine_dir = Path.home() / ".xdrop"
+                        engine_vbs = installed_engine_dir / "start_engine.sh"
+                        engine_script = installed_engine_dir / "run_engine.py"
+                        main_py = installed_engine_dir / "xdrop" / "main.py"
+
                     config_payload = {
-                        "runBat": str(BASE_DIR / "run.bat"),
-                        "runSh": str(BASE_DIR / "run.sh"),
+                        "installedEngineDir": str(installed_engine_dir),
+                        "runBat": str(installed_engine_dir / "run.bat") if (installed_engine_dir / "run.bat").is_file() else str(BASE_DIR / "run.bat"),
+                        "runSh": str(installed_engine_dir / "run.sh") if (installed_engine_dir / "run.sh").is_file() else str(BASE_DIR / "run.sh"),
                         "pythonExe": str(python_exe or sys.executable),
                         "pythonwExe": str(pythonw_exe or ""),
                         "startEngineVbs": str(engine_vbs),
-                        "startEngineSh": str(Path.home() / ".xdrop" / "start_engine.sh"),
-                        "engineScript": str(Path.home() / ".xdrop" / "run_engine.py"),
-                        "mainPy": str(find_source_dir("desktop-service") / "xdrop" / "main.py"),
+                        "startEngineSh": str(installed_engine_dir / "start_engine.sh"),
+                        "engineScript": str(engine_script),
+                        "mainPy": str(main_py if main_py.is_file() else find_source_dir("desktop-service") / "xdrop" / "main.py"),
                         "serviceUrl": "http://127.0.0.1:8484",
                     }
                     try:

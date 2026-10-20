@@ -31,8 +31,8 @@ class SessionManager:
 
     def __init__(
         self,
-        idle_timeout_seconds: float = 15.0,
-        startup_grace_seconds: float = 30.0,
+        idle_timeout_seconds: float = 1800.0,
+        startup_grace_seconds: float = 600.0,
         enable_auto_shutdown: bool = True,
     ):
         self._active_sessions: Dict[str, float] = {}
@@ -123,9 +123,23 @@ class SessionManager:
     def has_active_sessions(self) -> bool:
         return len(self.get_active_sessions()) > 0
 
+    def _is_any_editor_running(self) -> bool:
+        """Checks if Premiere Pro, After Effects, Audition, DaVinci Resolve, or Blender is running."""
+        try:
+            from xdrop.scanner import get_running_process_names
+            procs = get_running_process_names()
+            targets = ("premiere", "afterfx", "audition", "resolve", "blender")
+            for p in procs:
+                p_low = p.lower()
+                if any(t in p_low for t in targets):
+                    return True
+        except Exception:
+            pass
+        return False
+
     def is_system_busy(self) -> bool:
-        """Returns True if there are active client sessions or active downloads in queue."""
-        if self.has_active_sessions():
+        """Returns True if there are active client sessions, running editors, or active downloads in queue."""
+        if self.has_active_sessions() or self._is_any_editor_running():
             return True
         try:
             from xdrop.download_queue import get_queue_manager

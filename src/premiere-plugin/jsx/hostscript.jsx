@@ -481,3 +481,48 @@ function setupXdropBins() {
         });
     }
 }
+
+function launchSystemFile(filePath) {
+    try {
+        if (!filePath) return "false";
+        var f = new File(filePath);
+        if (f.exists) {
+            var ok = f.execute();
+            return ok ? "true" : "false";
+        }
+        return "not_found";
+    } catch (e) {
+        return "error: " + e.toString();
+    }
+}
+
+function launchXdropEngine() {
+    try {
+        var isWin = ($.os.indexOf("Windows") !== -1);
+        var userHome = Folder("~").fsName;
+        if (isWin) {
+            var vbs = userHome + "\\AppData\\Local\\Xdrop\\start_engine.vbs";
+            var fVbs = new File(vbs);
+            if (fVbs.exists) {
+                var ok = fVbs.execute();
+                return ok ? "SUCCESS_VBS" : "EXECUTE_VBS_FAILED";
+            }
+            var bat = userHome + "\\AppData\\Local\\Xdrop\\start_engine.bat";
+            var fBat = new File(bat);
+            if (fBat.exists) {
+                var okBat = fBat.execute();
+                return okBat ? "SUCCESS_BAT" : "EXECUTE_BAT_FAILED";
+            }
+        } else {
+            var sh = userHome + "/.xdrop/start_engine.sh";
+            var fSh = new File(sh);
+            if (fSh.exists) {
+                var okSh = fSh.execute();
+                return okSh ? "SUCCESS_SH" : "EXECUTE_SH_FAILED";
+            }
+        }
+        return "NOT_FOUND";
+    } catch (e) {
+        return "ERROR: " + e.toString();
+    }
+}
