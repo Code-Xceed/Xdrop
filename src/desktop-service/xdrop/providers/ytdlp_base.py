@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional, Callable
 import yt_dlp
 from xdrop.providers.base import PlatformProvider, MediaInfoModel, MediaAssetModel, DownloadResult
-from xdrop.config import discover_ffmpeg, THUMBNAILS_DIR
+from xdrop.config import discover_ffmpeg, discover_js_runtime, THUMBNAILS_DIR
 from xdrop.processor.organizer import sanitize_filename_py
 from xdrop.logger import app_logger, errors_logger
 
@@ -36,7 +36,10 @@ class YtDlpBaseProvider(PlatformProvider):
             "geo_bypass": False,
             "extract_flat": False,
         }
-        if node_bin:
+        js_rt = discover_js_runtime()
+        if js_rt:
+            opts["js_runtimes"] = {k: {"path": v} for k, v in js_rt.items()}
+        elif node_bin:
             opts["js_runtimes"] = {"node": {"path": node_bin}}
         if extra_opts:
             opts.update(extra_opts)
@@ -118,7 +121,12 @@ class YtDlpBaseProvider(PlatformProvider):
             if f.get("vcodec", "none") != "none" and (f.get("height") or f.get("width"))
         ]
         valid_video_formats.sort(
-            key=lambda f: (f.get("height") or 0, f.get("width") or 0, f.get("fps") or 0),
+            key=lambda f: (
+                f.get("height") or 0,
+                f.get("width") or 0,
+                f.get("fps") or 0,
+                1 if ("avc1" in (f.get("vcodec") or "").lower() or "h264" in (f.get("vcodec") or "").lower()) else 0
+            ),
             reverse=True
         )
 
@@ -134,7 +142,10 @@ class YtDlpBaseProvider(PlatformProvider):
                 continue
 
             fps_suffix = f"{int(fps)}" if fps and fps >= 50 else ""
-            if eff_res >= 2160 or height >= 2160:
+            if eff_res >= 4320 or height >= 4320:
+                tier = "8K Ultra HD"
+                res_key = f"4320p{fps_suffix}"
+            elif eff_res >= 2160 or height >= 2160:
                 tier = "4K Ultra HD"
                 res_key = f"2160p{fps_suffix}"
             elif eff_res >= 1440 or height >= 1440:
@@ -155,7 +166,7 @@ class YtDlpBaseProvider(PlatformProvider):
 
             if res_key not in seen_qualities:
                 seen_qualities.add(res_key)
-                is_default_candidate = (res_key.startswith("1080p") or res_key.startswith("720p")) and "default_video" not in seen_qualities
+                is_default_candidate = "default_video" not in seen_qualities
                 assets.append(MediaAssetModel(
                     id=f"video_{res_key}_{f.get('format_id')}",
                     media_type="video",
@@ -333,7 +344,9 @@ class YtDlpBaseProvider(PlatformProvider):
             # for 100% native NLE compatibility in DaVinci Resolve and Adobe Premiere Pro,
             # respecting user-selected resolution boundaries for lightning-fast downloads and zero re-encode lag.
             height_filter = None
-            if "2160" in asset_id or "4k" in asset_id.lower():
+            if "4320" in asset_id or "8k" in asset_id.lower():
+                height_filter = 4320
+            elif "2160" in asset_id or "4k" in asset_id.lower():
                 height_filter = 2160
             elif "1440" in asset_id or "2k" in asset_id.lower():
                 height_filter = 1440
@@ -361,8 +374,8 @@ class YtDlpBaseProvider(PlatformProvider):
                 )
             else:
                 format_spec = (
-                    "bestvideo[vcodec^=avc1]+bestaudio[acodec^=mp4a]/"
-                    "bestvideo[ext=mp4]+bestaudio[ext=m4a]/"
+                    "bestvideo+bestaudio[acodec^=mp4a]/"
+
                     "bestvideo+bestaudio[acodec^=mp4a]/"
                     "bestvideo+bestaudio/best"
                 )
@@ -405,7 +418,7 @@ class YtDlpBaseProvider(PlatformProvider):
                     fallback_opts.pop("http_chunk_size", None)
                     fallback_opts.pop("concurrent_fragment_downloads", None)
                     fallback_opts.setdefault("extractor_args", {}).setdefault("youtube", {
-                        "player_client": ["android", "ios", "web"]
+                        "player_client": ["web"]
                     })
                     with yt_dlp.YoutubeDL(fallback_opts) as fallback_ydl:
                         fallback_ydl.download([url])

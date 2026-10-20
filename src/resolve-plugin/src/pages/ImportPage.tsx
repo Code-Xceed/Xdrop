@@ -802,8 +802,12 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                   type="button"
                   onClick={() => {
                     setQualityMode('custom');
-                    if (!customQualityAssetId && mediaInfo.assets && mediaInfo.assets.length > 0) {
-                      setCustomQualityAssetId(mediaInfo.assets[0].id);
+                    const targetAsset = (mediaInfo.assets || []).find((a) => a.id === selectedAssetId) || mediaInfo.assets?.[0];
+                    if (targetAsset) {
+                      const mType = ((targetAsset.mediaType || (targetAsset as any).media_type || 'video') as 'video' | 'audio' | 'image');
+                      setCustomMediaType(mType);
+                      setCustomQualityAssetId(targetAsset.id);
+                      setCustomFormat(targetAsset.format || (mType === 'audio' ? 'wav' : 'mp4'));
                     }
                   }}
                   style={{
@@ -967,8 +971,12 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                   <div
                     onClick={() => {
                       setQualityMode('custom');
-                      if (!customQualityAssetId && mediaInfo.assets && mediaInfo.assets.length > 0) {
-                        setCustomQualityAssetId(mediaInfo.assets[0].id);
+                      const targetAsset = (mediaInfo.assets || []).find((a) => a.id === selectedAssetId) || mediaInfo.assets?.[0];
+                      if (targetAsset) {
+                        const mType = ((targetAsset.mediaType || (targetAsset as any).media_type || 'video') as 'video' | 'audio' | 'image');
+                        setCustomMediaType(mType);
+                        setCustomQualityAssetId(targetAsset.id);
+                        setCustomFormat(targetAsset.format || (mType === 'audio' ? 'wav' : 'mp4'));
                       }
                     }}
                     style={{
@@ -1080,9 +1088,11 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                           })
                         ) : (
                           <>
-                            <option value="best_video">Best Quality</option>
-                            <option value="1080p">1080p Full HD</option>
-                            <option value="720p">720p HD</option>
+                            <option value="best_video">Best Quality Available</option>
+                            <option value="video_2160p">4K Ultra HD (2160p)</option>
+                            <option value="video_1440p">2K Quad HD (1440p)</option>
+                            <option value="video_1080p">1080p Full HD</option>
+                            <option value="video_720p">720p HD</option>
                           </>
                         ))}
 

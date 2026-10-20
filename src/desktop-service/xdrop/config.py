@@ -82,6 +82,41 @@ def discover_ffmpeg() -> str:
 
     return "ffmpeg"
 
+def discover_js_runtime() -> Optional[Dict[str, str]]:
+    """Discovers a JS runtime (Node, Deno, or Bun) for yt-dlp challenge solving and full format extraction."""
+    # 1. Environment variable override
+    env_node = os.getenv("NODE_PATH") or os.getenv("JS_RUNTIME_PATH")
+    if env_node and Path(env_node).is_file():
+        return {"node": str(Path(env_node).resolve())}
+
+    # 2. PATH check
+    for rt in ["node", "deno", "bun"]:
+        w = shutil.which(rt)
+        if w and Path(w).is_file():
+            return {rt: str(Path(w).resolve())}
+
+    # 3. Known system locations
+    candidates = [
+        ("node", Path("C:/Program Files/nodejs/node.exe")),
+        ("node", Path("C:/Program Files (x86)/nodejs/node.exe")),
+        ("node", Path(os.getenv("LOCALAPPDATA", "")) / "Programs/node/node.exe"),
+        ("node", Path(os.getenv("APPDATA", "")) / "npm/node.cmd"),
+        ("deno", Path(os.getenv("USERPROFILE", "")) / ".deno/bin/deno.exe"),
+        ("bun", Path(os.getenv("USERPROFILE", "")) / ".bun/bin/bun.exe"),
+        # macOS / Linux
+        ("node", Path("/usr/local/bin/node")),
+        ("node", Path("/usr/bin/node")),
+        ("node", Path("/opt/homebrew/bin/node")),
+        ("deno", Path("/usr/local/bin/deno")),
+        ("deno", Path("/opt/homebrew/bin/deno")),
+        ("bun", Path.home() / ".bun/bin/bun"),
+    ]
+    for name, path in candidates:
+        if path.is_file():
+            return {name: str(path.resolve())}
+
+    return None
+
 def validate_and_sanitize_download_dir(dir_path: str) -> str:
     """Validates that download_dir points to an accessible drive and path, otherwise falls back to default."""
     if not dir_path or not dir_path.strip():

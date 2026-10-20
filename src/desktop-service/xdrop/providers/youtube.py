@@ -20,14 +20,7 @@ class YouTubeProvider(YtDlpBaseProvider):
 
     def _get_ydl_opts(self, extra_opts: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         opts = super()._get_ydl_opts(extra_opts)
-        # Bypasses YouTube's 403 Forbidden SABR/PO-token throttling
-        opts.setdefault("extractor_args", {}).setdefault("youtube", {
-            "player_client": ["android", "ios", "web"],
-            "player_skip": ["webpage", "configs"],
-        })
-        # Remove aggressive chunking that causes YouTube CDN rate-limiting/403
-        opts.pop("http_chunk_size", None)
-        opts.pop("concurrent_fragment_downloads", None)
+        # Allow full DASH and 4K stream extraction while preventing premature client throttling
         return opts
 
     def inspect(self, url: str):
