@@ -279,202 +279,153 @@
                 });
         }
 
-        // Locate pythonw.exe silently with 0 CMD console windows
-        function findSilentPythonw(fs, path, config) {
-            const isWin = (window.process && window.process.platform === 'win32') || navigator.platform.indexOf('Win') > -1;
-            if (!isWin) return null;
-
-            const localAppData = window.process && window.process.env && window.process.env.LOCALAPPDATA
-                ? window.process.env.LOCALAPPDATA
-                : '';
-
-            const candidates = [];
-
-            // 0. Explicit pythonwExe from config.json
-            if (config && config.pythonwExe) {
-                candidates.push(config.pythonwExe);
-            }
-
-            // 1. Next to config python executable
-            if (config && config.pythonExe) {
-                const cand = path.join(path.dirname(config.pythonExe), 'pythonw.exe');
-                candidates.push(cand);
-            }
-
-            // 2. Standard Python installations
-            if (localAppData) {
-                for (let v of ['Python314', 'Python313', 'Python312', 'Python311', 'Python310', 'Python39']) {
-                    candidates.push(path.join(localAppData, 'Programs', 'Python', v, 'pythonw.exe'));
+        function getExtensionPath() {
+            try {
+                if (typeof csInterface !== 'undefined' && csInterface.getSystemPath) {
+                    const p = csInterface.getSystemPath('extension');
+                    if (p) return p;
                 }
-            }
-
-            for (let v of ['Python314', 'Python313', 'Python312', 'Python311', 'Python310', 'Python39']) {
-                candidates.push('C:\\Program Files\\' + v + '\\pythonw.exe');
-                candidates.push('C:\\' + v + '\\pythonw.exe');
-            }
-
-            for (let c of candidates) {
-                if (c && fs && fs.existsSync && fs.existsSync(c)) {
-                    return c;
+                if (window.__adobe_cep__ && window.__adobe_cep__.getSystemPath) {
+                    const p = window.__adobe_cep__.getSystemPath('extension');
+                    if (p) return p;
                 }
-            }
-            return null;
+            } catch (_) {}
+
+            try {
+                let p = window.location.pathname || '';
+                p = decodeURIComponent(p);
+                if (/^\/[a-zA-Z]:/.test(p)) {
+                    p = p.substring(1);
+                }
+                const lastSlash = Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'));
+                if (lastSlash > -1) {
+                    p = p.substring(0, lastSlash);
+                }
+                return p;
+            } catch (_) {}
+
+            return '';
         }
 
-        // Headless, zero-flicker auto-start
+        function getLocalAppData() {
+            try {
+                if (typeof process !== 'undefined' && process.env && process.env.LOCALAPPDATA) {
+                    return process.env.LOCALAPPDATA;
+                }
+            } catch (_) {}
+            try {
+                if (window.process && window.process.env && window.process.env.LOCALAPPDATA) {
+                    return window.process.env.LOCALAPPDATA;
+                }
+            } catch (_) {}
+            try {
+                const ext = getExtensionPath();
+                const idx = ext.toLowerCase().indexOf('\\appdata\\');
+                if (idx !== -1) {
+                    return ext.substring(0, idx) + '\\AppData\\Local';
+                }
+                const idxFwd = ext.toLowerCase().indexOf('/appdata/');
+                if (idxFwd !== -1) {
+                    return ext.substring(0, idxFwd) + '/AppData/Local';
+                }
+            } catch (_) {}
+            return '';
+        }
+
+        function getUserHome() {
+            try {
+                if (typeof process !== 'undefined' && process.env && process.env.USERPROFILE) {
+                    return process.env.USERPROFILE;
+                }
+                if (typeof process !== 'undefined' && process.env && process.env.HOME) {
+                    return process.env.HOME;
+                }
+            } catch (_) {}
+            try {
+                const local = getLocalAppData();
+                if (local && local.toLowerCase().includes('\\appdata\\local')) {
+                    return local.substring(0, local.toLowerCase().indexOf('\\appdata\\local'));
+                }
+            } catch (_) {}
+            return '';
+        }
+
+        // Headless, multi-vector auto-start for all Adobe host environments
         function tryAutoStartEngine() {
             if (isAutoStarting) return;
             isAutoStarting = true;
 
             setStatus("Starting Xdrop Engine...", "Initializing background service...", true, false);
 
-            let started = false;
+            const isWin = navigator.platform.indexOf('Win') > -1 || (typeof process !== 'undefined' && process.platform === 'win32');
+            const localAppData = getLocalAppData();
+            const home = getUserHome();
 
-            // Strategy 1: Native ExtendScript execution via host application (Premiere, After Effects, Audition)
+            // Strategy 1: CEP Native C++ Process Spawner (Adobe native, zero dependencies)
+            try {
+                if (window.cep && window.cep.process && typeof window.cep.process.createProcess === 'function') {
+                    if (isWin) {
+                        const batTargets = [
+                            localAppData ? (localAppData + "\\Xdrop\\start_engine.bat") : '',
+                            home ? (home + "\\AppData\\Local\\Xdrop\\start_engine.bat") : '',
+                            "C:\\Users\\" + (typeof process !== 'undefined' && process.env && process.env.USERNAME ? process.env.USERNAME : '') + "\\AppData\\Local\\Xdrop\\start_engine.bat"
+                        ];
+                        for (let bat of batTargets) {
+                            if (bat) {
+                                console.log("[Xdrop CEP] Spawning via cep.process:", bat);
+                                window.cep.process.createProcess("C:\\Windows\\System32\\cmd.exe", "/c", "start", "", "/b", bat);
+                                break;
+                            }
+                        }
+                    } else {
+                        const sh = home ? (home + "/.xdrop/start_engine.sh") : "";
+                        if (sh) {
+                            window.cep.process.createProcess("/bin/sh", sh);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn("[Xdrop CEP] cep.process notice:", e);
+            }
+
+            // Strategy 2: Native ExtendScript execution via host application (Premiere, After Effects, Audition)
             if (typeof csInterface !== 'undefined' && csInterface.evalScript) {
                 csInterface.evalScript('launchXdropEngine()', function(res) {
                     console.log("[Xdrop CEP] launchXdropEngine host result:", res);
                 });
             }
 
-            // Strategy 2: Node.js process spawning (when Node integration is active in CEP)
+            // Strategy 3: Node.js process spawning (when Node integration is active in CEP)
             try {
                 const req = (typeof window.require === 'function') ? window.require : (typeof require === 'function' ? require : null);
                 if (req) {
                     const cp = req('child_process');
-                    const fs = req('fs');
-                    const path = req('path');
-
-                    let extDir = '';
-                    try {
-                        let pathname = window.location.pathname || '';
-                        if (window.process && window.process.platform === 'win32' && pathname.startsWith('/')) {
-                            pathname = pathname.substring(1);
-                        }
-                        extDir = path.dirname(decodeURIComponent(pathname));
-                    } catch (_) {}
-
-                    let config = null;
-                    const configPath = extDir ? path.join(extDir, 'config.json') : '';
-                    if (configPath && fs.existsSync(configPath)) {
-                        try {
-                            config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-                        } catch (_) {}
-                    }
-
-                    const isWin = (window.process && window.process.platform === 'win32') || navigator.platform.indexOf('Win') > -1;
-                    const localAppData = (window.process && window.process.env && window.process.env.LOCALAPPDATA) || '';
-
-                    // 2A: start_engine.vbs via wscript.exe (100% headless, ZERO window flicker on Windows)
-                    const vbsCandidates = [];
-                    if (config && config.startEngineVbs) {
-                        vbsCandidates.push(config.startEngineVbs);
-                    }
-                    if (localAppData) {
-                        vbsCandidates.push(path.join(localAppData, 'Xdrop', 'start_engine.vbs'));
-                    }
-                    if (extDir) {
-                        vbsCandidates.push(path.resolve(extDir, '..', '..', 'start_engine.vbs'));
-                        vbsCandidates.push(path.resolve(extDir, 'start_engine.vbs'));
-                    }
-
-                    for (let vbs of vbsCandidates) {
-                        if (vbs && fs.existsSync(vbs)) {
-                            console.log("[Xdrop CEP] Launching headless via wscript:", vbs);
-                            cp.spawn('wscript.exe', ['//B', vbs], {
-                                detached: true,
-                                stdio: 'ignore',
-                                windowsHide: true,
-                                cwd: path.dirname(vbs)
-                            }).unref();
-                            started = true;
-                            break;
-                        }
-                    }
-
-                    // 2B: pythonw.exe + run_engine.py / main.py --background (Zero console window)
-                    if (!started && isWin) {
-                        const pythonw = findSilentPythonw(fs, path, config);
-                        const scriptCandidates = [];
-                        if (config && config.runEnginePy) {
-                            scriptCandidates.push(config.runEnginePy);
-                        }
-                        if (localAppData) {
-                            scriptCandidates.push(path.join(localAppData, 'Xdrop', 'run_engine.py'));
-                            scriptCandidates.push(path.join(localAppData, 'Xdrop', 'xdrop', 'main.py'));
-                        }
-                        if (config && config.mainPy) {
-                            scriptCandidates.push(config.mainPy);
-                        }
-                        if (extDir) {
-                            scriptCandidates.push(path.resolve(extDir, '..', '..', 'apps', 'desktop-service', 'xdrop', 'main.py'));
-                            scriptCandidates.push(path.resolve(extDir, '..', '..', 'src', 'desktop-service', 'xdrop', 'main.py'));
-                        }
-
-                        let targetScript = null;
-                        for (let s of scriptCandidates) {
-                            if (s && fs.existsSync(s)) {
-                                targetScript = s;
-                                break;
-                            }
-                        }
-
-                        if (pythonw && targetScript) {
-                            console.log("[Xdrop CEP] Launching silent pythonw:", pythonw, targetScript);
-                            cp.spawn(pythonw, [targetScript, '--background'], {
-                                detached: true,
-                                stdio: 'ignore',
-                                windowsHide: true,
-                                cwd: path.dirname(targetScript)
-                            }).unref();
-                            started = true;
-                        }
-                    }
-
-                    // 2C: macOS / Linux daemon spawn
-                    if (!started && !isWin) {
-                        const homeDir = (window.process && window.process.env && window.process.env.HOME) || '';
-                        const candidates = [];
-                        if (homeDir) {
-                            candidates.push(path.join(homeDir, '.xdrop', 'start_engine.sh'));
-                            candidates.push(path.join(homeDir, '.xdrop', 'run_engine.py'));
-                            candidates.push(path.join(homeDir, '.xdrop', 'xdrop', 'main.py'));
-                        }
-                        if (config && config.startEngineSh) candidates.push(config.startEngineSh);
-                        if (config && config.runEnginePy) candidates.push(config.runEnginePy);
-                        if (config && config.engineScript) candidates.push(config.engineScript);
-                        if (config && config.mainPy) candidates.push(config.mainPy);
-                        if (extDir) {
-                            candidates.push(path.resolve(extDir, '..', '..', 'apps', 'desktop-service', 'xdrop', 'main.py'));
-                            candidates.push(path.resolve(extDir, '..', '..', 'src', 'desktop-service', 'xdrop', 'main.py'));
-                        }
-
-                        for (let cand of candidates) {
-                            if (cand && fs.existsSync(cand)) {
-                                if (cand.endsWith('.sh')) {
-                                    console.log("[Xdrop CEP] Launching background sh:", cand);
-                                    cp.spawn('/bin/sh', [cand], {
-                                        detached: true,
-                                        stdio: 'ignore'
-                                    }).unref();
-                                    started = true;
-                                    break;
-                                } else if (cand.endsWith('.py')) {
-                                    console.log("[Xdrop CEP] Launching background python3:", cand);
-                                    cp.spawn('python3', [cand, '--background'], {
+                    if (cp && typeof cp.spawn === 'function') {
+                        if (isWin) {
+                            const batTargets = [
+                                localAppData ? (localAppData + "\\Xdrop\\start_engine.bat") : '',
+                                home ? (home + "\\AppData\\Local\\Xdrop\\start_engine.bat") : ''
+                            ];
+                            for (let bat of batTargets) {
+                                if (bat) {
+                                    cp.spawn('cmd.exe', ['/c', 'start', '""', '/b', bat], {
                                         detached: true,
                                         stdio: 'ignore',
-                                        cwd: path.dirname(cand)
+                                        windowsHide: true
                                     }).unref();
-                                    started = true;
                                     break;
                                 }
+                            }
+                        } else {
+                            const sh = home ? (home + "/.xdrop/start_engine.sh") : "";
+                            if (sh) {
+                                cp.spawn('/bin/sh', [sh], { detached: true, stdio: 'ignore' }).unref();
                             }
                         }
                     }
                 }
             } catch (err) {
-                console.warn("[Xdrop CEP] Silent auto-start notice:", err);
+                console.warn("[Xdrop CEP] Node spawn notice:", err);
             }
 
             // Poll for service health up to 35 seconds (70 iterations * 500ms)

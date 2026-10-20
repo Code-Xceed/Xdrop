@@ -499,29 +499,49 @@ function launchSystemFile(filePath) {
 function launchXdropEngine() {
     try {
         var isWin = ($.os.indexOf("Windows") !== -1);
-        var userHome = Folder("~").fsName;
         if (isWin) {
-            var vbs = userHome + "\\AppData\\Local\\Xdrop\\start_engine.vbs";
-            var fVbs = new File(vbs);
-            if (fVbs.exists) {
-                var ok = fVbs.execute();
-                return ok ? "SUCCESS_VBS" : "EXECUTE_VBS_FAILED";
+            var localAppData = $.getenv("LOCALAPPDATA");
+            if (!localAppData) {
+                try {
+                    localAppData = Folder.userData.parent.fsName + "\\Local";
+                } catch (_) {
+                    localAppData = "C:\\Users\\" + $.getenv("USERNAME") + "\\AppData\\Local";
+                }
             }
-            var bat = userHome + "\\AppData\\Local\\Xdrop\\start_engine.bat";
-            var fBat = new File(bat);
-            if (fBat.exists) {
-                var okBat = fBat.execute();
-                return okBat ? "SUCCESS_BAT" : "EXECUTE_BAT_FAILED";
+            var xdropDir = localAppData + "\\Xdrop";
+            
+            // Priority 1: start_engine.bat
+            var bat = new File(xdropDir + "\\start_engine.bat");
+            if (bat.exists) {
+                var okBat = bat.execute();
+                if (okBat) return "SUCCESS_BAT";
+            }
+            
+            // Priority 2: start_engine.vbs
+            var vbs = new File(xdropDir + "\\start_engine.vbs");
+            if (vbs.exists) {
+                var okVbs = vbs.execute();
+                if (okVbs) return "SUCCESS_VBS";
+            }
+
+            // Priority 3: app.system if available
+            if (typeof app.system === "function") {
+                app.system('start "" /b "' + xdropDir + '\\start_engine.bat"');
+                return "SUCCESS_APP_SYSTEM";
             }
         } else {
-            var sh = userHome + "/.xdrop/start_engine.sh";
-            var fSh = new File(sh);
-            if (fSh.exists) {
-                var okSh = fSh.execute();
-                return okSh ? "SUCCESS_SH" : "EXECUTE_SH_FAILED";
+            var home = $.getenv("HOME") || Folder("~").fsName;
+            var sh = new File(home + "/.xdrop/start_engine.sh");
+            if (sh.exists) {
+                var okSh = sh.execute();
+                if (okSh) return "SUCCESS_SH";
+            }
+            if (typeof app.system === "function") {
+                app.system('sh "' + home + '/.xdrop/start_engine.sh" &');
+                return "SUCCESS_APP_SYSTEM_SH";
             }
         }
-        return "NOT_FOUND";
+        return "FALLTHROUGH";
     } catch (e) {
         return "ERROR: " + e.toString();
     }

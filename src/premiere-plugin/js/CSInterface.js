@@ -12,6 +12,25 @@ function CSInterface() {
  */
 CSInterface.THEME_COLOR_CHANGED_EVENT = "com.adobe.csxs.events.ThemeColorChanged";
 
+var SystemPath = {
+    USER_DATA: "userData",
+    COMMON_FILES: "commonFiles",
+    MY_DOCUMENTS: "myDocuments",
+    APPLICATION: "application",
+    EXTENSION: "extension",
+    HOST_APPLICATION: "hostApplication"
+};
+
+/**
+ * Retrieves the system path.
+ */
+CSInterface.prototype.getSystemPath = function(pathType) {
+    if (window.__adobe_cep__) {
+        return window.__adobe_cep__.getSystemPath(pathType);
+    }
+    return "";
+};
+
 /**
  * Evaluates JavaScript code in the ExtendScript context.
  *
