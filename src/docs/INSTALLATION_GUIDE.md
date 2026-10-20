@@ -4,11 +4,19 @@ Welcome to **Xdrop** — the high-performance media import and downloading engin
 
 Xdrop offers dedicated standalone installers tailored to the exact extension architecture supported by each host application:
 
+### Windows Installers
 | Host Application | Dedicated Installer | Primary Extension Format | Secondary / Bonus |
 | :--- | :--- | :--- | :--- |
 | **DaVinci Resolve** (Free & Studio) | **`XdropInstaller-Resolve.exe`** | Native Fusion UI Script (`Xdrop.lua`) | Studio Workflow Integration + Starter Bin (`.drb`) |
-| **Adobe Premiere Pro** (CC 2019–2026+) | **`XdropInstaller-Premiere.exe`** | Adobe CEP Docked Panel (`com.xdrop.panel`) | Modern UXP Package (`.ccx`) + AE/Audition |
-| **Universal / All Suites** | **`XdropInstaller.exe`** | Universal Multi-Host Scanner | Provisions all detected editors in one click |
+| **Adobe Creative Cloud** (Premiere, AE, Audition) | **`XdropInstaller-Premiere.exe`** | Adobe CEP Docked Panel (`com.xdrop.panel`) | Modern UXP Package (`.ccx`) + Multi-Host JSX |
+| **Universal / All Suites** | **`XdropSetup.exe`** | Modern Dark-Mode GUI Multi-Host Scanner | Provisions all detected editors in 1 click |
+
+### macOS Launchers
+| Host Application | Dedicated Launcher | Primary Extension Format | Launch Method |
+| :--- | :--- | :--- | :--- |
+| **Universal / All Suites** | **`XdropSetup.command`** | Full System Scanner & Installer | Double-click in Finder or `./setup_mac.sh` |
+| **Adobe Creative Cloud** (Premiere, AE, Audition) | **`XdropSetup-Adobe.command`** | CEP Panel + CSXS PlayerDebugMode + Auto-Start | Double-click in Finder or `./setup_mac.sh --adobe` |
+| **DaVinci Resolve** (Free & Studio) | **`XdropSetup-Resolve.command`** | Fusion Lua Script + Studio Plugin + Starter Bin | Double-click in Finder or `./setup_mac.sh --resolve` |
 
 > [!NOTE]
 > All installers are **completely standalone** (~11 MB self-contained executables). They do not require Git, Node.js, or an existing Python installation on the user's system.
@@ -142,15 +150,26 @@ XdropInstaller-Premiere.exe
 
 ## 3. macOS Installation Guide
 
-### 1-Click Setup on macOS
-1. Double-click **`XdropSetup.command`** in Finder (or run `./setup_mac.sh` in Terminal).
-2. The installer provisions:
-   - **DaVinci Resolve Comp Script**: `~/Library/Application Support/Blackmagic Design/DaVinci Resolve/Fusion/Scripts/Comp/Xdrop.lua` and Starter Bin.
-   - **DaVinci Studio Workflow Integration**: `~/Library/Application Support/Blackmagic Design/DaVinci Resolve/Workflow Integration Plugins/com.xdrop.resolve.workflowintegration`
-   - **Adobe Creative Cloud CEP**: `~/Library/Application Support/Adobe/CEP/extensions/com.xdrop.panel`
-   - **PlayerDebugMode**: Enables CEP debug mode for versions 9..16 via macOS `defaults write`.
-   - **Blender VSE Add-on**: `~/Library/Application Support/Blender/<ver>/scripts/addons/xdrop`.
-   - **Background Daemon LaunchAgent**: `~/Library/LaunchAgents/com.xdrop.service.plist` (launches headless engine on login with zero Dock icon).
+### Dedicated & 1-Click Setup Options on macOS
+Choose the launcher tailored to your editing workflow:
+- **Universal Multi-Host**: Double-click **`XdropSetup.command`** in Finder (or run `./setup_mac.sh`).
+- **Adobe Creative Cloud Dedicated**: Double-click **`XdropSetup-Adobe.command`** in Finder (or run `./setup_mac.sh --adobe`).
+- **DaVinci Resolve Dedicated**: Double-click **`XdropSetup-Resolve.command`** in Finder (or run `./setup_mac.sh --resolve`).
+
+### What the installer provisions automatically:
+1. **Adobe Creative Cloud (Premiere Pro, After Effects, Audition)**:
+   - Deploys CEP extension to `~/Library/Application Support/Adobe/CEP/extensions/com.xdrop.panel/`.
+   - Executes `defaults write com.adobe.CSXS.<ver> PlayerDebugMode 1` across CSXS versions 9..16 so the extension loads seamlessly without signing roadblocks.
+   - Generates `config.json` with macOS background script paths (`~/.xdrop/start_engine.sh`, `~/.xdrop/run_engine.py`).
+   - If the background engine is offline when Premiere Pro or After Effects opens, the CEP panel automatically launches the headless daemon on macOS without a terminal window.
+2. **DaVinci Resolve (Free & Studio)**:
+   - Deploys Lua script to `~/Library/Application Support/Blackmagic Design/DaVinci Resolve/Fusion/Scripts/Comp/Xdrop.lua`.
+   - Deploys Starter Bin (`Xdrop - Starter Bin.drb`) and Studio Workflow Integration plugin.
+3. **Blender VSE Add-on**:
+   - Deploys addon to `~/Library/Application Support/Blender/<ver>/scripts/addons/xdrop`.
+4. **Background Engine & Zero Sudo**:
+   - Deploys engine to `~/.xdrop/run_engine.py` and creates executable `~/.xdrop/start_engine.sh`.
+   - Requires zero administrator permissions (`sudo`) — 100% user-space installation.
 
 ---
 

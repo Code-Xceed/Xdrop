@@ -372,15 +372,41 @@
 
                     // Strategy C: macOS / Linux daemon spawn
                     if (!started && !isWin) {
-                        const mainPy = (config && config.mainPy) || (extDir ? path.resolve(extDir, '..', '..', 'apps', 'desktop-service', 'xdrop', 'main.py') : null);
-                        if (mainPy && fs.existsSync(mainPy)) {
-                            console.log("[Xdrop CEP] Launching background python3:", mainPy);
-                            cp.spawn('python3', [mainPy, '--background'], {
-                                detached: true,
-                                stdio: 'ignore',
-                                cwd: path.dirname(mainPy)
-                            }).unref();
-                            started = true;
+                        const homeDir = (window.process && window.process.env && window.process.env.HOME) || '';
+                        const candidates = [];
+                        if (homeDir) {
+                            candidates.push(path.join(homeDir, '.xdrop', 'start_engine.sh'));
+                            candidates.push(path.join(homeDir, '.xdrop', 'run_engine.py'));
+                        }
+                        if (config && config.startEngineSh) candidates.push(config.startEngineSh);
+                        if (config && config.engineScript) candidates.push(config.engineScript);
+                        if (config && config.mainPy) candidates.push(config.mainPy);
+                        if (extDir) {
+                            candidates.push(path.resolve(extDir, '..', '..', 'apps', 'desktop-service', 'xdrop', 'main.py'));
+                            candidates.push(path.resolve(extDir, '..', '..', 'src', 'desktop-service', 'xdrop', 'main.py'));
+                        }
+
+                        for (let cand of candidates) {
+                            if (cand && fs.existsSync(cand)) {
+                                if (cand.endsWith('.sh')) {
+                                    console.log("[Xdrop CEP] Launching background sh:", cand);
+                                    cp.spawn('/bin/sh', [cand], {
+                                        detached: true,
+                                        stdio: 'ignore'
+                                    }).unref();
+                                    started = true;
+                                    break;
+                                } else if (cand.endsWith('.py')) {
+                                    console.log("[Xdrop CEP] Launching background python3:", cand);
+                                    cp.spawn('python3', [cand, '--background'], {
+                                        detached: true,
+                                        stdio: 'ignore',
+                                        cwd: path.dirname(cand)
+                                    }).unref();
+                                    started = true;
+                                    break;
+                                }
+                            }
                         }
                     }
                 }

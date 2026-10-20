@@ -24,9 +24,14 @@ Install Xdrop for your operating system without complex setup or administrator/r
 | [**`XdropInstaller-Premiere.exe`**](XdropInstaller-Premiere.exe) | **Adobe Creative Cloud Dedicated (CC 2019–2026+)**<br>• Premiere Pro CEP Docked Extension (`com.xdrop.panel`)<br>• Automated `PlayerDebugMode` Registry Setup<br>• After Effects & Audition Extension Panels<br>• Modern Creative Cloud UXP Bundle (`.ccx`) | **Ready (`11 MB`)** |
 
 ### macOS
-- **1-Click Finder Runner**: Double-click [**`XdropSetup.command`**](XdropSetup.command).
-- **Terminal Runner**: Run `./setup_mac.sh`
-- Automatically configures DaVinci Resolve (`~/Library/Application Support/...`), Adobe Creative Cloud CEP (`~/Library/Application Support/Adobe/CEP/extensions/com.xdrop.panel`), `defaults write com.adobe.CSXS.<ver> PlayerDebugMode 1`, Blender VSE, and background LaunchAgent (`~/Library/LaunchAgents/com.xdrop.service.plist`).
+| Launcher | Target Host & Architecture | Launch Method |
+| :--- | :--- | :--- |
+| [**`XdropSetup.command`**](XdropSetup.command) | **Universal macOS Installer**<br>• Configures all installed editors (DaVinci Resolve, Adobe CC, Blender)<br>• Sets up background daemon LaunchAgent | Double-click in Finder or `./setup_mac.sh` |
+| [**`XdropSetup-Adobe.command`**](XdropSetup-Adobe.command) | **Adobe Creative Cloud Dedicated (Premiere, AE, Audition)**<br>• Deploys CEP extension to `~/Library/Application Support/Adobe/CEP/`<br>• Configures `defaults write com.adobe.CSXS.<ver> PlayerDebugMode 1`<br>• Auto-spawns background engine from inside CEP | Double-click in Finder or `./setup_mac.sh --adobe` |
+| [**`XdropSetup-Resolve.command`**](XdropSetup-Resolve.command) | **DaVinci Resolve Dedicated (Free & Studio)**<br>• Installs Lua script to `~/Library/Application Support/.../Fusion/Scripts/Comp/`<br>• Provisions starter bin and Workflow Integration panel | Double-click in Finder or `./setup_mac.sh --resolve` |
+
+- Zero `sudo` or administrator rights required — installs entirely in user space.
+- Headless auto-start engine runs silently in background.
 
 ### Linux
 - **Terminal Runner**: Run `./setup_linux.sh`
@@ -78,8 +83,14 @@ Install Xdrop for your operating system without complex setup or administrator/r
 
 ```text
 Xdrop/
-├── XdropInstaller-Resolve.exe      # 1-Click Installer for DaVinci Resolve (Free & Studio)
-├── XdropInstaller-Premiere.exe     # 1-Click Installer for Adobe Creative Cloud
+├── XdropSetup.exe                  # Unified Multi-Host Windows Installer (GUI + Auto-Detection)
+├── XdropInstaller-Resolve.exe      # Dedicated DaVinci Resolve Windows Installer
+├── XdropInstaller-Premiere.exe     # Dedicated Adobe Creative Cloud Windows Installer
+├── XdropSetup.command              # Unified Multi-Host macOS Double-Click Launcher
+├── XdropSetup-Resolve.command      # Dedicated DaVinci Resolve macOS Launcher
+├── XdropSetup-Adobe.command        # Dedicated Adobe Creative Cloud macOS Launcher
+├── setup_mac.sh                    # macOS Terminal Setup Script
+├── setup_linux.sh                  # Linux Terminal Setup Script
 ├── LICENSE                         # MIT License
 ├── README.md                       # Project overview & guide
 └── src/                            # Clean open-source implementation

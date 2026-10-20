@@ -54,8 +54,26 @@ echo -e "${CYAN}[i] Checking dependencies...${RESET}"
 # 3. Ensure permissions
 chmod +x "$SCRIPT_DIR/run.sh" 2>/dev/null || true
 
-# 4. Launch Master Installer
+# 4. Launch Appropriate Installer (Universal, Adobe, or Resolve)
 export PYTHONPATH="$SCRIPT_DIR/src/desktop-service:$PYTHONPATH"
-"$PYTHON_BIN" "$SCRIPT_DIR/src/tools/installer.py" "$@"
+
+INSTALLER_SCRIPT="$SCRIPT_DIR/src/tools/installer.py"
+ARGS=()
+
+for arg in "$@"; do
+    case "$arg" in
+        --adobe|--premiere)
+            INSTALLER_SCRIPT="$SCRIPT_DIR/src/tools/installer_premiere.py"
+            ;;
+        --resolve|--davinci)
+            INSTALLER_SCRIPT="$SCRIPT_DIR/src/tools/installer_resolve.py"
+            ;;
+        *)
+            ARGS+=("$arg")
+            ;;
+    esac
+done
+
+"$PYTHON_BIN" "$INSTALLER_SCRIPT" "${ARGS[@]}"
 
 echo -e "\n${GREEN}${BOLD}✓ Setup complete! You can close this terminal window.${RESET}\n"

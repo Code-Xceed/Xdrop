@@ -917,6 +917,8 @@ X-GNOME-Autostart-enabled=true
                         "pythonExe": str(python_exe or sys.executable),
                         "pythonwExe": str(pythonw_exe or ""),
                         "startEngineVbs": str(engine_vbs),
+                        "startEngineSh": str(Path.home() / ".xdrop" / "start_engine.sh"),
+                        "engineScript": str(Path.home() / ".xdrop" / "run_engine.py"),
                         "mainPy": str(find_source_dir("desktop-service") / "xdrop" / "main.py"),
                         "serviceUrl": "http://127.0.0.1:8484",
                     }
