@@ -28,6 +28,7 @@ from xdrop.database import get_settings_from_db, save_settings_to_db
 
 GITHUB_REPO = "Code-Xceed/Xdrop"
 GITHUB_API_RELEASES = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
+GITHUB_API_CONTENTS = f"https://api.github.com/repos/{GITHUB_REPO}/contents/version.json"
 GITHUB_RAW_VERSION = f"https://raw.githubusercontent.com/{GITHUB_REPO}/master/version.json"
 GITHUB_DEFAULT_ARCHIVE = f"https://github.com/{GITHUB_REPO}/archive/refs/heads/master.zip"
 
@@ -210,7 +211,33 @@ class UpdateManager:
         except Exception as e:
             app_logger.debug(f"[Updater] GitHub Releases API unavailable or no release yet ({e}); trying raw version.json")
 
-        # 2. Fallback to raw version.json on master branch
+        # 2. Check GitHub Contents API (immediate real-time data, zero Fastly CDN lag)
+        if not fetched:
+            try:
+                import base64
+                req = urllib.request.Request(
+                    GITHUB_API_CONTENTS,
+                    headers={
+                        "User-Agent": "Xdrop-AutoUpdater",
+                        "Accept": "application/vnd.github.v3+json",
+                    },
+                )
+                loop = asyncio.get_running_loop()
+                resp_bytes = await loop.run_in_executor(None, lambda: urllib.request.urlopen(req, timeout=6).read())
+                c_data = json.loads(resp_bytes.decode("utf-8"))
+                if "content" in c_data:
+                    raw_decoded = base64.b64decode(c_data["content"]).decode("utf-8")
+                    v_data = json.loads(raw_decoded)
+                    latest_ver = str(v_data.get("version", CURRENT_VERSION)).strip().lstrip("vV")
+                    release_name = v_data.get("name") or f"Xdrop v{latest_ver}"
+                    changelog = v_data.get("changelog") or ""
+                    published_at = v_data.get("releaseDate") or ""
+                    download_url = v_data.get("archiveUrl") or GITHUB_DEFAULT_ARCHIVE
+                    fetched = True
+            except Exception as e:
+                app_logger.debug(f"[Updater] GitHub Contents API check skipped: {e}")
+
+        # 3. Fallback to raw version.json on master branch
         if not fetched:
             try:
                 req = urllib.request.Request(
