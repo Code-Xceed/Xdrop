@@ -104,6 +104,63 @@ def test_premiere_installer_copies_cep_panel_and_uxp(tmp_path, monkeypatch):
     assert vbs.is_file(), "Silent background launcher start_engine.vbs was not created"
 
 
+def test_resolve_installer_custom_folder(tmp_path, monkeypatch):
+    """Verify Resolve installer deploys files into user-specified custom directory."""
+    appdata_mock = tmp_path / "AppData" / "Roaming"
+    localappdata_mock = tmp_path / "AppData" / "Local"
+    monkeypatch.setenv("APPDATA", str(appdata_mock))
+    monkeypatch.setenv("LOCALAPPDATA", str(localappdata_mock))
+
+    custom_dir = tmp_path / "CustomDrive" / "DaVinci Resolve" / "Fusion" / "Scripts"
+    custom_dir.mkdir(parents=True, exist_ok=True)
+
+    from tools.installer_resolve import ResolveExtensionInstaller, get_default_resolve_paths
+
+    installer = ResolveExtensionInstaller(custom_scripts_dir=custom_dir)
+    installer.run_resolve_only(install_engine=False)
+
+    # Verify custom Comp directory received Xdrop.lua and Starter Bin
+    comp_dir = custom_dir / "Comp"
+    assert (comp_dir / "Xdrop.lua").is_file(), "Custom Comp/Xdrop.lua missing"
+    assert (comp_dir / "Xdrop - Starter Bin.drb").is_file(), "Custom Comp/Xdrop - Starter Bin.drb missing"
+
+    # Verify custom Utility directory received Xdrop.py
+    util_dir = custom_dir / "Utility"
+    assert (util_dir / "Xdrop.py").is_file(), "Custom Utility/Xdrop.py missing"
+
+    # Verify paths detection
+    paths = get_default_resolve_paths()
+    assert "user_comp" in paths
+    assert "user_workflow" in paths
+
+
+def test_premiere_installer_custom_folder(tmp_path, monkeypatch):
+    """Verify Premiere installer deploys files into user-specified custom CEP directory."""
+    appdata_mock = tmp_path / "AppData" / "Roaming"
+    localappdata_mock = tmp_path / "AppData" / "Local"
+    monkeypatch.setenv("APPDATA", str(appdata_mock))
+    monkeypatch.setenv("LOCALAPPDATA", str(localappdata_mock))
+
+    custom_cep = tmp_path / "CustomDrive" / "Adobe" / "CEP" / "extensions"
+    custom_cep.mkdir(parents=True, exist_ok=True)
+
+    from tools.installer_premiere import PremiereExtensionInstaller, get_default_adobe_paths
+
+    installer = PremiereExtensionInstaller(custom_cep_dir=custom_cep)
+    installer.run_premiere_only(install_engine=False)
+
+    # Verify custom CEP extension folder was created
+    custom_panel = custom_cep / "com.xdrop.panel"
+    assert custom_panel.is_dir(), "Custom com.xdrop.panel directory missing"
+    assert (custom_panel / "CSXS" / "manifest.xml").is_file(), "Custom manifest.xml missing"
+    assert (custom_panel / "config.json").is_file(), "Custom config.json missing"
+
+    # Verify paths detection
+    paths = get_default_adobe_paths()
+    assert "user_cep" in paths
+    assert "user_panel" in paths
+
+
 def test_process_util_silent_hook():
     """Verify install_silent_subprocess_hook sets CREATE_NO_WINDOW and SW_HIDE flags."""
     import subprocess

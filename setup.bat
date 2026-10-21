@@ -1,10 +1,10 @@
 @echo off
 setlocal enabledelayedexpansion
-title Xdrop Setup & Installation
+title Xdrop Dedicated Setup ^& Installation
 cd /d "%~dp0"
 
 echo ========================================================================
-echo    Xdrop — Universal One-Click Automated Setup
+echo    Xdrop — Dedicated Editor Setup ^& Installation
 echo ========================================================================
 echo.
 
@@ -59,7 +59,6 @@ if %ERRORLEVEL% NEQ 0 (
     echo.
     echo [X] Could not install Python automatically.
     echo [*] Please install Python 3.9+ from https://www.python.org/downloads/
-    echo [*] Make sure to check "Add Python to PATH" during installation.
     pause
     exit /b 1
 )
@@ -69,26 +68,45 @@ set "PYTHON_BIN=python"
 echo [+] Using Python: %PYTHON_BIN%
 echo.
 
-echo [*] Installing / validating required dependencies...
+echo [*] Validating dependencies...
 "%PYTHON_BIN%" -m pip install --quiet --upgrade pip >nul 2>nul
-"%PYTHON_BIN%" -m pip install -r requirements.txt
-if %ERRORLEVEL% NEQ 0 (
-    echo [!] Warning during pip install. Proceeding with setup...
-)
+"%PYTHON_BIN%" -m pip install -r requirements.txt >nul 2>nul
 
 echo.
-echo [*] Running Xdrop Universal Setup...
-set "PYTHONPATH=%~dp0src\desktop-service;%PYTHONPATH%"
-"%PYTHON_BIN%" src\desktop-service\xdrop\setup.py
+echo ========================================================================
+echo   Select your target video editor to configure:
+echo ========================================================================
+echo   [1] DaVinci Resolve Setup (Free ^& Studio)
+echo   [2] Adobe Premiere Pro Setup (Creative Cloud)
+echo   [3] Exit
+echo ========================================================================
+echo.
 
+set /p "CHOICE=Enter choice [1, 2, or 3]: "
+if "%CHOICE%"=="1" goto :RunResolve
+if "%CHOICE%"=="2" goto :RunPremiere
+if "%CHOICE%"=="3" exit /b 0
+
+echo [!] Invalid selection. Defaulting to DaVinci Resolve.
+:RunResolve
+echo.
+echo [*] Launching DaVinci Resolve Setup...
+set "PYTHONPATH=%~dp0src;%~dp0src\desktop-service;%PYTHONPATH%"
+"%PYTHON_BIN%" src\tools\installer_resolve.py %*
+goto :Done
+
+:RunPremiere
+echo.
+echo [*] Launching Adobe Premiere Pro Setup...
+set "PYTHONPATH=%~dp0src;%~dp0src\desktop-service;%PYTHONPATH%"
+"%PYTHON_BIN%" src\tools\installer_premiere.py %*
+goto :Done
+
+:Done
 if %ERRORLEVEL% EQU 0 (
     echo.
     echo ========================================================================
-    echo   [+] Setup completed successfully! You can now run 'run.bat'
+    echo   [+] Setup completed successfully! You can now launch your editor.
     echo ========================================================================
-) else (
-    echo.
-    echo [!] Setup exited with a warning or error code.
 )
-
 pause

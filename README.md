@@ -1,61 +1,59 @@
 # Xdrop
 
 > **Universal High-Performance Media Importer for Video Editors**  
-> *DaVinci Resolve • Adobe Premiere Pro • Adobe After Effects • Adobe Audition*  
+> *DaVinci Resolve (Free & Studio) • Adobe Premiere Pro • Adobe After Effects • Adobe Audition*  
 >  
 > *Paste URL → Detect Platform → Inspect Quality → Download & Transcode → Instantly Drop into Timelines & Bins.*
 
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue.svg)]()
-[![Editors](https://img.shields.io/badge/editors-DaVinci%20Resolve%20%7C%20Premiere%20Pro%20%7C%20After%20Effects%20%7C%20Audition%20%7C%20Blender-purple.svg)]()
-[![Tests](https://img.shields.io/badge/tests-108%20passed-brightgreen.svg)]()
+[![Editors](https://img.shields.io/badge/editors-DaVinci%20Resolve%20%7C%20Premiere%20Pro%20%7C%20After%20Effects%20%7C%20Audition-purple.svg)]()
+[![Tests](https://img.shields.io/badge/tests-110%20passed-brightgreen.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-purple.svg)](LICENSE)
 
 ---
 
-## ⚡ 1-Click Installers Across Operating Systems
+## ⚡ Dedicated Standalone Setups
 
-Install Xdrop for your operating system without complex setup or administrator/root prompts:
+Xdrop provides dedicated, focused installers tailored specifically for each video editor ecosystem. Each installer features a dark studio GUI, multi-drive deep scanner, and custom installation folder support with zero admin/root requirements:
 
-### Windows
-| Installer Executable | Target Host & Extension Architecture | Status |
+### 1. DaVinci Resolve (Free & Studio 18, 19, 20+)
+| Platform | Dedicated Setup Method | Details |
 | :--- | :--- | :--- |
-| [**`XdropSetup.exe`**](XdropSetup.exe) | **Unified Modern GUI Setup (Recommended)**<br>• Full Dark-Mode GUI with auto-detection of all editors<br>• Configures DaVinci Resolve & Adobe Creative Cloud in 1 click<br>• Sets up zero-trace, on-demand headless engine | **Ready (`14 MB`)** |
-| [**`XdropInstaller-Resolve.exe`**](XdropInstaller-Resolve.exe) | **DaVinci Resolve Dedicated (Free & Studio)**<br>• Native Fusion UI Comp Script (`Xdrop.lua`)<br>• Color-Coded Starter Bin (`Xdrop - Starter Bin.drb`)<br>• Studio Workflow Integration panel | **Ready (`11 MB`)** |
-| [**`XdropInstaller-Premiere.exe`**](XdropInstaller-Premiere.exe) | **Adobe Creative Cloud Dedicated (CC 2019–2026+)**<br>• Premiere Pro CEP Docked Extension (`com.xdrop.panel`)<br>• Automated `PlayerDebugMode` Registry Setup<br>• After Effects & Audition Extension Panels<br>• Modern Creative Cloud UXP Bundle (`.ccx`) | **Ready (`11 MB`)** |
+| **Windows** | [**`XdropInstaller-Resolve.exe`**](XdropInstaller-Resolve.exe) *(or `setup_resolve.bat`)* | **Standalone Obsidian Studio GUI**<br>• Deep-scans all drives (`C:`, `D:`, `E:`) for DaVinci Resolve Free & Studio<br>• Custom folder selection ("Browse Custom Folder...")<br>• Deploys Native Fusion Comp Script (`Xdrop.lua`) & Starter Bin (`.drb`)<br>• Deploys Studio Workflow Integration docked panel (`WorkflowIntegration.node`)<br>• Provisions zero-flicker headless engine with auto-start |
+| **macOS** | [**`XdropSetup-Resolve.command`**](XdropSetup-Resolve.command) *(or `./setup_mac.sh --resolve`)* | Installs Lua script to `~/Library/Application Support/.../Fusion/Scripts/Comp/`<br>Provisions starter bin, LaunchAgent daemon, and Studio Workflow Integration panel |
+| **Linux** | `./setup_linux.sh --resolve` | Installs to `~/.local/share/DaVinciResolve/Fusion/Scripts/Comp/` |
 
-### macOS
-| Launcher | Target Host & Architecture | Launch Method |
+### 2. Adobe Premiere Pro & Creative Cloud (CC 2020–2026+)
+| Platform | Dedicated Setup Method | Details |
 | :--- | :--- | :--- |
-| [**`XdropSetup.command`**](XdropSetup.command) | **Universal macOS Installer**<br>• Configures all installed editors (DaVinci Resolve, Adobe CC, Blender)<br>• Sets up background daemon LaunchAgent | Double-click in Finder or `./setup_mac.sh` |
-| [**`XdropSetup-Adobe.command`**](XdropSetup-Adobe.command) | **Adobe Creative Cloud Dedicated (Premiere, AE, Audition)**<br>• Deploys CEP extension to `~/Library/Application Support/Adobe/CEP/`<br>• Configures `defaults write com.adobe.CSXS.<ver> PlayerDebugMode 1`<br>• Auto-spawns background engine from inside CEP | Double-click in Finder or `./setup_mac.sh --adobe` |
-| [**`XdropSetup-Resolve.command`**](XdropSetup-Resolve.command) | **DaVinci Resolve Dedicated (Free & Studio)**<br>• Installs Lua script to `~/Library/Application Support/.../Fusion/Scripts/Comp/`<br>• Provisions starter bin and Workflow Integration panel | Double-click in Finder or `./setup_mac.sh --resolve` |
+| **Windows** | [**`XdropInstaller-Premiere.exe`**](XdropInstaller-Premiere.exe) *(or `setup_premiere.bat`)* | **Standalone Creative Cloud Midnight GUI**<br>• Deep-scans all drives (`C:`, `D:`, `E:`) for Premiere, After Effects & Audition<br>• Custom CEP directory selection ("Browse Custom CEP Directory...")<br>• Deploys Native CEP Docked Panel (`com.xdrop.panel`)<br>• Configures Windows Registry `PlayerDebugMode` across CSXS 6..18 (no admin needed)<br>• Packages modern UXP bundles (`.ccx`) |
+| **macOS** | [**`XdropSetup-Adobe.command`**](XdropSetup-Adobe.command) *(or `./setup_mac.sh --adobe`)* | Deploys CEP extension to `~/Library/Application Support/Adobe/CEP/extensions/`<br>Configures `defaults write com.adobe.CSXS.<ver> PlayerDebugMode 1`<br>Spawns silent background daemon |
+| **Linux** | `./setup_linux.sh --adobe` | Configures local CEP / browser bridge |
 
-- Zero `sudo` or administrator rights required — installs entirely in user space.
-- Headless auto-start engine runs silently in background.
-
-### Linux
-- **Terminal Runner**: Run `./setup_linux.sh`
-- Automatically configures DaVinci Resolve (`~/.local/share/DaVinciResolve/Fusion/Scripts/Comp/`), Blender VSE (`~/.config/blender/`), and desktop autostart (`~/.config/autostart/xdrop.desktop`). No root or sudo required.
-
-📖 **For detailed instructions and FAQs, see the [Installation Guide](src/docs/INSTALLATION_GUIDE.md).**
+> [!NOTE]
+> **Setup Selector Menu**: Running [`setup.bat`](setup.bat) on Windows or [`setup_mac.sh`](setup_mac.sh) on macOS presents an interactive choice to launch either dedicated installer.
 
 ---
 
-## 🎬 How to Access Xdrop in Your Editors
+## 🎬 How to Launch Xdrop in Your Editors
 
 ### 1. DaVinci Resolve (Free & Studio)
-1. Double-click [**`XdropInstaller-Resolve.exe`**](XdropInstaller-Resolve.exe).
+1. Run [**`XdropInstaller-Resolve.exe`**](XdropInstaller-Resolve.exe) (or double-click `setup_resolve.bat`).
 2. Launch DaVinci Resolve and open any project.
-3. Open from top menu: **Workspace → Scripts → Comp → Xdrop** *(or Script → Xdrop in Fusion)*.
-4. *Studio users:* You can also open the docked panel via **Workspace → Workflow Integrations → Xdrop**.
-5. *Starter Bins:* Right-click your Media Pool → **Import Bin...** and choose [`src/resolve-plugin/Xdrop - Starter Bin.drb`](src/resolve-plugin/Xdrop%20-%20Starter%20Bin.drb) for pre-organized, color-coded bins (`000_Xdrop Assets`, `01_Downloads`, etc.).
+3. Access via top menu:
+   - **DaVinci Resolve Free & Studio**: **Workspace → Scripts → Comp → Xdrop**  
+     *(Launches the dedicated standalone Studio window with 100% zero-flicker background engine).*
+   - **DaVinci Resolve Studio**: **Workspace → Workflow Integrations → Xdrop**  
+     *(Opens the dockable Studio panel right alongside your Media Pool and Timeline).*
+   - **Utility Launcher**: **Workspace → Scripts → Utility → Xdrop**.
+4. **Starter Bins**: The installer pre-loads the canonical `000_Xdrop Assets` bin hierarchy (`01_Downloads`, `02_Video Clips`, `03_Music & SFX`, `04_Dialogue & Audio`, `05_Proxies & Renders`).
 
-### 2. Adobe Premiere Pro (CC 2019–2026+)
-1. Double-click [**`XdropInstaller-Premiere.exe`**](XdropInstaller-Premiere.exe).
+### 2. Adobe Premiere Pro (CC 2020–2026+)
+1. Run [**`XdropInstaller-Premiere.exe`**](XdropInstaller-Premiere.exe) (or double-click `setup_premiere.bat`).
 2. Launch Premiere Pro and open any project.
 3. Open from top menu: **Window → Extensions → Xdrop**.
-4. Drag and dock the panel anywhere in your workspace (alongside Project Bins, Source Monitor, or Essential Graphics).
-5. Paste any link and click **Download & Import**; clips drop directly into your active project bin and playhead sequence.
+4. Drag and dock the panel anywhere in your workspace (next to Project Bins, Source Monitor, or Effect Controls).
+5. Paste any URL and click **Download & Import**; media drops directly into your active project bin and timeline at the playhead.
 
 ### 3. Adobe After Effects & Audition
 - Open from top menu: **Window → Extensions → Xdrop**.
@@ -64,50 +62,46 @@ Install Xdrop for your operating system without complex setup or administrator/r
 
 ---
 
-## ✨ Key Features
+## ✨ Robustness & Custom Installation Support
 
-- **Direct NLE Bin & Timeline Insertion**: Automatically imports media into your active project bin (`000_Xdrop Assets`) and drops clips at the playhead position.
-- **Zero-Flicker Headless Engine**: Runs silently under `pythonw.exe` via `start_engine.vbs` with `CREATE_NO_WINDOW` flags. Zero command prompt popups or terminal flashes.
-- **Ultra-Fast Remuxing & Transcoding**:
-  - **Stream Copy Remuxing**: <125ms with 0% quality loss.
-  - **Hardware Acceleration**: NVIDIA NVENC, Intel QuickSync, and Apple VideoToolbox support.
-  - **Broadcast Audio**: 48.0 kHz 16-bit PCM WAV and 192k AAC conversion.
-  - **FastStart Header**: `moov` atom placement at file start for instant timeline scrubbing.
-- **Universal Provider Support**: One-click downloads from YouTube, TikTok, Instagram, Twitter/X, Reddit, Vimeo, and direct media URLs (`.mp4`, `.mov`, `.wav`, `.mp3`).
-- **1-Click Auto-Update System**: Integrated GitHub updater automatically notifies users of new releases inside any video editor, silently downloads & unpacks update packages, and provisions updated extensions without manual re-installation.
-- **Color-Coded Starter Bins**: Pre-configured folder hierarchy for organized video editing workflows.
-- **Apple FCPXML 1.11 Sidecars**: Companion `.fcpxml` sidecars generated for universal timeline drag-and-drop.
+- **Multi-Drive Deep Scanning**: Automatically scans all connected drive roots (`C:`, `D:`, `E:`, `F:`, etc.) for standard and custom installation paths of DaVinci Resolve and Adobe Creative Cloud apps.
+- **Custom Folder Installation**: Select "Custom Installation Folder" to deploy directly into custom drive letters, portable installations, or custom network/NAS paths.
+- **Safe Cleanup**: Intelligently purges old or duplicate `ResolveFetch` files across all script roots while strictly preserving third-party scripts (e.g. Snap Captions, Reactor).
+- **Registry Configuration without Elevation**: Configures `PlayerDebugMode = 1` for Adobe CSXS versions 6 through 18 under `HKCU`, requiring zero administrator privileges.
+- **Zero-Flicker Headless Engine**: Launches via `pythonw.exe` and `start_engine.vbs` using `CREATE_NO_WINDOW`. Zero black command prompt windows or console flashes.
+- **Self-Healing Background Daemon**: Listens on `http://127.0.0.1:8484`, automatically boots when an extension opens, and auto-quits on idle.
+- **Universal Provider Support**: One-click downloads with best quality detection (4K/1080p/60fps) from YouTube, TikTok, Instagram, Twitter/X, Reddit, Vimeo, and direct media URLs.
 
 ---
 
-## 📁 Open-Source Repository Structure
+## 📁 Repository Structure
 
 ```text
 Xdrop/
-├── XdropSetup.exe                  # Unified Multi-Host Windows Installer (GUI + Auto-Detection)
-├── XdropInstaller-Resolve.exe      # Dedicated DaVinci Resolve Windows Installer
-├── XdropInstaller-Premiere.exe     # Dedicated Adobe Creative Cloud Windows Installer
-├── setup.bat                       # Automated 1-Click Windows Setup (Python + Deps + Extensions)
-├── run.bat                         # 1-Click Windows Launcher
-├── XdropSetup.command              # Unified Multi-Host macOS Double-Click Launcher
+├── XdropInstaller-Resolve.exe      # Dedicated DaVinci Resolve Windows Installer (Studio GUI)
+├── XdropInstaller-Premiere.exe     # Dedicated Adobe Premiere Pro Windows Installer (CC GUI)
+├── setup_resolve.bat               # 1-Click DaVinci Resolve Setup Script
+├── setup_premiere.bat              # 1-Click Adobe Premiere Pro Setup Script
+├── setup.bat                       # Interactive Setup Selector (Resolve vs Premiere)
+├── run.bat                         # 1-Click Windows Background Engine Launcher
 ├── XdropSetup-Resolve.command      # Dedicated DaVinci Resolve macOS Launcher
 ├── XdropSetup-Adobe.command        # Dedicated Adobe Creative Cloud macOS Launcher
-├── setup_mac.sh                    # macOS Terminal Setup Script
-├── setup_linux.sh                  # Linux Terminal Setup Script
+├── setup_mac.sh                    # macOS Dedicated Setup Script
+├── setup_linux.sh                  # Linux Dedicated Setup Script
 ├── run.sh                          # macOS / Linux Launcher Script
 ├── version.json                    # Release version & update definition
 ├── requirements.txt                # Python dependencies
 ├── LICENSE                         # MIT License
 ├── README.md                       # Project overview & guide
-└── src/                            # Clean open-source implementation
+└── src/                            # Clean source architecture
     ├── desktop-service/            # Headless Python backend engine & queue
     ├── resolve-plugin/             # Studio UI frontend (React/Vite) & Resolve scripts
     ├── premiere-plugin/            # Adobe CEP Panel & UXP Packages
     ├── resolve-workflow-integration# DaVinci Studio Workflow Integration
     ├── blender-addon/              # Blender Sequencer Add-on
     ├── browser-extension/          # Browser Companion Extension
-    ├── tools/                      # Build & packaging scripts
-    ├── tests/                      # Automated test suite (108 passing tests)
+    ├── tools/                      # Dedicated installers & packaging scripts
+    ├── tests/                      # Automated test suite (110 passing tests)
     └── docs/                       # Technical documentation
 ```
 

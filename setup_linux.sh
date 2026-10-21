@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Xdrop — Linux 1-Click Setup & Extension Installer
+# Xdrop — Linux Dedicated Setup & Extension Installer
 # ==============================================================================
-# Configures DaVinci Resolve, Blender VSE, and the background desktop service
-# without requiring root / sudo rights.
+# Configures DaVinci Resolve or Blender VSE and the background desktop service
+# without requiring root/sudo privileges.
 # ==============================================================================
 
 set -e
@@ -19,11 +19,11 @@ RESET='\033[0m'
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 cd "$SCRIPT_DIR"
 
-echo -e "${CYAN}${BOLD}=== Xdrop Linux Universal Installer ===${RESET}"
+echo -e "${CYAN}${BOLD}=== Xdrop Linux Dedicated Setup ===${RESET}"
 
 # 1. Locate Python 3
 PYTHON_BIN=""
-for cand in python3 /usr/bin/python3 /usr/local/bin/python3; do
+for cand in python3 python /usr/bin/python3 /usr/local/bin/python3; do
     if command -v "$cand" >/dev/null 2>&1; then
         PYTHON_BIN="$cand"
         break
@@ -32,10 +32,10 @@ done
 
 if [ -z "$PYTHON_BIN" ]; then
     echo -e "${RED}[X] Python 3 was not found on your system.${RESET}"
-    echo -e "    Please install Python 3 using your distribution's package manager:"
-    echo -e "      Ubuntu/Debian: sudo apt update && sudo apt install python3 python3-pip"
-    echo -e "      Fedora:        sudo dnf install python3 python3-pip"
-    echo -e "      Arch:          sudo pacman -S python python-pip"
+    echo -e "    Please install Python 3 via your package manager:"
+    echo -e "    Ubuntu/Debian: sudo apt update && sudo apt install -y python3 python3-pip"
+    echo -e "    Fedora/RHEL:   sudo dnf install -y python3 python3-pip"
+    echo -e "    Arch Linux:    sudo pacman -S python python-pip"
     exit 1
 fi
 
@@ -54,10 +54,10 @@ echo -e "${CYAN}[i] Checking dependencies...${RESET}"
 # 3. Ensure permissions
 chmod +x "$SCRIPT_DIR/run.sh" 2>/dev/null || true
 
-# 4. Launch Appropriate Installer (Universal, Adobe, or Resolve)
-export PYTHONPATH="$SCRIPT_DIR/src/desktop-service:$PYTHONPATH"
+# 4. Launch Appropriate Installer (Dedicated Adobe or Resolve)
+export PYTHONPATH="$SCRIPT_DIR/src:$SCRIPT_DIR/src/desktop-service:$PYTHONPATH"
 
-INSTALLER_SCRIPT="$SCRIPT_DIR/src/tools/installer.py"
+INSTALLER_SCRIPT=""
 ARGS=()
 
 for arg in "$@"; do
@@ -73,6 +73,21 @@ for arg in "$@"; do
             ;;
     esac
 done
+
+if [ -z "$INSTALLER_SCRIPT" ]; then
+    echo -e "\n${BOLD}${CYAN}Select your target editor to configure:${RESET}"
+    echo "  1) DaVinci Resolve Setup"
+    echo "  2) Adobe Premiere Pro Setup"
+    read -p "Enter choice [1 or 2]: " choice
+    case "$choice" in
+        2)
+            INSTALLER_SCRIPT="$SCRIPT_DIR/src/tools/installer_premiere.py"
+            ;;
+        *)
+            INSTALLER_SCRIPT="$SCRIPT_DIR/src/tools/installer_resolve.py"
+            ;;
+    esac
+fi
 
 "$PYTHON_BIN" "$INSTALLER_SCRIPT" "${ARGS[@]}"
 

@@ -372,12 +372,30 @@ class DeepAppScanner:
 
     def _scan_drives_filesystem(self, found: Dict[str, DiscoveredApp]):
         patterns = [
+            # DaVinci Resolve (Standard and Custom Drives)
             ("Program Files/Blackmagic Design/DaVinci Resolve/Resolve.exe", "resolve", "DaVinci Resolve", "Blackmagic Design"),
+            ("Program Files (x86)/Blackmagic Design/DaVinci Resolve/Resolve.exe", "resolve", "DaVinci Resolve", "Blackmagic Design"),
+            ("Blackmagic Design/DaVinci Resolve/Resolve.exe", "resolve", "DaVinci Resolve", "Blackmagic Design"),
+            ("DaVinci Resolve/Resolve.exe", "resolve", "DaVinci Resolve", "Blackmagic Design"),
+            ("DaVinci Resolve Studio/Resolve.exe", "resolve", "DaVinci Resolve Studio", "Blackmagic Design"),
+            ("Software/DaVinci Resolve/Resolve.exe", "resolve", "DaVinci Resolve", "Blackmagic Design"),
+            ("Apps/DaVinci Resolve/Resolve.exe", "resolve", "DaVinci Resolve", "Blackmagic Design"),
+            ("Video/DaVinci Resolve/Resolve.exe", "resolve", "DaVinci Resolve", "Blackmagic Design"),
+            # Adobe Standard and Custom Drives
             ("Program Files/Adobe/Adobe Premiere Pro*/Adobe Premiere Pro.exe", "premiere", "Adobe Premiere Pro", "Adobe"),
+            ("Program Files (x86)/Adobe/Adobe Premiere Pro*/Adobe Premiere Pro.exe", "premiere", "Adobe Premiere Pro", "Adobe"),
+            ("Adobe/Adobe Premiere Pro*/Adobe Premiere Pro.exe", "premiere", "Adobe Premiere Pro", "Adobe"),
+            ("Apps/Adobe/Adobe Premiere Pro*/Adobe Premiere Pro.exe", "premiere", "Adobe Premiere Pro", "Adobe"),
+            ("Software/Adobe/Adobe Premiere Pro*/Adobe Premiere Pro.exe", "premiere", "Adobe Premiere Pro", "Adobe"),
+            ("Creative Cloud/Adobe Premiere Pro*/Adobe Premiere Pro.exe", "premiere", "Adobe Premiere Pro", "Adobe"),
             ("Program Files/Adobe/Adobe After Effects*/Support Files/AfterFX.exe", "aftereffects", "Adobe After Effects", "Adobe"),
+            ("Adobe/Adobe After Effects*/Support Files/AfterFX.exe", "aftereffects", "Adobe After Effects", "Adobe"),
             ("Program Files/Adobe/Adobe Audition*/Adobe Audition.exe", "audition", "Adobe Audition", "Adobe"),
+            ("Adobe/Adobe Audition*/Adobe Audition.exe", "audition", "Adobe Audition", "Adobe"),
+            # Blender Standard & Steam
             ("Program Files/Blender Foundation/Blender*/blender.exe", "blender", "Blender VSE", "Blender Foundation"),
             ("SteamLibrary/steamapps/common/Blender/blender.exe", "blender", "Blender VSE (Steam)", "Blender Foundation"),
+            ("Program Files (x86)/Steam/steamapps/common/Blender/blender.exe", "blender", "Blender VSE (Steam)", "Blender Foundation"),
         ]
         for drive in self.drives:
             dp = Path(drive)

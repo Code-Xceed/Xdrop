@@ -163,17 +163,25 @@ def test_clean_scripts_preserves_snap_captions(tmp_path: Path, monkeypatch):
 
 
 def test_cross_platform_setup_scripts_exist():
-    """Verify setup and run scripts exist in repository root."""
+    """Verify dedicated setup and run scripts exist in repository root."""
     repo_root = BASE_DIR
     mac_setup = repo_root / "setup_mac.sh"
-    mac_cmd = repo_root / "XdropSetup.command"
+    mac_resolve = repo_root / "XdropSetup-Resolve.command"
+    mac_adobe = repo_root / "XdropSetup-Adobe.command"
     linux_setup = repo_root / "setup_linux.sh"
+    setup_bat = repo_root / "setup.bat"
+    resolve_bat = repo_root / "setup_resolve.bat"
+    premiere_bat = repo_root / "setup_premiere.bat"
     run_bat = repo_root / "run.bat"
     run_sh = repo_root / "run.sh"
 
     assert mac_setup.is_file(), "setup_mac.sh must exist"
-    assert mac_cmd.is_file(), "XdropSetup.command must exist"
+    assert mac_resolve.is_file(), "XdropSetup-Resolve.command must exist"
+    assert mac_adobe.is_file(), "XdropSetup-Adobe.command must exist"
     assert linux_setup.is_file(), "setup_linux.sh must exist"
+    assert setup_bat.is_file(), "setup.bat must exist"
+    assert resolve_bat.is_file(), "setup_resolve.bat must exist"
+    assert premiere_bat.is_file(), "setup_premiere.bat must exist"
     assert run_bat.is_file(), "run.bat must exist"
     assert run_sh.is_file(), "run.sh must exist"
 

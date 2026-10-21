@@ -405,12 +405,26 @@ class DeepEditorScanner:
 
     def _scan_windows_drives_and_filesystem(self, found: Dict[str, DetectedEditor]) -> None:
         search_patterns = [
-            # DaVinci Resolve
+            # DaVinci Resolve (Standard and Custom Drives)
             ("Program Files/Blackmagic Design/DaVinci Resolve/Resolve.exe", "resolve", "DaVinci Resolve", "Blackmagic Design", "Workflow Integration (Studio Dock) & Python Utility Script"),
-            # Adobe Standard
+            ("Program Files (x86)/Blackmagic Design/DaVinci Resolve/Resolve.exe", "resolve", "DaVinci Resolve", "Blackmagic Design", "Workflow Integration (Studio Dock) & Python Utility Script"),
+            ("Blackmagic Design/DaVinci Resolve/Resolve.exe", "resolve", "DaVinci Resolve", "Blackmagic Design", "Workflow Integration (Studio Dock) & Python Utility Script"),
+            ("DaVinci Resolve/Resolve.exe", "resolve", "DaVinci Resolve", "Blackmagic Design", "Workflow Integration (Studio Dock) & Python Utility Script"),
+            ("DaVinci Resolve Studio/Resolve.exe", "resolve", "DaVinci Resolve Studio", "Blackmagic Design", "Workflow Integration (Studio Dock) & Python Utility Script"),
+            ("Software/DaVinci Resolve/Resolve.exe", "resolve", "DaVinci Resolve", "Blackmagic Design", "Workflow Integration (Studio Dock) & Python Utility Script"),
+            ("Apps/DaVinci Resolve/Resolve.exe", "resolve", "DaVinci Resolve", "Blackmagic Design", "Workflow Integration (Studio Dock) & Python Utility Script"),
+            ("Video/DaVinci Resolve/Resolve.exe", "resolve", "DaVinci Resolve", "Blackmagic Design", "Workflow Integration (Studio Dock) & Python Utility Script"),
+            # Adobe Standard and Custom Drives
             ("Program Files/Adobe/Adobe Premiere Pro*/Adobe Premiere Pro.exe", "premiere", "Adobe Premiere Pro", "Adobe", "CEP & UXP Docked Panel"),
+            ("Program Files (x86)/Adobe/Adobe Premiere Pro*/Adobe Premiere Pro.exe", "premiere", "Adobe Premiere Pro", "Adobe", "CEP & UXP Docked Panel"),
+            ("Adobe/Adobe Premiere Pro*/Adobe Premiere Pro.exe", "premiere", "Adobe Premiere Pro", "Adobe", "CEP & UXP Docked Panel"),
+            ("Apps/Adobe/Adobe Premiere Pro*/Adobe Premiere Pro.exe", "premiere", "Adobe Premiere Pro", "Adobe", "CEP & UXP Docked Panel"),
+            ("Software/Adobe/Adobe Premiere Pro*/Adobe Premiere Pro.exe", "premiere", "Adobe Premiere Pro", "Adobe", "CEP & UXP Docked Panel"),
+            ("Creative Cloud/Adobe Premiere Pro*/Adobe Premiere Pro.exe", "premiere", "Adobe Premiere Pro", "Adobe", "CEP & UXP Docked Panel"),
             ("Program Files/Adobe/Adobe After Effects*/Support Files/AfterFX.exe", "aftereffects", "Adobe After Effects", "Adobe", "CEP & UXP Docked Panel"),
+            ("Adobe/Adobe After Effects*/Support Files/AfterFX.exe", "aftereffects", "Adobe After Effects", "Adobe", "CEP & UXP Docked Panel"),
             ("Program Files/Adobe/Adobe Audition*/Adobe Audition.exe", "audition", "Adobe Audition", "Adobe", "CEP Docked Panel"),
+            ("Adobe/Adobe Audition*/Adobe Audition.exe", "audition", "Adobe Audition", "Adobe", "CEP Docked Panel"),
             # Blender Standard & Steam
             ("Program Files/Blender Foundation/Blender*/blender.exe", "blender", "Blender VSE", "Blender Foundation", "Sequencer Add-on (N-Panel)"),
             ("SteamLibrary/steamapps/common/Blender/blender.exe", "blender", "Blender VSE (Steam)", "Blender Foundation", "Sequencer Add-on (N-Panel)"),

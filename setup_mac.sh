@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Xdrop — macOS 1-Click Setup & Extension Installer
+# Xdrop — macOS Dedicated Setup & Extension Installer
 # ==============================================================================
-# Configures DaVinci Resolve, Adobe Creative Cloud, Blender VSE, and the
-# background desktop service without requiring administrator / sudo rights.
+# Configures DaVinci Resolve or Adobe Creative Cloud and the background
+# desktop service without requiring administrator / sudo rights.
 # ==============================================================================
 
 set -e
@@ -19,7 +19,7 @@ RESET='\033[0m'
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 cd "$SCRIPT_DIR"
 
-echo -e "${CYAN}${BOLD}=== Xdrop macOS Universal Installer ===${RESET}"
+echo -e "${CYAN}${BOLD}=== Xdrop macOS Dedicated Setup ===${RESET}"
 
 # 1. Locate Python 3
 PYTHON_BIN=""
@@ -52,10 +52,10 @@ echo -e "${CYAN}[i] Checking dependencies...${RESET}"
 # 3. Ensure permissions
 chmod +x "$SCRIPT_DIR/run.sh" 2>/dev/null || true
 
-# 4. Launch Appropriate Installer (Universal, Adobe, or Resolve)
-export PYTHONPATH="$SCRIPT_DIR/src/desktop-service:$PYTHONPATH"
+# 4. Launch Appropriate Installer (Dedicated Adobe or Resolve)
+export PYTHONPATH="$SCRIPT_DIR/src:$SCRIPT_DIR/src/desktop-service:$PYTHONPATH"
 
-INSTALLER_SCRIPT="$SCRIPT_DIR/src/tools/installer.py"
+INSTALLER_SCRIPT=""
 ARGS=()
 
 for arg in "$@"; do
@@ -71,6 +71,21 @@ for arg in "$@"; do
             ;;
     esac
 done
+
+if [ -z "$INSTALLER_SCRIPT" ]; then
+    echo -e "\n${BOLD}${CYAN}Select your target editor to configure:${RESET}"
+    echo "  1) DaVinci Resolve Setup (Free & Studio)"
+    echo "  2) Adobe Premiere Pro Setup (Creative Cloud)"
+    read -p "Enter choice [1 or 2]: " choice
+    case "$choice" in
+        2)
+            INSTALLER_SCRIPT="$SCRIPT_DIR/src/tools/installer_premiere.py"
+            ;;
+        *)
+            INSTALLER_SCRIPT="$SCRIPT_DIR/src/tools/installer_resolve.py"
+            ;;
+    esac
+fi
 
 "$PYTHON_BIN" "$INSTALLER_SCRIPT" "${ARGS[@]}"
 
