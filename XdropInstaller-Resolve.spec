@@ -14,7 +14,7 @@ a = Analysis(
         ('src/assets', 'src/assets'),
         ('src/tools/assets', 'src/tools/assets'),
     ],
-    hiddenimports=['tkinter', 'tkinter.ttk', 'tkinter.messagebox', 'tkinter.filedialog'],
+    hiddenimports=['tkinter', 'tkinter.ttk', 'tkinter.messagebox', 'tkinter.filedialog', 'PIL', 'PIL.Image', 'PIL.ImageTk'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

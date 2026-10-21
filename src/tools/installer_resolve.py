@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """
-Xdrop DaVinci Resolve Native Extension Installer.
+Xdrop DaVinci Resolve Dedicated Extension Installer.
 
-Minimal, usable, and professional installer for DaVinci Resolve (Free & Studio):
-1. Deep-scans workstation drives, registry, and running processes.
-2. Supports standard per-user (%APPDATA%), system-wide (%PROGRAMDATA%), and custom folder installations.
-3. Purges legacy ResolveFetch scripts while strictly preserving third-party plugins (Snap Captions).
-4. Deploys the DaVinci Resolve Native Lua Extension (Xdrop.lua + Starter Bin.drb) into Scripts/Comp/.
-5. Deploys the DaVinci Resolve Desktop Utility script (Xdrop.py) into Scripts/Utility/.
-6. Deploys the DaVinci Resolve Studio Workflow Integration docked panel (WorkflowIntegration.node).
-7. Installs and silently starts the Xdrop zero-flicker headless background engine (0 CMD windows).
-8. Provides a minimal, studio-grade dark GUI with automatic headless CLI fallback.
+Minimal, usable, and professional installer for DaVinci Resolve Studio & Free:
+1. Deep-scans workstation drives, registry, and running processes to detect installed DaVinci Resolve versions.
+2. Supports standard per-user (%APPDATA%), system common files, and custom folder installations.
+3. Cleans up duplicate/legacy scripts in Fusion/Scripts/Comp while strictly preserving third-party scripts (e.g. Snap Captions).
+4. Deploys native Lua script (Xdrop.lua) and Starter Bin template (.drb) into Fusion/Scripts/Comp.
+5. Deploys DaVinci Resolve Studio Workflow Integration plugin into Workflow Integration Plugins.
+6. Installs and silently starts the Xdrop zero-flicker headless background engine (0 CMD windows).
+7. Provides a minimal, studio-grade dark GUI with high-DPI awareness and automatic headless CLI fallback.
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import platform
 import shutil
@@ -88,37 +88,122 @@ except ImportError:
         log_warn,
     )
 
-# --- Minimal Design Tokens (Obsidian / Resolve Studio Theme) --------------------
-COLOR_BG = "#0c0d12"             # Deep Obsidian Black
-COLOR_CARD = "#141620"           # Inset surface
-COLOR_CARD_BORDER = "#222638"    # Subtle 1px boundary
-COLOR_ACCENT = "#f59e0b"         # Resolve Amber / Gold
-COLOR_ACCENT_HOVER = "#d97706"   # Deep Amber on press
-COLOR_CYAN = "#00e5ff"           # Xdrop Cyan
-COLOR_TEXT = "#fafafa"           # Crisp white
-COLOR_TEXT_MUTED = "#94a3b8"     # Secondary body text
-COLOR_TEXT_DIM = "#64748b"       # Footnote / meta
-COLOR_SUCCESS = "#22c55e"        # Emerald green
-COLOR_SUCCESS_BG = "#0d2218"     # Green container
-COLOR_SUCCESS_BORDER = "#1b4d32" # Green boundary
-COLOR_WARN = "#f59e0b"
+
+# --- High-DPI Windows Awareness --------------------------------------------------
+def enable_high_dpi_awareness():
+    """Enables per-monitor high-DPI awareness on Windows to prevent blurry OS bitmap stretching."""
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            try:
+                ctypes.windll.shcore.SetProcessDpiAwareness(2)
+            except Exception:
+                try:
+                    ctypes.windll.shcore.SetProcessDpiAwareness(1)
+                except Exception:
+                    ctypes.windll.user32.SetProcessDPIAware()
+        except Exception:
+            pass
 
 
-def load_app_icon_image(size: int = 32, target_size: Optional[int] = None) -> Optional[object]:
-    """Safely loads a crisp, compact app icon for the header without heavy dependencies."""
+def get_dpi_scale() -> float:
+    """Returns the primary monitor DPI scale factor (1.0 = 100%, 1.25 = 125%, 1.5 = 150%, 2.0 = 200%)."""
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            hdc = ctypes.windll.user32.GetDC(0)
+            dpi = ctypes.windll.gdi32.GetDeviceCaps(hdc, 88)  # 88 = LOGPIXELSX
+            ctypes.windll.user32.ReleaseDC(0, hdc)
+            return max(1.0, dpi / 96.0)
+        except Exception:
+            pass
+    return 1.0
+
+
+# --- Studio Monochromatic Palette (Matches Extension theme.css 1:1) ---------------
+COLOR_BG = "#09090b"            # Void dark background (--bg-void)
+COLOR_SURFACE = "#111216"       # Matte studio card surface (--bg-primary)
+COLOR_SURFACE_INSET = "#0c0d10" # Inset container for paths
+COLOR_BORDER = "#1f2229"        # 1px studio boundary (--border-default)
+COLOR_BORDER_SUBTLE = "#17181f" # Internal row dividers
+
+COLOR_TEXT_PRIMARY = "#f4f4f5"  # High-contrast crisp white (--text-primary)
+COLOR_TEXT_SECONDARY = "#a1a1aa"# Muted zinc for body/labels (--text-secondary)
+COLOR_TEXT_MUTED = "#71717a"    # Dim text for meta/headers (--text-muted)
+COLOR_TEXT_DIM = "#52525b"      # Footnote / inactive (--text-disabled)
+
+# High-contrast studio action button (Matches extension style)
+COLOR_BTN_PRIMARY_BG = "#f4f4f5"
+COLOR_BTN_PRIMARY_FG = "#09090b"
+COLOR_BTN_PRIMARY_HOVER = "#e4e4e7"
+COLOR_BTN_PRIMARY_ACTIVE = "#d4d4d8"
+
+# Minimal dark secondary button
+COLOR_BTN_SEC_BG = "#16181f"
+COLOR_BTN_SEC_BORDER = "#272a34"
+COLOR_BTN_SEC_FG = "#d4d4d8"
+COLOR_BTN_SEC_HOVER_BG = "#20232c"
+COLOR_BTN_SEC_HOVER_FG = "#ffffff"
+
+# Discrete Status Tokens (Subtle, never neon or jarring)
+COLOR_STATUS_OK = "#34d399"       # Muted emerald
+COLOR_STATUS_OK_BG = "#0d2218"    # Soft green badge
+COLOR_STATUS_OK_BORDER = "#1b4d32"
+COLOR_STATUS_NOTE = "#94a3b8"     # Calm slate note
+
+
+def load_app_icon_image(
+    logical_size: int = 34,
+    scale: float = 1.0,
+    size: Optional[int] = None,
+    target_size: Optional[int] = None,
+) -> Optional[object]:
+    """Safely loads a crystal-sharp, high-DPI app icon matching the display scale."""
     import tkinter as tk
-    effective_size = target_size or size
+
+    eff_logical = target_size or size or logical_size
+    target_px = int(round(eff_logical * scale))
+
+    # Priority 1: PIL downsample with LANCZOS from master logo.png for pixel-perfect sharpness
+    try:
+        from PIL import Image, ImageTk
+
+        master_candidates = [
+            SCRIPT_DIR / "assets" / "logo.png",
+            REPO_ROOT / "src" / "assets" / "logo.png",
+            REPO_ROOT / "src" / "tools" / "assets" / "logo.png",
+        ]
+        if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+            meipass = Path(sys._MEIPASS)
+            master_candidates = [
+                meipass / "src" / "assets" / "logo.png",
+                meipass / "src" / "tools" / "assets" / "logo.png",
+                meipass / "assets" / "logo.png",
+            ] + master_candidates
+
+        for m in master_candidates:
+            if m.is_file():
+                with Image.open(m) as img:
+                    img_rgba = img.convert("RGBA")
+                    resized = img_rgba.resize((target_px, target_px), Image.Resampling.LANCZOS)
+                    return ImageTk.PhotoImage(resized)
+    except Exception:
+        pass
+
+    # Priority 2: Pre-rendered multi-resolution icons in src/tools/assets/
+    available_sizes = [24, 32, 40, 48, 64, 72, 96, 128]
+    best_size = min(available_sizes, key=lambda s: abs(s - target_px))
     candidates = [
+        SCRIPT_DIR / "assets" / f"logo-{best_size}.png",
+        REPO_ROOT / "src" / "tools" / "assets" / f"logo-{best_size}.png",
         SCRIPT_DIR / "assets" / "logo-40.png",
         REPO_ROOT / "src" / "tools" / "assets" / "logo-40.png",
-        REPO_ROOT / "src" / "tools" / "assets" / "logo-64.png",
     ]
     if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
         meipass = Path(sys._MEIPASS)
         candidates = [
+            meipass / "src" / "tools" / "assets" / f"logo-{best_size}.png",
             meipass / "src" / "tools" / "assets" / "logo-40.png",
-            meipass / "src" / "tools" / "assets" / "logo-64.png",
-            meipass / "assets" / "logo-40.png",
         ] + candidates
 
     for c in candidates:
@@ -126,8 +211,8 @@ def load_app_icon_image(size: int = 32, target_size: Optional[int] = None) -> Op
             try:
                 photo = tk.PhotoImage(file=str(c))
                 w = photo.width()
-                if w > effective_size * 1.4:
-                    factor = max(1, round(w / effective_size))
+                if w > target_px * 1.5:
+                    factor = max(1, round(w / target_px))
                     return photo.subsample(factor, factor)
                 return photo
             except Exception:
@@ -136,18 +221,16 @@ def load_app_icon_image(size: int = 32, target_size: Optional[int] = None) -> Op
 
 
 class ResolveExtensionInstaller(ExtensionInstaller):
-    """Specialized installer that provisions DaVinci Resolve extensions only."""
+    """Specialized installer that provisions DaVinci Resolve native extensions only."""
 
     def __init__(
         self,
         discovered: Optional[List[DiscoveredApp]] = None,
         custom_scripts_dir: Optional[Path] = None,
-        custom_workflow_dir: Optional[Path] = None,
         log_callback=None,
     ):
         super().__init__(discovered or [])
         self.custom_scripts_dir = Path(custom_scripts_dir).resolve() if custom_scripts_dir else None
-        self.custom_workflow_dir = Path(custom_workflow_dir).resolve() if custom_workflow_dir else None
         self.log_callback = log_callback
         self.installed_files: List[Path] = []
 
@@ -166,31 +249,56 @@ class ResolveExtensionInstaller(ExtensionInstaller):
         else:
             log_info(msg)
 
-    def run_resolve_only(self, install_engine: bool = True, clean_legacy: bool = True):
-        log_header("Configuring DaVinci Resolve Native Integrations")
-        self._log("Starting DaVinci Resolve integration deployment...")
+    def run_resolve_only(self, install_engine: bool = True):
+        log_header("Configuring DaVinci Resolve Native Extensions")
+        self._log("Starting DaVinci Resolve extension deployment...")
 
         # 1. Background Engine (Headless, 0 CMD windows)
         if install_engine:
             self._log("Configuring zero-trace background engine service...")
             self.install_desktop_service()
 
-        # 2. Cleanup legacy duplicates (preserving Snap Captions and third-party tools)
-        if clean_legacy:
-            self._log("Scanning for legacy/duplicate script files...")
-            self.clean_davinci_resolve_scripts()
+        # 2. Cleanup Legacy / Duplicate Scripts (Preserving third-party tools like Snap Captions)
+        self._log("Cleaning up legacy scripts...")
+        self.clean_davinci_resolve_scripts()
 
-        # 3. Install DaVinci Resolve Lua & Studio Workflow Integration
-        self._log("Deploying native Fusion UI script, Starter Bin, and Workflow Integration...")
+        # 3. Deploy Xdrop.lua, Starter Bin, and Workflow Integration
+        self._log("Deploying native Fusion Comp script and Workflow Integration...")
         self.install_davinci_resolve()
 
-        # 4. If custom scripts directory was specified, deploy directly there as well
+        # 4. If custom scripts folder specified, deploy there directly
         if self.custom_scripts_dir:
             self.deploy_to_custom_scripts_dir(self.custom_scripts_dir)
 
         # 5. Configure Universal Timeline Sidecars
         self.configure_fcpxml_drag_and_drop()
         self._log("DaVinci Resolve deployment completed successfully!", "success")
+
+    def clean_davinci_resolve_scripts(self):
+        """Removes outdated or duplicate Xdrop scripts while strictly protecting third-party scripts."""
+        script_targets = [
+            "Xdrop_Standalone.lua",
+            "Xdrop_Workflow.lua",
+            "Xdrop_Panel.lua",
+            "xdrop_resolve.py",
+            "xdrop_workflow.py",
+        ]
+        paths = get_default_resolve_paths()
+        folders = [
+            paths.get("user_comp"),
+            paths.get("user_utility"),
+            paths.get("system_comp"),
+        ]
+        for f in folders:
+            if f and f.is_dir():
+                for target in script_targets:
+                    candidate = f / target
+                    if candidate.is_file():
+                        try:
+                            candidate.unlink()
+                            self._log(f"Removed legacy script: {candidate.name}")
+                        except Exception:
+                            pass
 
     def deploy_to_custom_scripts_dir(self, target_dir: Path):
         """Deploys Fusion Lua script, Utility script, and Starter Bin to a user-specified custom folder."""
@@ -244,6 +352,7 @@ class ResolveExtensionInstaller(ExtensionInstaller):
             # 4. Generate Utility Script
             try:
                 from xdrop.integrations.resolve import build_resolve_script_content
+
                 script_code = build_resolve_script_content()
                 tgt_py = utility_dir / "Xdrop.py"
                 tgt_py.write_text(script_code, encoding="utf-8")
@@ -257,16 +366,19 @@ class ResolveExtensionInstaller(ExtensionInstaller):
 
 
 def get_default_resolve_paths() -> Dict[str, Path]:
-    """Returns detected standard and system Resolve scripts and workflow paths."""
+    """Returns detected standard and common DaVinci Resolve script paths."""
     paths: Dict[str, Path] = {}
     if sys.platform == "win32":
         appdata = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming"))
-        progdata = Path(os.environ.get("PROGRAMDATA", "C:/ProgramData"))
-        paths["user_scripts"] = appdata / "Blackmagic Design" / "DaVinci Resolve" / "Support" / "Fusion" / "Scripts"
+        base = appdata / "Blackmagic Design" / "DaVinci Resolve" / "Support"
+        paths["user_scripts"] = base / "Fusion" / "Scripts"
         paths["user_comp"] = paths["user_scripts"] / "Comp"
         paths["user_utility"] = paths["user_scripts"] / "Utility"
-        paths["user_workflow"] = appdata / "Blackmagic Design" / "DaVinci Resolve" / "Support" / "Workflow Integration Plugins" / "com.xdrop.resolve.workflowintegration"
-        paths["system_scripts"] = progdata / "Blackmagic Design" / "DaVinci Resolve" / "Fusion" / "Scripts"
+        paths["user_workflow"] = base / "Workflow Integration Plugins" / "com.xdrop.resolve.workflowintegration"
+
+        progdata = Path(os.environ.get("PROGRAMDATA", r"C:\ProgramData"))
+        sys_base = progdata / "Blackmagic Design" / "DaVinci Resolve" / "Support"
+        paths["system_scripts"] = sys_base / "Fusion" / "Scripts"
         paths["system_comp"] = paths["system_scripts"] / "Comp"
         paths["system_workflow"] = progdata / "Blackmagic Design" / "DaVinci Resolve" / "Workflow Integration Plugins" / "com.xdrop.resolve.workflowintegration"
     elif sys.platform == "darwin":
@@ -290,13 +402,16 @@ def get_default_resolve_paths() -> Dict[str, Path]:
 
 
 # ==============================================================================
-# Minimal, Usable, Professional GUI
+# Minimal, Usable, High-DPI Studio GUI
 # ==============================================================================
 
 class ResolveGuiInstaller:
     """Minimal, elegant studio installer tailored specifically for DaVinci Resolve."""
 
     def __init__(self, initial_custom_dir: Optional[Path] = None):
+        enable_high_dpi_awareness()
+        self.scale = get_dpi_scale()
+
         import tkinter as tk
         from tkinter import ttk, filedialog
 
@@ -306,11 +421,16 @@ class ResolveGuiInstaller:
 
         self.root = tk.Tk()
         self.root.title("Xdrop Setup — DaVinci Resolve")
-        self.root.geometry("520x460")
-        self.root.minsize(520, 460)
-        self.root.maxsize(520, 460)
-        self.root.resizable(False, False)
         self.root.configure(bg=COLOR_BG)
+
+        # Scale window geometry to match monitor DPI perfectly
+        base_w, base_h = 540, 475
+        win_w = int(round(base_w * self.scale))
+        win_h = int(round(base_h * self.scale))
+        self.root.geometry(f"{win_w}x{win_h}")
+        self.root.minsize(win_w, win_h)
+        self.root.maxsize(win_w, win_h)
+        self.root.resizable(False, False)
 
         # Windows taskbar AppUserModelID
         if sys.platform == "win32":
@@ -321,7 +441,7 @@ class ResolveGuiInstaller:
                 pass
 
         self._load_app_icons()
-        self._center_window()
+        self._center_window(win_w, win_h)
 
         self.default_paths = get_default_resolve_paths()
         self.target_dir = Path(initial_custom_dir).resolve() if initial_custom_dir else self.default_paths.get("user_comp")
@@ -355,26 +475,29 @@ class ResolveGuiInstaller:
                 except Exception:
                     pass
 
-        self._logo_photo = load_app_icon_image(size=32)
+        self._logo_photo = load_app_icon_image(logical_size=34, scale=self.scale)
 
-    def _center_window(self):
+    def _center_window(self, w: int, h: int):
         self.root.update_idletasks()
-        w, h = 520, 460
-        x = max(0, (self.root.winfo_screenwidth() // 2) - (w // 2))
-        y = max(0, (self.root.winfo_screenheight() // 2) - (h // 2))
+        sw = self.root.winfo_screenwidth()
+        sh = self.root.winfo_screenheight()
+        x = max(0, (sw // 2) - (w // 2))
+        y = max(0, (sh // 2) - (h // 2))
         self.root.geometry(f"{w}x{h}+{x}+{y}")
 
     def _build_ui(self):
-        self.container = self.tk.Frame(self.root, bg=COLOR_BG, padx=28, pady=24)
+        pad_x = int(round(26 * self.scale))
+        pad_y = int(round(22 * self.scale))
+        self.container = self.tk.Frame(self.root, bg=COLOR_BG, padx=pad_x, pady=pad_y)
         self.container.pack(fill=self.tk.BOTH, expand=True)
 
-        # 1. Header Row
+        # 1. Header Row (Crisp icon, brand, studio pill, subtitle)
         header = self.tk.Frame(self.container, bg=COLOR_BG)
-        header.pack(fill=self.tk.X, pady=(0, 16))
+        header.pack(fill=self.tk.X, pady=(0, int(round(16 * self.scale))))
 
         if self._logo_photo:
             lbl_logo = self.tk.Label(header, image=self._logo_photo, bg=COLOR_BG)
-            lbl_logo.pack(side=self.tk.LEFT, padx=(0, 12))
+            lbl_logo.pack(side=self.tk.LEFT, padx=(0, int(round(12 * self.scale))))
 
         title_col = self.tk.Frame(header, bg=COLOR_BG)
         title_col.pack(side=self.tk.LEFT, fill=self.tk.Y)
@@ -385,156 +508,202 @@ class ResolveGuiInstaller:
         lbl_title = self.tk.Label(
             title_row,
             text="Xdrop",
-            font=("Segoe UI", 16, "bold"),
-            fg=COLOR_TEXT,
-            bg=COLOR_BG
+            font=("Segoe UI", 15, "bold"),
+            fg=COLOR_TEXT_PRIMARY,
+            bg=COLOR_BG,
         )
         lbl_title.pack(side=self.tk.LEFT)
 
+        # Studio Pill Badge (Subtle dark badge matching extension)
         lbl_pill = self.tk.Label(
             title_row,
-            text=" DaVinci Resolve ",
-            font=("Segoe UI", 9, "bold"),
-            fg=COLOR_ACCENT,
-            bg="#1d1e28",
-            padx=6,
-            pady=2
+            text=" DAVINCI RESOLVE ",
+            font=("Segoe UI", 8, "bold"),
+            fg=COLOR_TEXT_SECONDARY,
+            bg="#181a20",
+            highlightbackground=COLOR_BORDER,
+            highlightthickness=1,
+            padx=int(round(7 * self.scale)),
+            pady=int(round(2 * self.scale)),
         )
-        lbl_pill.pack(side=self.tk.LEFT, padx=(8, 0))
+        lbl_pill.pack(side=self.tk.LEFT, padx=(int(round(8 * self.scale)), 0))
 
         lbl_sub = self.tk.Label(
             title_col,
-            text="High-performance media importer for DaVinci Resolve Free & Studio",
+            text="Native Workflow Integration & Background Service",
             font=("Segoe UI", 9),
-            fg=COLOR_TEXT_DIM,
-            bg=COLOR_BG
+            fg=COLOR_TEXT_MUTED,
+            bg=COLOR_BG,
         )
-        lbl_sub.pack(anchor="w", pady=(2, 0))
+        lbl_sub.pack(anchor="w", pady=(int(round(2 * self.scale)), 0))
 
-        # 2. Status Detection Strip
-        self.detect_card = self.tk.Frame(
+        # 2. Main Studio Card (Single clean panel, 1px studio border)
+        self.studio_card = self.tk.Frame(
             self.container,
-            bg=COLOR_CARD,
-            highlightbackground=COLOR_CARD_BORDER,
+            bg=COLOR_SURFACE,
+            highlightbackground=COLOR_BORDER,
             highlightthickness=1,
-            padx=14,
-            pady=10
+            padx=int(round(16 * self.scale)),
+            pady=int(round(14 * self.scale)),
         )
-        self.detect_card.pack(fill=self.tk.X, pady=(0, 14))
+        self.studio_card.pack(fill=self.tk.X, pady=(0, int(round(16 * self.scale))))
 
-        strip_row = self.tk.Frame(self.detect_card, bg=COLOR_CARD)
-        strip_row.pack(fill=self.tk.X)
+        # Section A: Target Host Application
+        sec_a_lbl = self.tk.Label(
+            self.studio_card,
+            text="TARGET APPLICATION",
+            font=("Segoe UI", 8, "bold"),
+            fg=COLOR_TEXT_MUTED,
+            bg=COLOR_SURFACE,
+        )
+        sec_a_lbl.pack(anchor="w")
 
-        self.lbl_detect_dot = self.tk.Label(strip_row, text="●", font=("Segoe UI", 10), fg=COLOR_CYAN, bg=COLOR_CARD)
-        self.lbl_detect_dot.pack(side=self.tk.LEFT, padx=(0, 6))
+        row_target = self.tk.Frame(self.studio_card, bg=COLOR_SURFACE)
+        row_target.pack(fill=self.tk.X, pady=(int(round(4 * self.scale)), 0))
 
-        self.lbl_detect_text = self.tk.Label(
-            strip_row,
-            text="Scanning workstation for DaVinci Resolve...",
+        self.lbl_target_name = self.tk.Label(
+            row_target,
+            text="Scanning for DaVinci Resolve...",
             font=("Segoe UI", 9, "bold"),
-            fg=COLOR_TEXT,
-            bg=COLOR_CARD
+            fg=COLOR_TEXT_PRIMARY,
+            bg=COLOR_SURFACE,
         )
-        self.lbl_detect_text.pack(side=self.tk.LEFT)
+        self.lbl_target_name.pack(side=self.tk.LEFT)
 
-        self.lbl_detect_ver = self.tk.Label(strip_row, text="", font=("Segoe UI", 9), fg=COLOR_TEXT_DIM, bg=COLOR_CARD)
-        self.lbl_detect_ver.pack(side=self.tk.RIGHT)
+        self.lbl_target_status = self.tk.Label(
+            row_target,
+            text="Scanning",
+            font=("Segoe UI", 8, "bold"),
+            fg=COLOR_TEXT_MUTED,
+            bg="#181a20",
+            highlightbackground=COLOR_BORDER,
+            highlightthickness=1,
+            padx=int(round(6 * self.scale)),
+            pady=int(round(1 * self.scale)),
+        )
+        self.lbl_target_status.pack(side=self.tk.RIGHT)
 
-        self.lbl_detect_warn = self.tk.Label(
-            self.detect_card,
+        self.lbl_target_running = self.tk.Label(
+            self.studio_card,
             text="",
             font=("Segoe UI", 8),
-            fg=COLOR_WARN,
-            bg=COLOR_CARD
+            fg=COLOR_STATUS_NOTE,
+            bg=COLOR_SURFACE,
         )
 
-        # 3. Features Card (Clean, minimal bullet overview)
-        feat_card = self.tk.Frame(
-            self.container,
-            bg=COLOR_CARD,
-            highlightbackground=COLOR_CARD_BORDER,
+        # Divider 1
+        div_1 = self.tk.Frame(self.studio_card, bg=COLOR_BORDER_SUBTLE, height=1)
+        div_1.pack(fill=self.tk.X, pady=int(round(12 * self.scale)))
+
+        # Section B: Installation Directory
+        sec_b_lbl = self.tk.Label(
+            self.studio_card,
+            text="INSTALLATION DIRECTORY",
+            font=("Segoe UI", 8, "bold"),
+            fg=COLOR_TEXT_MUTED,
+            bg=COLOR_SURFACE,
+        )
+        sec_b_lbl.pack(anchor="w")
+
+        path_box = self.tk.Frame(
+            self.studio_card,
+            bg=COLOR_SURFACE_INSET,
+            highlightbackground=COLOR_BORDER,
             highlightthickness=1,
-            padx=14,
-            pady=12
+            padx=int(round(12 * self.scale)),
+            pady=int(round(7 * self.scale)),
         )
-        feat_card.pack(fill=self.tk.X, pady=(0, 16))
-
-        feats = [
-            ("✓", "Native Studio UI script (Workspace → Scripts → Comp → Xdrop)"),
-            ("✓", "Pre-configured Starter Bins & Studio Workflow Integration"),
-            ("✓", "Zero-flicker background engine (auto-starts on demand, 0 CMD windows)"),
-        ]
-        for mark, desc in feats:
-            row = self.tk.Frame(feat_card, bg=COLOR_CARD)
-            row.pack(fill=self.tk.X, pady=2)
-            self.tk.Label(row, text=mark, font=("Segoe UI", 9, "bold"), fg=COLOR_SUCCESS, bg=COLOR_CARD).pack(side=self.tk.LEFT, padx=(0, 8))
-            self.tk.Label(row, text=desc, font=("Segoe UI", 9), fg=COLOR_TEXT_MUTED, bg=COLOR_CARD).pack(side=self.tk.LEFT)
-
-        # Inset Target Folder Row
-        dest_div = self.tk.Frame(feat_card, bg=COLOR_CARD_BORDER, height=1)
-        dest_div.pack(fill=self.tk.X, pady=(10, 8))
-
-        dest_row = self.tk.Frame(feat_card, bg=COLOR_CARD)
-        dest_row.pack(fill=self.tk.X)
-
-        lbl_dest_tag = self.tk.Label(dest_row, text="Install to:", font=("Segoe UI", 8, "bold"), fg=COLOR_TEXT_DIM, bg=COLOR_CARD)
-        lbl_dest_tag.pack(side=self.tk.LEFT, padx=(0, 6))
+        path_box.pack(fill=self.tk.X, pady=(int(round(5 * self.scale)), 0))
 
         self.lbl_dest_path = self.tk.Label(
-            dest_row,
+            path_box,
             text=self._format_path_short(self.target_dir),
             font=("Consolas", 8),
-            fg=COLOR_TEXT_MUTED,
-            bg=COLOR_CARD
+            fg=COLOR_TEXT_SECONDARY,
+            bg=COLOR_SURFACE_INSET,
+            anchor="w",
+            justify=self.tk.LEFT,
         )
-        self.lbl_dest_path.pack(side=self.tk.LEFT, fill=self.tk.X, expand=True)
+        self.lbl_dest_path.pack(side=self.tk.LEFT, fill=self.tk.X, expand=True, anchor="w")
 
         btn_change = self.tk.Button(
-            dest_row,
-            text="Change...",
+            path_box,
+            text="Browse...",
             font=("Segoe UI", 8),
-            fg=COLOR_CYAN,
-            bg=COLOR_CARD,
-            activeforeground="#ffffff",
-            activebackground=COLOR_CARD,
+            fg=COLOR_TEXT_SECONDARY,
+            bg=COLOR_SURFACE_INSET,
+            activeforeground=COLOR_TEXT_PRIMARY,
+            activebackground=COLOR_SURFACE_INSET,
             relief=self.tk.FLAT,
             bd=0,
             cursor="hand2",
-            command=self._choose_custom_folder
+            padx=int(round(4 * self.scale)),
+            command=self._choose_custom_folder,
         )
-        btn_change.pack(side=self.tk.RIGHT)
+        btn_change.pack(side=self.tk.RIGHT, padx=(int(round(8 * self.scale)), 0))
+        btn_change.bind("<Enter>", lambda e: btn_change.config(fg=COLOR_TEXT_PRIMARY))
+        btn_change.bind("<Leave>", lambda e: btn_change.config(fg=COLOR_TEXT_SECONDARY))
 
-        # 4. Progress Section
+        # Divider 2
+        div_2 = self.tk.Frame(self.studio_card, bg=COLOR_BORDER_SUBTLE, height=1)
+        div_2.pack(fill=self.tk.X, pady=int(round(12 * self.scale)))
+
+        # Section C: Deployment Summary
+        sec_c_lbl = self.tk.Label(
+            self.studio_card,
+            text="DEPLOYMENT SUMMARY",
+            font=("Segoe UI", 8, "bold"),
+            fg=COLOR_TEXT_MUTED,
+            bg=COLOR_SURFACE,
+        )
+        sec_c_lbl.pack(anchor="w")
+
+        comps = [
+            "• Studio Workflow Integration plugin (Workspace → Workflow Integrations)",
+            "• Comp native script (Xdrop.lua) & Starter Bin template (.drb)",
+            "• Local engine service (Port 8484, zero-flicker background engine)",
+        ]
+        for c_text in comps:
+            row_c = self.tk.Label(
+                self.studio_card,
+                text=c_text,
+                font=("Segoe UI", 8),
+                fg=COLOR_TEXT_SECONDARY,
+                bg=COLOR_SURFACE,
+            )
+            row_c.pack(anchor="w", pady=(int(round(2 * self.scale)), 0))
+
+        # 3. Progress Section
         self.progress_frame = self.tk.Frame(self.container, bg=COLOR_BG)
-        self.progress_frame.pack(fill=self.tk.X, pady=(0, 16))
+        self.progress_frame.pack(fill=self.tk.X, pady=(0, int(round(16 * self.scale))))
 
         self.lbl_status = self.tk.Label(
             self.progress_frame,
             text="Ready to install",
             font=("Segoe UI", 8),
-            fg=COLOR_TEXT_DIM,
-            bg=COLOR_BG
+            fg=COLOR_TEXT_MUTED,
+            bg=COLOR_BG,
         )
-        self.lbl_status.pack(anchor="w", pady=(0, 4))
+        self.lbl_status.pack(anchor="w", pady=(0, int(round(4 * self.scale))))
 
         style = self.ttk.Style()
         style.theme_use("default")
         style.configure(
-            "Resolve.Horizontal.TProgressbar",
-            background=COLOR_ACCENT,
-            troughcolor=COLOR_CARD,
+            "Studio.Horizontal.TProgressbar",
+            background=COLOR_BTN_PRIMARY_BG,
+            troughcolor=COLOR_SURFACE,
             borderwidth=0,
-            thickness=4
+            thickness=int(round(3 * self.scale)),
         )
         self.progress_bar = self.ttk.Progressbar(
             self.progress_frame,
-            style="Resolve.Horizontal.TProgressbar",
-            mode="determinate"
+            style="Studio.Horizontal.TProgressbar",
+            mode="determinate",
         )
         self.progress_bar.pack(fill=self.tk.X)
         self.progress_bar["value"] = 0
 
-        # 5. Bottom Action Bar
+        # 4. Action Bar (Cancel on left, high-contrast studio install on right)
         self.action_bar = self.tk.Frame(self.container, bg=COLOR_BG)
         self.action_bar.pack(fill=self.tk.X, side=self.tk.BOTTOM)
 
@@ -542,44 +711,52 @@ class ResolveGuiInstaller:
             self.action_bar,
             text="Cancel",
             font=("Segoe UI", 9),
-            fg=COLOR_TEXT_MUTED,
-            bg=COLOR_CARD,
-            activeforeground=COLOR_TEXT,
-            activebackground=COLOR_CARD_BORDER,
+            fg=COLOR_BTN_SEC_FG,
+            bg=COLOR_BTN_SEC_BG,
+            activeforeground=COLOR_BTN_SEC_HOVER_FG,
+            activebackground=COLOR_BTN_SEC_HOVER_BG,
             relief=self.tk.FLAT,
-            padx=16,
-            pady=6,
+            bd=0,
+            highlightbackground=COLOR_BTN_SEC_BORDER,
+            highlightthickness=1,
+            padx=int(round(18 * self.scale)),
+            pady=int(round(7 * self.scale)),
             cursor="hand2",
-            command=self.root.destroy
+            command=self.root.destroy,
         )
         self.btn_cancel.pack(side=self.tk.LEFT)
+        self.btn_cancel.bind("<Enter>", lambda e: self.btn_cancel.config(bg=COLOR_BTN_SEC_HOVER_BG, fg=COLOR_BTN_SEC_HOVER_FG))
+        self.btn_cancel.bind("<Leave>", lambda e: self.btn_cancel.config(bg=COLOR_BTN_SEC_BG, fg=COLOR_BTN_SEC_FG))
 
         self.btn_install = self.tk.Button(
             self.action_bar,
             text="  Install for DaVinci Resolve  ",
             font=("Segoe UI", 9, "bold"),
-            fg="#000000",
-            bg=COLOR_ACCENT,
-            activeforeground="#000000",
-            activebackground=COLOR_ACCENT_HOVER,
+            fg=COLOR_BTN_PRIMARY_FG,
+            bg=COLOR_BTN_PRIMARY_BG,
+            activeforeground=COLOR_BTN_PRIMARY_FG,
+            activebackground=COLOR_BTN_PRIMARY_HOVER,
             relief=self.tk.FLAT,
-            padx=20,
-            pady=7,
+            bd=0,
+            padx=int(round(22 * self.scale)),
+            pady=int(round(7 * self.scale)),
             cursor="hand2",
-            command=self._start_installation
+            command=self._start_installation,
         )
         self.btn_install.pack(side=self.tk.RIGHT)
+        self.btn_install.bind("<Enter>", lambda e: self.btn_install.config(bg=COLOR_BTN_PRIMARY_HOVER) if not self.is_installing else None)
+        self.btn_install.bind("<Leave>", lambda e: self.btn_install.config(bg=COLOR_BTN_PRIMARY_BG) if not self.is_installing else None)
 
     def _format_path_short(self, path: Optional[Path]) -> str:
         if not path:
             return "Standard User Directory"
         p_str = str(path)
-        if len(p_str) > 48:
-            return p_str[:22] + "..." + p_str[-22:]
+        if len(p_str) > 52:
+            return p_str[:24] + "..." + p_str[-24:]
         return p_str
 
     def _choose_custom_folder(self):
-        folder = self.filedialog.askdirectory(title="Select DaVinci Resolve or Fusion Scripts Directory")
+        folder = self.filedialog.askdirectory(title="Select DaVinci Resolve Fusion Scripts Directory")
         if folder:
             self.target_dir = Path(folder)
             self.is_custom_location = True
@@ -596,16 +773,28 @@ class ResolveGuiInstaller:
                     return
                 if self.discovered_resolve_apps:
                     app = self.discovered_resolve_apps[0]
-                    self.lbl_detect_dot.config(fg=COLOR_SUCCESS)
-                    self.lbl_detect_text.config(text=f"{app.name} detected")
-                    self.lbl_detect_ver.config(text=f"v{app.version}")
+                    ver_str = f"v{app.version}" if app.version and app.version[0].isdigit() else (app.version or "")
+                    label_str = f"{app.name} ({ver_str})" if ver_str else app.name
+                    self.lbl_target_name.config(text=label_str)
+                    self.lbl_target_status.config(
+                        text="Detected",
+                        fg=COLOR_STATUS_OK,
+                        bg=COLOR_STATUS_OK_BG,
+                        highlightbackground=COLOR_STATUS_OK_BORDER,
+                    )
                     if app.is_running:
-                        self.lbl_detect_warn.config(text="⚠️ Resolve is running. Please restart it after setup to load extensions.")
-                        self.lbl_detect_warn.pack(anchor="w", pady=(4, 0))
+                        self.lbl_target_running.config(
+                            text="Note: DaVinci Resolve is running. Restart it after setup to load extensions."
+                        )
+                        self.lbl_target_running.pack(anchor="w", pady=(int(round(4 * self.scale)), 0))
                 else:
-                    self.lbl_detect_dot.config(fg=COLOR_CYAN)
-                    self.lbl_detect_text.config(text="DaVinci Resolve not running")
-                    self.lbl_detect_ver.config(text="Standard paths ready")
+                    self.lbl_target_name.config(text="DaVinci Resolve Studio & Free (Standard Paths)")
+                    self.lbl_target_status.config(
+                        text="Ready",
+                        fg=COLOR_TEXT_SECONDARY,
+                        bg="#181a20",
+                        highlightbackground=COLOR_BORDER,
+                    )
 
             self.root.after(0, update_ui)
         except Exception:
@@ -673,37 +862,55 @@ class ResolveGuiInstaller:
 
     def _render_completion_screen(self):
         self.is_completed = True
-        self.btn_install.config(state=self.tk.NORMAL, text="Done", bg=COLOR_SUCCESS, fg="#ffffff")
+        self.btn_install.config(
+            state=self.tk.NORMAL,
+            text="Done",
+            bg=COLOR_BTN_PRIMARY_BG,
+            fg=COLOR_BTN_PRIMARY_FG,
+        )
         self.btn_cancel.pack_forget()
 
-        # Replace features card with success instructions
+        # Replace studio card with completion card
         for child in self.container.winfo_children():
             if child not in (self.progress_frame, self.action_bar):
                 child.destroy()
 
         success_box = self.tk.Frame(
             self.container,
-            bg=COLOR_SUCCESS_BG,
-            highlightbackground=COLOR_SUCCESS_BORDER,
+            bg=COLOR_SURFACE,
+            highlightbackground=COLOR_BORDER,
             highlightthickness=1,
-            padx=16,
-            pady=16
+            padx=int(round(18 * self.scale)),
+            pady=int(round(18 * self.scale)),
         )
-        success_box.pack(fill=self.tk.BOTH, expand=True, pady=(8, 16))
+        success_box.pack(fill=self.tk.BOTH, expand=True, pady=(int(round(8 * self.scale)), int(round(16 * self.scale))))
 
-        lbl_check = self.tk.Label(success_box, text="✓  DaVinci Resolve Setup Complete", font=("Segoe UI", 12, "bold"), fg=COLOR_SUCCESS, bg=COLOR_SUCCESS_BG)
-        lbl_check.pack(anchor="w", pady=(0, 10))
+        lbl_check = self.tk.Label(
+            success_box,
+            text="Extension Installed Successfully",
+            font=("Segoe UI", 12, "bold"),
+            fg=COLOR_TEXT_PRIMARY,
+            bg=COLOR_SURFACE,
+        )
+        lbl_check.pack(anchor="w", pady=(0, int(round(10 * self.scale))))
 
         guide = (
-            "How to launch Xdrop inside DaVinci Resolve:\n\n"
-            "• Free & Studio:\n"
-            "  Workspace → Scripts → Comp → Xdrop\n\n"
-            "• Studio Docked Panel:\n"
-            "  Workspace → Workflow Integrations → Xdrop\n\n"
+            "How to access Xdrop in DaVinci Resolve:\n\n"
+            "1. Launch or restart DaVinci Resolve\n"
+            "2. Access the extension via:\n"
+            "   • Free & Studio: Workspace  →  Scripts  →  Comp  →  Xdrop\n"
+            "   • Studio Panel: Workspace  →  Workflow Integrations  →  Xdrop\n\n"
             "Background service is active on http://127.0.0.1:8484"
         )
-        lbl_guide = self.tk.Label(success_box, text=guide, font=("Segoe UI", 9), fg=COLOR_TEXT, bg=COLOR_SUCCESS_BG, justify=self.tk.LEFT)
-        lbl_guide.pack(anchor="w", pady=(0, 14))
+        lbl_guide = self.tk.Label(
+            success_box,
+            text=guide,
+            font=("Segoe UI", 9),
+            fg=COLOR_TEXT_SECONDARY,
+            bg=COLOR_SURFACE,
+            justify=self.tk.LEFT,
+        )
+        lbl_guide.pack(anchor="w", pady=(0, int(round(14 * self.scale))))
 
         resolve_exe = None
         if self.discovered_resolve_apps and self.discovered_resolve_apps[0].executable:
@@ -714,12 +921,15 @@ class ResolveGuiInstaller:
                 success_box,
                 text="  Launch DaVinci Resolve  ",
                 font=("Segoe UI", 9, "bold"),
-                bg=COLOR_ACCENT,
-                fg="#000000",
-                activebackground=COLOR_ACCENT_HOVER,
+                bg=COLOR_BTN_PRIMARY_BG,
+                fg=COLOR_BTN_PRIMARY_FG,
+                activebackground=COLOR_BTN_PRIMARY_HOVER,
                 relief=self.tk.FLAT,
+                bd=0,
+                padx=int(round(16 * self.scale)),
+                pady=int(round(6 * self.scale)),
                 cursor="hand2",
-                command=lambda: subprocess.Popen([str(resolve_exe)], start_new_session=True)
+                command=lambda: subprocess.Popen([str(resolve_exe)], start_new_session=True),
             )
             btn_launch.pack(side=self.tk.LEFT)
 
@@ -790,6 +1000,7 @@ def run_cli_installer(custom_dir: Optional[Path] = None):
 
 
 def main():
+    enable_high_dpi_awareness()
     parser = argparse.ArgumentParser(description="Xdrop DaVinci Resolve Dedicated Installer")
     parser.add_argument("--cli", action="store_true", help="Run in command-line mode without GUI")
     parser.add_argument("--silent", "-y", "--non-interactive", action="store_true", dest="silent", help="Run silently without user interaction")
