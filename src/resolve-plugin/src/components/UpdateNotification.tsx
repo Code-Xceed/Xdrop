@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowUpCircle, X, ChevronDown, ChevronUp, CheckCircle, Loader2 } from 'lucide-react';
+import { X, ChevronDown, ChevronUp, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import { UpdateInfo, UpdateProgress } from '@xdrop/shared-types';
 
 interface UpdateNotificationProps {
@@ -29,25 +29,23 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
       ['downloading', 'extracting', 'installing'].includes(updateProgress.stage));
 
   const isDone = updateProgress && updateProgress.stage === 'completed';
-
-  const percent = updateProgress?.percent ?? (isWorking ? 30 : 0);
+  const percent = updateProgress?.percent ?? (isWorking ? 35 : 0);
   const statusMsg = updateProgress?.message || 'Installing update...';
 
   return (
     <div
       style={{
-        margin: '6px 12px 2px 12px',
-        padding: '9px 12px',
-        borderRadius: '8px',
-        backgroundColor: 'rgba(20, 24, 33, 0.96)',
-        border: '1px solid rgba(52, 211, 153, 0.28)',
-        boxShadow: '0 4px 18px rgba(0, 0, 0, 0.35)',
-        backdropFilter: 'blur(10px)',
+        margin: '0 10px 6px 10px',
+        padding: '8px 10px',
+        borderRadius: 'var(--radius-sm)',
+        backgroundColor: 'var(--bg-secondary)',
+        border: '1px solid var(--border-strong)',
+        boxShadow: 'var(--shadow-sm)',
         userSelect: 'none',
         display: 'flex',
         flexDirection: 'column',
         gap: '6px',
-        animation: 'fadeIn 0.2s ease-out',
+        flexShrink: 0,
       }}
     >
       <div
@@ -58,14 +56,14 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
           gap: '8px',
         }}
       >
-        {/* Left: Badge + Version Headline */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+        {/* Left: Indicator & Version */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
           {isDone ? (
-            <CheckCircle size={15} color="#34d399" style={{ flexShrink: 0 }} />
+            <CheckCircle2 size={14} color="var(--success)" style={{ flexShrink: 0 }} />
           ) : isWorking ? (
-            <Loader2 size={15} color="#38bdf8" className="animate-spin" style={{ flexShrink: 0 }} />
+            <Loader2 size={14} color="var(--text-primary)" className="spin" style={{ flexShrink: 0 }} />
           ) : (
-            <ArrowUpCircle size={15} color="#34d399" style={{ flexShrink: 0 }} />
+            <Sparkles size={14} color="var(--success)" style={{ flexShrink: 0 }} />
           )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flexWrap: 'wrap' }}>
@@ -85,13 +83,10 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
 
             {!isWorking && !isDone && (
               <span
+                className="badge badge-success"
                 style={{
-                  fontSize: '10px',
+                  fontSize: '9px',
                   padding: '1px 5px',
-                  borderRadius: '4px',
-                  backgroundColor: 'rgba(52, 211, 153, 0.12)',
-                  color: '#34d399',
-                  border: '1px solid rgba(52, 211, 153, 0.25)',
                   fontWeight: 600,
                 }}
               >
@@ -101,9 +96,9 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
           </div>
         </div>
 
-        {/* Right Actions: Update button & dismiss */}
+        {/* Right Actions */}
         {!isWorking && !isDone && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
             {updateInfo.changelog && (
               <button
                 type="button"
@@ -112,7 +107,7 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
                   background: 'none',
                   border: 'none',
                   color: 'var(--text-muted)',
-                  fontSize: '11px',
+                  fontSize: '10.5px',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -121,27 +116,21 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
                 }}
                 title="View what's new"
               >
-                {showNotes ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                {showNotes ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
                 <span>Notes</span>
               </button>
             )}
 
             <button
               type="button"
+              className="btn btn-sm btn-primary"
               onClick={onInstall}
               style={{
-                backgroundColor: '#10b981',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '5px',
-                padding: '3px 9px',
-                fontSize: '11px',
+                padding: '2px 8px',
+                height: '22px',
+                fontSize: '10.5px',
                 fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'background-color 0.15s ease',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#059669')}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#10b981')}
             >
               Update Now
             </button>
@@ -158,79 +147,67 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: '4px',
               }}
-              title="Later"
+              title="Dismiss notification"
             >
-              <X size={13} />
+              <X size={12} />
             </button>
           </div>
         )}
       </div>
 
-      {/* Progress indicator during download / installation */}
+      {/* Progress Bar when installing */}
       {isWorking && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '2px' }}>
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              fontSize: '10px',
-              color: 'var(--text-secondary)',
-            }}
-          >
-            <span>{statusMsg}</span>
-            <span style={{ fontWeight: 600 }}>{percent}%</span>
-          </div>
-
-          <div
-            style={{
-              width: '100%',
-              height: '4px',
+              height: '3px',
               backgroundColor: 'rgba(255, 255, 255, 0.08)',
               borderRadius: '2px',
               overflow: 'hidden',
+              position: 'relative',
             }}
           >
             <div
               style={{
-                width: `${percent}%`,
                 height: '100%',
-                backgroundColor: '#34d399',
-                transition: 'width 0.3s ease',
+                width: `${Math.min(100, Math.max(0, percent))}%`,
+                backgroundColor: 'var(--success)',
+                transition: 'width 250ms ease-out',
+                borderRadius: '2px',
               }}
             />
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              fontSize: '9.5px',
+              color: 'var(--text-muted)',
+              fontFamily: 'var(--font-mono)',
+            }}
+          >
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {statusMsg}
+            </span>
+            <span>{percent}%</span>
           </div>
         </div>
       )}
 
-      {/* Completion message */}
-      {isDone && (
-        <div
-          style={{
-            fontSize: '10px',
-            color: '#34d399',
-            fontWeight: 500,
-          }}
-        >
-          {statusMsg} Restarting interface...
-        </div>
-      )}
-
-      {/* Expandable release notes */}
-      {showNotes && updateInfo.changelog && !isWorking && !isDone && (
+      {/* Expandable Release Notes */}
+      {showNotes && updateInfo.changelog && !isWorking && (
         <div
           style={{
             marginTop: '4px',
             padding: '6px 8px',
-            borderRadius: '5px',
-            backgroundColor: 'rgba(0, 0, 0, 0.25)',
-            border: '1px solid rgba(255, 255, 255, 0.05)',
-            fontSize: '10px',
-            lineHeight: '1.4',
+            borderRadius: 'var(--radius-xs)',
+            backgroundColor: 'var(--bg-primary)',
+            border: '1px solid var(--border-subtle)',
+            fontSize: '10.5px',
             color: 'var(--text-secondary)',
-            maxHeight: '80px',
+            lineHeight: 1.4,
+            maxHeight: '90px',
             overflowY: 'auto',
           }}
         >

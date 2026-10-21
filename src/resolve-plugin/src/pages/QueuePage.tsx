@@ -20,15 +20,18 @@ import {
   RotateCcw,
   Trash2,
   ArrowUpRight,
-  Zap,
-  Check,
   GripVertical,
+  Loader2,
+  Download,
+  Plus,
+  Clock,
 } from 'lucide-react';
 
 interface QueuePageProps {
   downloads: DownloadJob[];
   onRefresh: () => void;
   showToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
+  onSwitchToImport?: () => void;
 }
 
 type EditorTarget = 'resolve' | 'premiere' | 'aftereffects' | 'audition';
@@ -37,23 +40,33 @@ export const QueuePage: React.FC<QueuePageProps> = ({
   downloads,
   onRefresh,
   showToast,
+  onSwitchToImport,
 }) => {
   const { activeEditor } = useEditorContext();
   const [filter, setFilter] = useState<'all' | 'active' | 'completed' | 'failed'>('all');
   const [selectedEditorMap, setSelectedEditorMap] = useState<Record<string, EditorTarget>>({});
   const [importingId, setImportingId] = useState<string | null>(null);
 
-  // Helper to determine selected editor for a given job
+  // Helper to determine target editor for a given job
   const getSelectedEditorForJob = (job: DownloadJob): EditorTarget => {
     if (selectedEditorMap[job.id]) {
       return selectedEditorMap[job.id];
     }
-    // Auto-detect matching where the user is working
-    if (activeEditor === 'premiere' || activeEditor === 'aftereffects' || activeEditor === 'audition' || activeEditor === 'resolve') {
+    if (
+      activeEditor === 'premiere' ||
+      activeEditor === 'aftereffects' ||
+      activeEditor === 'audition' ||
+      activeEditor === 'resolve'
+    ) {
       return activeEditor;
     }
     const target = job.targetEditor || (job as any).target_editor;
-    if (target === 'premiere' || target === 'aftereffects' || target === 'audition' || target === 'resolve') {
+    if (
+      target === 'premiere' ||
+      target === 'aftereffects' ||
+      target === 'audition' ||
+      target === 'resolve'
+    ) {
       return target;
     }
     return 'resolve';
@@ -69,10 +82,10 @@ export const QueuePage: React.FC<QueuePageProps> = ({
   const handleCancel = async (id: string) => {
     try {
       await cancelDownload(id);
-      showToast('Download cancelled.', 'info');
+      showToast('Download cancelled', 'info');
       onRefresh();
     } catch (e: any) {
-      showToast(e.message, 'error');
+      showToast(e.message || 'Failed to cancel', 'error');
     }
   };
 
@@ -82,7 +95,7 @@ export const QueuePage: React.FC<QueuePageProps> = ({
       showToast('Retrying download...', 'info');
       onRefresh();
     } catch (e: any) {
-      showToast(e.message, 'error');
+      showToast(e.message || 'Retry failed', 'error');
     }
   };
 
@@ -91,7 +104,7 @@ export const QueuePage: React.FC<QueuePageProps> = ({
       await removeDownload(id);
       onRefresh();
     } catch (e: any) {
-      showToast(e.message, 'error');
+      showToast(e.message || 'Failed to remove', 'error');
     }
   };
 
@@ -101,26 +114,26 @@ export const QueuePage: React.FC<QueuePageProps> = ({
       if (target === 'premiere') {
         const res = await importJobToPremiere(jobId);
         if (res.success) {
-          showToast('Imported into Adobe Premiere Pro project bin!', 'success');
+          showToast('Imported into Premiere Pro bin', 'success');
           onRefresh();
         } else {
-          showToast(res.error || 'Failed to import to Premiere Pro. Ensure Premiere is open.', 'error');
+          showToast(res.error || 'Failed to import into Premiere Pro', 'error');
         }
       } else if (target === 'aftereffects') {
         const res = await importJobToAfterEffects(jobId);
         if (res.success) {
-          showToast('Imported into Adobe After Effects project panel!', 'success');
+          showToast('Imported into After Effects project', 'success');
           onRefresh();
         } else {
-          showToast(res.error || 'Failed to import to After Effects. Ensure AE is open.', 'error');
+          showToast(res.error || 'Failed to import into After Effects', 'error');
         }
       } else if (target === 'audition') {
         const res = await importJobToAudition(jobId);
         if (res.success) {
-          showToast('Imported into Adobe Audition session!', 'success');
+          showToast('Imported into Audition session', 'success');
           onRefresh();
         } else {
-          showToast(res.error || 'Failed to import to Audition. Ensure Audition is open.', 'error');
+          showToast(res.error || 'Failed to import into Audition', 'error');
         }
       } else {
         const res = await importJobToResolve(jobId);
@@ -128,18 +141,18 @@ export const QueuePage: React.FC<QueuePageProps> = ({
           showToast(`Imported into DaVinci Resolve: ${res.clipName || 'Media Pool'}`, 'success');
           onRefresh();
         } else {
-          showToast(res.error || 'Failed to import to Resolve. Ensure Resolve is open.', 'error');
+          showToast(res.error || 'Failed to import into DaVinci Resolve', 'error');
         }
       }
     } catch (e: any) {
-      showToast(e.message || 'Import error occurred.', 'error');
+      showToast(e.message || 'Import error occurred', 'error');
     } finally {
       setImportingId(null);
     }
   };
 
-  const activeDownloads = downloads.filter(
-    (j) => j.status === 'downloading' || j.status === 'processing' || j.status === 'importing' || j.status === 'queued'
+  const activeDownloads = downloads.filter((j) =>
+    ['downloading', 'processing', 'importing', 'queued'].includes(j.status)
   );
   const completedDownloads = downloads.filter((j) => j.status === 'completed');
   const failedDownloads = downloads.filter((j) => j.status === 'failed' || j.status === 'cancelled');
@@ -151,70 +164,100 @@ export const QueuePage: React.FC<QueuePageProps> = ({
     return true;
   });
 
+  // Empty State
   if (downloads.length === 0) {
     return (
-      <div
-        style={{
-          maxWidth: '520px',
-          margin: '36px auto',
-          textAlign: 'center',
-          padding: '36px 18px',
-          backgroundColor: 'var(--bg-secondary)',
-          borderRadius: 'var(--radius-md)',
-          border: '1px solid var(--border-default)',
-          boxShadow: 'var(--shadow-sm)',
-        }}
-      >
+      <div style={{ maxWidth: '480px', margin: '48px auto', padding: '0 16px', textAlign: 'center' }}>
         <div
           style={{
-            width: '40px',
-            height: '40px',
-            margin: '0 auto 12px',
-            borderRadius: 'var(--radius-xs)',
-            backgroundColor: 'var(--bg-tertiary)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--text-muted)',
+            padding: '36px 24px',
+            borderRadius: 'var(--radius-lg)',
+            backgroundColor: 'var(--bg-secondary)',
             border: '1px solid var(--border-default)',
+            boxShadow: 'var(--shadow-sm)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
           }}
         >
-          <Zap size={20} strokeWidth={2} />
+          <div
+            style={{
+              width: '44px',
+              height: '44px',
+              borderRadius: 'var(--radius-sm)',
+              backgroundColor: 'var(--bg-tertiary)',
+              border: '1px solid var(--border-strong)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--text-secondary)',
+              marginBottom: '14px',
+            }}
+          >
+            <Download size={20} strokeWidth={1.8} />
+          </div>
+          <h4
+            style={{
+              fontSize: '13px',
+              fontWeight: 600,
+              color: 'var(--text-primary)',
+              marginBottom: '6px',
+              letterSpacing: '-0.01em',
+            }}
+          >
+            No Downloads in Queue
+          </h4>
+          <p
+            style={{
+              fontSize: '11px',
+              color: 'var(--text-muted)',
+              lineHeight: 1.5,
+              maxWidth: '320px',
+              marginBottom: '18px',
+            }}
+          >
+            Paste any YouTube, Instagram, TikTok, or web media link in the Import tab to begin downloading.
+          </p>
+          {onSwitchToImport && (
+            <button
+              onClick={onSwitchToImport}
+              className="btn btn-primary btn-sm"
+              style={{ padding: '6px 14px', fontSize: '11px', gap: '5px' }}
+            >
+              <Plus size={13} strokeWidth={2.2} />
+              <span>Import Media</span>
+            </button>
+          )}
         </div>
-        <h4 style={{ fontSize: '13px', fontWeight: 600, marginBottom: '4px', color: 'var(--text-primary)' }}>
-          Queue is Empty
-        </h4>
-        <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-          Paste any video or audio URL in the Import tab to initiate downloads.
-        </p>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: '12px 10px', maxWidth: '820px', margin: '0 auto' }}>
-      {/* Filter Chips Bar */}
+    <div style={{ padding: '12px 14px', maxWidth: '820px', margin: '0 auto' }}>
+      {/* Segmented Filter Control Bar */}
       <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '10px',
+          marginBottom: '12px',
           gap: '8px',
           flexWrap: 'wrap',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-            Queue
+          <span style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
+            Transfers
           </span>
           <span
             style={{
-              fontSize: '9.5px',
+              fontSize: '10px',
               fontWeight: 600,
-              padding: '1px 5px',
-              borderRadius: '2px',
-              backgroundColor: 'var(--bg-tertiary)',
+              fontFamily: 'var(--font-mono)',
+              padding: '1px 6px',
+              borderRadius: 'var(--radius-pill)',
+              backgroundColor: 'var(--bg-secondary)',
               border: '1px solid var(--border-default)',
               color: 'var(--text-secondary)',
             }}
@@ -223,45 +266,57 @@ export const QueuePage: React.FC<QueuePageProps> = ({
           </span>
         </div>
 
-        {/* Filter Buttons */}
+        {/* Filter Pills */}
         <div
           style={{
-            display: 'flex',
+            display: 'inline-flex',
+            alignItems: 'center',
             backgroundColor: 'var(--bg-secondary)',
             padding: '2px',
-            borderRadius: 'var(--radius-xs)',
+            borderRadius: 'var(--radius-pill)',
             border: '1px solid var(--border-default)',
             gap: '2px',
           }}
         >
-          {(['all', 'active', 'completed', 'failed'] as const).map((t) => {
-            const count =
-              t === 'all'
-                ? downloads.length
-                : t === 'active'
-                ? activeDownloads.length
-                : t === 'completed'
-                ? completedDownloads.length
-                : failedDownloads.length;
-            const isSel = filter === t;
+          {(
+            [
+              { id: 'all', label: 'All', count: downloads.length },
+              { id: 'active', label: 'Active', count: activeDownloads.length },
+              { id: 'completed', label: 'Completed', count: completedDownloads.length },
+              { id: 'failed', label: 'Errors', count: failedDownloads.length },
+            ] as const
+          ).map((item) => {
+            const isSel = filter === item.id;
             return (
               <button
-                key={t}
-                onClick={() => setFilter(t)}
-                className="btn btn-sm"
+                key={item.id}
+                onClick={() => setFilter(item.id)}
                 style={{
                   border: isSel ? '1px solid var(--border-strong)' : '1px solid transparent',
                   backgroundColor: isSel ? 'var(--bg-elevated)' : 'transparent',
                   color: isSel ? '#ffffff' : 'var(--text-muted)',
-                  padding: '2px 8px',
-                  fontSize: '9.5px',
+                  padding: '3px 9px',
+                  borderRadius: 'var(--radius-pill)',
+                  fontSize: '10px',
                   fontWeight: isSel ? 600 : 500,
-                  boxShadow: 'none',
-                  transform: 'none',
-                  textTransform: 'capitalize',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  transition: 'all 120ms ease',
+                  boxShadow: isSel ? '0 1px 2px rgba(0,0,0,0.4)' : 'none',
                 }}
               >
-                {t} ({count})
+                <span>{item.label}</span>
+                <span
+                  style={{
+                    fontSize: '9px',
+                    fontFamily: 'var(--font-mono)',
+                    opacity: isSel ? 1 : 0.7,
+                  }}
+                >
+                  {item.count}
+                </span>
               </button>
             );
           })}
@@ -290,9 +345,6 @@ export const QueuePage: React.FC<QueuePageProps> = ({
           const isAfterEffectsImported = Boolean(job.aftereffectsImported ?? (job as any).aftereffects_imported);
           const isAuditionImported = Boolean(job.auditionImported ?? (job as any).audition_imported);
 
-          // An import is still outstanding when the editor was closed at download time, or
-          // when the Adobe panel has not confirmed the ExtendScript result yet. Showing the
-          // reason keeps the card honest instead of claiming the clip is already in a bin.
           const pendingImport = (
             [
               {
@@ -322,20 +374,21 @@ export const QueuePage: React.FC<QueuePageProps> = ({
             ] as const
           ).find((state) => state.pending && !state.imported);
 
-          const errorMsg = job.errorMessage || (job as any).error_message || 'Download failed.';
+          const errorMsg = job.errorMessage || (job as any).error_message || 'Download failed';
           const formatStr = (job.format || 'MP4').toUpperCase();
 
           const wasAutoImportRequested = Boolean(job.autoImport ?? (job as any).auto_import);
           const targetEditor = (job.targetEditor ?? (job as any).target_editor) as EditorTarget | undefined;
 
-          // Determine if this item was automatically imported into its targeted software
-          const isAutoImportedComplete = isCompleted && wasAutoImportRequested && (
-            (targetEditor === 'resolve' && isResolveImported) ||
-            (targetEditor === 'premiere' && isPremiereImported) ||
-            (targetEditor === 'aftereffects' && isAfterEffectsImported) ||
-            (targetEditor === 'audition' && isAuditionImported) ||
-            (!targetEditor && (isResolveImported || isPremiereImported || isAfterEffectsImported || isAuditionImported))
-          );
+          const isAutoImportedComplete =
+            isCompleted &&
+            wasAutoImportRequested &&
+            ((targetEditor === 'resolve' && isResolveImported) ||
+              (targetEditor === 'premiere' && isPremiereImported) ||
+              (targetEditor === 'aftereffects' && isAfterEffectsImported) ||
+              (targetEditor === 'audition' && isAuditionImported) ||
+              (!targetEditor &&
+                (isResolveImported || isPremiereImported || isAfterEffectsImported || isAuditionImported)));
 
           const currentTarget = getSelectedEditorForJob(job);
           const isCurrentlyImporting = importingId === job.id;
@@ -348,6 +401,15 @@ export const QueuePage: React.FC<QueuePageProps> = ({
 
           const outputFilePath = job.outputFilePath || (job as any).output_file_path;
           const canDrag = isCompleted && Boolean(outputFilePath);
+
+          // Status indicator color
+          const statusAccentColor = isActive
+            ? 'var(--accent-primary)'
+            : isCompleted
+            ? 'var(--success)'
+            : isFailed
+            ? 'var(--danger)'
+            : 'var(--border-strong)';
 
           return (
             <div
@@ -362,36 +424,61 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                 }
               }}
               style={{
+                position: 'relative',
                 padding: '10px 12px',
-                border: '1px solid var(--border-default)',
-                borderLeft: `3px solid ${
-                  isActive
-                    ? 'var(--accent-primary)'
-                    : isCompleted
-                    ? 'var(--success)'
-                    : isFailed
-                    ? 'var(--danger)'
-                    : 'var(--border-default)'
-                }`,
+                borderRadius: 'var(--radius-sm)',
                 backgroundColor: 'var(--bg-secondary)',
+                border: '1px solid var(--border-default)',
                 boxShadow: 'var(--shadow-xs)',
-                transition: 'border-color 0.12s ease',
                 cursor: canDrag ? 'grab' : 'default',
+                transition: 'border-color 120ms ease, background 120ms ease',
               }}
-              title={canDrag ? 'Drag to timeline' : undefined}
+              title={canDrag ? 'Drag clip directly onto timeline or bin' : undefined}
             >
-              {/* Row 1: Icon, Title & Status Badge */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+              {/* Left Subtle Color Strip */}
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: '6px',
+                  bottom: '6px',
+                  width: '3px',
+                  borderRadius: '0 2px 2px 0',
+                  backgroundColor: statusAccentColor,
+                  opacity: isActive ? 1 : 0.75,
+                }}
+              />
+
+              {/* Row 1: Header (Grip / Media Icon / Title / Status Badge) */}
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: '8px',
+                  paddingLeft: '4px',
+                }}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
                   {canDrag && (
-                    <div style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', cursor: 'grab' }} title="Drag to timeline">
+                    <div
+                      style={{
+                        color: 'var(--text-muted)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        cursor: 'grab',
+                        flexShrink: 0,
+                      }}
+                      title="Drag to timeline"
+                    >
                       <GripVertical size={13} strokeWidth={2} />
                     </div>
                   )}
+
                   <div
                     style={{
-                      width: '22px',
-                      height: '22px',
+                      width: '24px',
+                      height: '24px',
                       borderRadius: 'var(--radius-xs)',
                       backgroundColor: 'var(--bg-tertiary)',
                       border: '1px solid var(--border-default)',
@@ -413,6 +500,7 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
+                      letterSpacing: '-0.01em',
                     }}
                     title={job.title || 'Untitled Asset'}
                   >
@@ -420,77 +508,101 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                   </h5>
                 </div>
 
-                {/* Status Indicator */}
+                {/* Status Indicator Badge */}
                 <div style={{ flexShrink: 0 }}>
                   {job.status === 'downloading' && (
-                    <span className="badge badge-info" style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px', textTransform: 'none' }}>
-                      <span className="spin">⟳</span> Downloading
+                    <span
+                      className="badge"
+                      style={{
+                        fontSize: '9px',
+                        padding: '2px 7px',
+                        gap: '4px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                        color: '#ffffff',
+                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                      }}
+                    >
+                      <Loader2 size={10} className="spin" />
+                      <span>{safeProgress.toFixed(0)}%</span>
                     </span>
                   )}
                   {job.status === 'processing' && (
-                    <span className="badge badge-warning" style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px', textTransform: 'none' }}>
-                      <span className="spin">⟳</span> Processing
+                    <span
+                      className="badge badge-warning"
+                      style={{ fontSize: '9px', padding: '2px 7px', gap: '4px' }}
+                    >
+                      <Loader2 size={10} className="spin" />
+                      <span>Processing</span>
                     </span>
                   )}
                   {job.status === 'importing' && (
-                    <span className="badge badge-info" style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px', textTransform: 'none' }}>
-                      <span className="spin">⟳</span> Importing
+                    <span
+                      className="badge"
+                      style={{
+                        fontSize: '9px',
+                        padding: '2px 7px',
+                        gap: '4px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                        color: '#ffffff',
+                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                      }}
+                    >
+                      <Loader2 size={10} className="spin" />
+                      <span>Importing</span>
                     </span>
                   )}
                   {job.status === 'queued' && (
-                    <span className="badge badge-neutral" style={{ fontSize: '8.5px', padding: '1px 6px', textTransform: 'none' }}>
-                      Queued
+                    <span className="badge badge-neutral" style={{ fontSize: '9px', padding: '2px 7px', gap: '4px' }}>
+                      <Clock size={9} strokeWidth={2} />
+                      <span>Queued</span>
                     </span>
                   )}
                   {isCompleted && pendingImport && (
                     <span
                       className="badge badge-warning"
-                      style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px', textTransform: 'none' }}
+                      style={{ fontSize: '9px', padding: '2px 7px', gap: '4px' }}
                       title={pendingImport.error || `Waiting for ${pendingImport.editor}`}
                     >
-                      <span className="spin">⟳</span>
-                      {`Waiting for ${pendingImport.editor}`}
+                      <Loader2 size={10} className="spin" />
+                      <span>{pendingImport.editor} pending</span>
                     </span>
                   )}
                   {isCompleted && !pendingImport && (
                     <span
                       className="badge badge-success"
-                      style={{
-                        fontSize: '8.5px',
-                        padding: '1px 6px',
-                        gap: '3px',
-                        textTransform: 'none',
-                      }}
+                      style={{ fontSize: '9px', padding: '2px 7px', gap: '4px' }}
                     >
-                      <CheckCircle2 size={10} strokeWidth={2} />
-                      {isAutoImportedComplete
-                        ? targetEditor === 'premiere'
-                          ? 'Imported to Premiere'
-                          : targetEditor === 'aftereffects'
-                          ? 'Imported to AE'
-                          : 'Imported to Resolve'
-                        : 'Ready'}
+                      <CheckCircle2 size={10} strokeWidth={2.2} />
+                      <span>Ready</span>
                     </span>
                   )}
                   {isFailed && (
-                    <span className="badge badge-danger" style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px', textTransform: 'none' }}>
-                      <AlertCircle size={10} strokeWidth={2} /> Error
+                    <span
+                      className="badge badge-danger"
+                      style={{ fontSize: '9px', padding: '2px 7px', gap: '4px' }}
+                    >
+                      <AlertCircle size={10} strokeWidth={2.2} />
+                      <span>Failed</span>
                     </span>
                   )}
                   {isCancelled && (
-                    <span className="badge badge-neutral" style={{ fontSize: '8.5px', padding: '1px 6px', gap: '3px', textTransform: 'none' }}>
-                      <XCircle size={10} strokeWidth={2} /> Cancelled
+                    <span
+                      className="badge badge-neutral"
+                      style={{ fontSize: '9px', padding: '2px 7px', gap: '4px' }}
+                    >
+                      <XCircle size={10} strokeWidth={2} />
+                      <span>Cancelled</span>
                     </span>
                   )}
                 </div>
               </div>
 
-              {/* Progress Meter Bar */}
+              {/* Row 2: Sleek Precision Progress Bar */}
               <div
                 style={{
                   width: '100%',
-                  height: '4px',
-                  backgroundColor: 'var(--bg-primary)',
+                  height: '3px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.06)',
                   borderRadius: '2px',
                   overflow: 'hidden',
                   margin: '8px 0 6px',
@@ -504,21 +616,22 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                       ? 'var(--success)'
                       : isFailed
                       ? 'var(--danger)'
-                      : 'var(--accent-primary)',
-                    transition: 'width 0.15s ease',
+                      : 'linear-gradient(90deg, rgba(255,255,255,0.7), #ffffff)',
+                    transition: 'width 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
                   }}
                 />
               </div>
 
-              {/* Row 3: Telemetry Line */}
+              {/* Row 3: Monospace Telemetry & Quick Action Icons */}
               <div
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  fontSize: '9.5px',
+                  fontSize: '10px',
                   color: 'var(--text-muted)',
                   gap: '8px',
+                  paddingLeft: '4px',
                 }}
               >
                 <div
@@ -528,6 +641,7 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
+                    letterSpacing: '-0.01em',
                   }}
                 >
                   {job.status === 'downloading' ? (
@@ -539,54 +653,39 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                         ? ` • ${formatBytes(downloadedBytes)}`
                         : ''}
                       {job.speed ? ` • ${job.speed}` : ''}
-                      {job.eta ? ` • ETA: ${job.eta}` : ''}
+                      {job.eta ? ` • ETA ${job.eta}` : ''}
                     </span>
                   ) : job.status === 'processing' ? (
-                    <span style={{ color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                      <span className="spin" style={{ fontSize: '9px' }}>⟳</span>
-                      <span>Preparing stream for timeline...</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>
+                      Muxing audio and video streams...
                     </span>
                   ) : job.status === 'importing' ? (
-                    <span style={{ color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                      <span className="spin" style={{ fontSize: '9px' }}>⟳</span>
-                      <span>Importing into {targetEditor === 'premiere' ? 'Premiere Pro' : targetEditor === 'aftereffects' ? 'After Effects' : 'DaVinci Resolve'}...</span>
+                    <span style={{ color: '#ffffff' }}>
+                      Registering clip into {targetEditor === 'premiere' ? 'Premiere Pro' : targetEditor === 'aftereffects' ? 'After Effects' : 'DaVinci Resolve'}...
                     </span>
                   ) : job.status === 'queued' ? (
-                    <span>Queued...</span>
+                    <span>Awaiting download slot...</span>
                   ) : isCompleted ? (
                     <span style={{ color: 'var(--text-secondary)' }}>
-                      {pendingImport ? (
-                        <span
-                          style={{ color: 'var(--warning)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                        >
-                          <span className="spin" style={{ fontSize: '9px' }}>⟳</span>
-                          <span>
-                            {pendingImport.error
-                              ? `${pendingImport.error} `
-                              : `Waiting for ${pendingImport.editor}. `}
-                          </span>
-                        </span>
-                      ) : isAutoImportedComplete ? (
-                        <span style={{ color: 'var(--success)', fontWeight: 600 }}>
-                          ✓ In Bin: '{job.premiereBin || job.aftereffectsBin || job.resolveBin || (job as any).premiere_bin || (job as any).target_media_pool_bin || 'Xdrop'}' •{' '}
-                        </span>
-                      ) : null}
-                      {formatStr} {job.qualityLabel ? `• ${job.qualityLabel}` : ''} • {formatBytes(downloadedBytes)}
+                      {formatStr} {job.qualityLabel ? `• ${job.qualityLabel}` : ''}
+                      {downloadedBytes > 0 ? ` • ${formatBytes(downloadedBytes)}` : ''}
                     </span>
                   ) : isFailed ? (
                     <span style={{ color: 'var(--danger)' }}>{errorMsg}</span>
                   ) : (
-                    <span>{formatStr} {job.qualityLabel ? `• ${job.qualityLabel}` : ''}</span>
+                    <span>
+                      {formatStr} {job.qualityLabel ? `• ${job.qualityLabel}` : ''}
+                    </span>
                   )}
                 </div>
 
-                {/* Right Quick Actions (Cancel, Retry, Remove) */}
+                {/* Right Action Buttons */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
                   {isActive && (
                     <button
                       onClick={() => handleCancel(job.id)}
                       className="btn btn-sm btn-danger"
-                      style={{ padding: '2px 6px', fontSize: '9.5px' }}
+                      style={{ padding: '2px 7px', fontSize: '10px' }}
                       title="Cancel download"
                     >
                       Cancel
@@ -597,10 +696,10 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                     <button
                       onClick={() => handleRetry(job.id)}
                       className="btn btn-sm btn-secondary"
-                      style={{ padding: '2px 6px', fontSize: '9.5px' }}
+                      style={{ padding: '2px 7px', fontSize: '10px' }}
                       title="Retry download"
                     >
-                      <RotateCcw size={10} />
+                      <RotateCcw size={10} strokeWidth={2} />
                       <span>Retry</span>
                     </button>
                   )}
@@ -608,15 +707,15 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                   <button
                     onClick={() => handleRemove(job.id)}
                     className="btn btn-sm btn-ghost"
-                    style={{ padding: '2px 4px' }}
+                    style={{ padding: '3px 5px' }}
                     title="Remove from queue"
                   >
-                    <Trash2 size={11} />
+                    <Trash2 size={12} strokeWidth={1.8} />
                   </button>
                 </div>
               </div>
 
-              {/* Row 4: COMPLETED IMPORT FLOW (Auto-imported badge OR Manual Import Selector) */}
+              {/* Row 4: Timeline / Bin Destination Bar */}
               {isCompleted && (
                 <div
                   style={{
@@ -628,83 +727,69 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                     borderTop: '1px solid var(--border-subtle)',
                     gap: '8px',
                     flexWrap: 'wrap',
+                    paddingLeft: '4px',
                   }}
                 >
                   {isAutoImportedComplete ? (
-                    /* Auto-imported mode: Display completed badge without import dropdown or button */
+                    /* Auto-imported mode: Clean confirmation pill */
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <span
-                        className="badge badge-resolve"
+                        className="badge badge-success"
                         style={{
-                          fontSize: '9.5px',
-                          padding: '2px 7px',
-                          fontWeight: 600,
+                          fontSize: '10px',
+                          padding: '2px 8px',
+                          fontWeight: 500,
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '4px',
                         }}
-                        title="Media was automatically imported into project workspace upon download completion."
                       >
-                        <Check size={11} strokeWidth={2.5} />
-                        Imported to {
-                          targetEditor === 'aftereffects' || isAfterEffectsImported
+                        <CheckCircle2 size={11} strokeWidth={2} />
+                        <span>
+                          Imported to{' '}
+                          {targetEditor === 'aftereffects' || isAfterEffectsImported
                             ? 'After Effects'
                             : targetEditor === 'premiere' || isPremiereImported
                             ? 'Premiere Pro'
-                            : 'DaVinci Resolve'
-                        }
+                            : 'DaVinci Resolve'}
+                        </span>
                       </span>
                     </div>
                   ) : (
-                    /* Manual import mode (or deferred auto-import): Show dropdown selector + nearby Import button */
+                    /* Manual import / Multi-editor selector */
                     <>
-                      {/* Left: Already-Imported Status Badges */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
                         {isResolveImported && (
-                          <span
-                            className="badge badge-resolve"
-                            style={{ fontSize: '8.5px', padding: '1px 5px' }}
-                            title="Imported into DaVinci Resolve"
-                          >
-                            <Check size={9} strokeWidth={2.5} /> Resolve
+                          <span className="badge badge-success" style={{ fontSize: '9px', padding: '1px 5px' }}>
+                            ✓ Resolve
                           </span>
                         )}
                         {isPremiereImported && (
-                          <span
-                            className="badge badge-premiere"
-                            style={{ fontSize: '8.5px', padding: '1px 5px' }}
-                            title="Imported into Adobe Premiere Pro"
-                          >
-                            <Check size={9} strokeWidth={2.5} /> Premiere
+                          <span className="badge badge-success" style={{ fontSize: '9px', padding: '1px 5px' }}>
+                            ✓ Premiere
                           </span>
                         )}
                         {isAfterEffectsImported && (
-                          <span
-                            className="badge badge-ae"
-                            style={{ fontSize: '8.5px', padding: '1px 5px' }}
-                            title="Imported into Adobe After Effects"
-                          >
-                            <Check size={9} strokeWidth={2.5} /> AE
+                          <span className="badge badge-success" style={{ fontSize: '9px', padding: '1px 5px' }}>
+                            ✓ AE
                           </span>
                         )}
                         {isAuditionImported && (
-                          <span
-                            className="badge badge-info"
-                            style={{ fontSize: '8.5px', padding: '1px 5px' }}
-                            title="Imported into Adobe Audition"
-                          >
-                            <Check size={9} strokeWidth={2.5} /> Audition
+                          <span className="badge badge-success" style={{ fontSize: '9px', padding: '1px 5px' }}>
+                            ✓ Audition
                           </span>
                         )}
-                        {!isResolveImported && !isPremiereImported && !isAfterEffectsImported && !isAuditionImported && (
-                          <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                            Target editor:
-                          </span>
-                        )}
+                        {!isResolveImported &&
+                          !isPremiereImported &&
+                          !isAfterEffectsImported &&
+                          !isAuditionImported && (
+                            <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                              Send to project:
+                            </span>
+                          )}
                       </div>
 
-                      {/* Right: Software Selection Dropdown + Nearby Import Button */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <select
                           className="input"
                           value={currentTarget}
@@ -720,10 +805,9 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                             color: 'var(--text-primary)',
                             boxShadow: 'none',
                             width: 'auto',
-                            minWidth: '130px',
+                            minWidth: '135px',
                             cursor: 'pointer',
                           }}
-                          title="Select software for importing"
                         >
                           <option value="resolve">
                             DaVinci Resolve {isResolveImported ? '✓' : ''}
@@ -735,7 +819,7 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                             After Effects {isAfterEffectsImported ? '✓' : ''}
                           </option>
                           <option value="audition">
-                            Adobe Audition {isAuditionImported ? '✓' : ''}
+                            Audition {isAuditionImported ? '✓' : ''}
                           </option>
                         </select>
 
@@ -750,24 +834,13 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                             fontWeight: 600,
                             gap: '4px',
                           }}
-                          title={`Import asset into ${
-                            currentTarget === 'resolve'
-                              ? 'DaVinci Resolve'
-                              : currentTarget === 'premiere'
-                              ? 'Adobe Premiere Pro'
-                              : currentTarget === 'aftereffects'
-                              ? 'Adobe After Effects'
-                              : 'Adobe Audition'
-                          }`}
                         >
                           {isCurrentlyImporting ? (
-                            <span className="spin">⟳</span>
+                            <Loader2 size={11} className="spin" />
                           ) : (
-                            <ArrowUpRight size={11} strokeWidth={2} />
+                            <ArrowUpRight size={11} strokeWidth={2.2} />
                           )}
-                          <span>
-                            {isAlreadyImportedInTarget ? 'Re-import' : 'Import'}
-                          </span>
+                          <span>{isAlreadyImportedInTarget ? 'Re-import' : 'Import'}</span>
                         </button>
                       </div>
                     </>

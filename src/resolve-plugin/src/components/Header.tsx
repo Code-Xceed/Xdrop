@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, Sparkles, Film, Layers } from 'lucide-react';
+import { RefreshCw, Sparkles, Film, Layers, Radio } from 'lucide-react';
 import { useEditorContext } from '../context/EditorContext';
 import logoImg from '../assets/logo.png';
 
@@ -14,169 +14,157 @@ export const Header: React.FC = () => {
     isRefreshing,
   } = useEditorContext();
 
-  const getEditorBadge = () => {
+  const getEditorMeta = () => {
     if (activeEditor === 'aftereffects') {
       return {
         label: 'After Effects',
-        icon: <Sparkles size={11} strokeWidth={2} />,
+        icon: <Sparkles size={11} strokeWidth={2.2} />,
       };
     }
     if (activeEditor === 'premiere') {
       return {
         label: 'Premiere Pro',
-        icon: <Layers size={11} strokeWidth={2} />,
+        icon: <Layers size={11} strokeWidth={2.2} />,
+      };
+    }
+    if (activeEditor === 'audition') {
+      return {
+        label: 'Audition',
+        icon: <Radio size={11} strokeWidth={2.2} />,
       };
     }
     return {
       label: 'DaVinci Resolve',
-      icon: <Film size={11} strokeWidth={2} />,
+      icon: <Film size={11} strokeWidth={2.2} />,
     };
   };
 
-  const badge = getEditorBadge();
+  const meta = getEditorMeta();
 
   return (
     <header
       style={{
         display: 'flex',
-        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         backgroundColor: 'var(--bg-primary)',
         borderBottom: '1px solid var(--border-default)',
-        padding: '7px 12px',
-        gap: '4px',
+        padding: '0 12px',
+        height: '38px',
         userSelect: 'none',
+        flexShrink: 0,
+        gap: '8px',
       }}
     >
-      {/* Top Bar: Brand + Auto-detected Editor Status + Tools */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '8px',
-          width: '100%',
-        }}
-      >
-        {/* Brand & Connected Editor Status */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flexShrink: 0 }}>
+      {/* Brand & Connected Editor */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <img
             src={logoImg}
             alt="Xdrop"
             style={{
-              width: '22px',
-              height: '22px',
+              width: '18px',
+              height: '18px',
               objectFit: 'contain',
               flexShrink: 0,
             }}
           />
-
           <span
             style={{
               fontSize: '12px',
               fontWeight: 700,
-              letterSpacing: '0.02em',
+              letterSpacing: '-0.02em',
               color: 'var(--text-primary)',
-              whiteSpace: 'nowrap',
             }}
           >
             Xdrop
           </span>
-
-          {/* Auto-detected Editor Status Pill (Monochromatic Minimalist) */}
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '5px',
-              padding: '2px 7px',
-              borderRadius: 'var(--radius-xs)',
-              border: '1px solid var(--border-default)',
-              backgroundColor: 'var(--bg-secondary)',
-              fontSize: '10px',
-              fontWeight: 500,
-              color: 'var(--text-secondary)',
-            }}
-            title={isEditorConnected ? `${activeEditorName} connected` : `${activeEditorName} waiting for connection`}
-          >
-            <span
-              style={{
-                width: '5px',
-                height: '5px',
-                borderRadius: '50%',
-                backgroundColor: isEditorConnected ? 'var(--success)' : 'var(--text-muted)',
-                flexShrink: 0,
-              }}
-            />
-            <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-              {badge.icon}
-              {badge.label}
-            </span>
-          </div>
         </div>
 
-        {/* Right Tools: Clean Sync / Refresh button */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-          <button
-            onClick={() => refreshEditorsStatus()}
-            disabled={isRefreshing}
-            className="btn btn-sm btn-ghost"
+        {/* Studio Status Pill with subtle breathing indicator */}
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '5px',
+            padding: '2px 8px',
+            borderRadius: '12px',
+            border: '1px solid var(--border-default)',
+            backgroundColor: 'var(--bg-secondary)',
+            fontSize: '10px',
+            fontWeight: 500,
+            color: isEditorConnected ? 'var(--text-primary)' : 'var(--text-muted)',
+            transition: 'all 0.15s ease',
+          }}
+          title={isEditorConnected ? `${activeEditorName} connected and ready` : `Waiting for ${activeEditorName} connection`}
+        >
+          <span
+            className={isEditorConnected ? 'pulse-dot' : ''}
             style={{
-              padding: '3px 7px',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-xs)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontSize: '10.5px',
-              color: 'var(--text-secondary)',
+              width: '5px',
+              height: '5px',
+              borderRadius: '50%',
+              backgroundColor: isEditorConnected ? 'var(--success)' : 'var(--text-disabled)',
+              flexShrink: 0,
             }}
-            title="Sync connection and project status"
-          >
-            <RefreshCw
-              size={11}
-              strokeWidth={2}
-              className={isRefreshing ? 'spin' : ''}
-              style={{ color: 'var(--text-muted)' }}
-            />
-            <span>Sync</span>
-          </button>
+          />
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ color: isEditorConnected ? 'var(--text-secondary)' : 'var(--text-muted)' }}>
+              {meta.icon}
+            </span>
+            <span>{meta.label}</span>
+          </span>
         </div>
       </div>
 
-      {/* Slim Project Context Sub-bar */}
-      {(activeProjectName || activeSequenceOrTimeline) && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontSize: '9.5px',
-            color: 'var(--text-muted)',
-            padding: '0 2px',
-            minWidth: 0,
-          }}
-        >
+      {/* Right Project / Sequence Context & Sync */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flexShrink: 0 }}>
+        {(activeProjectName || activeSequenceOrTimeline) && (
           <span
             style={{
-              color: 'var(--text-muted)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '9px',
+              display: 'inline-block',
+              maxWidth: '160px',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
-              flex: 1,
+              fontFamily: 'var(--font-mono)',
+              fontSize: '9.5px',
+              color: 'var(--text-muted)',
+              padding: '2px 6px',
+              borderRadius: 'var(--radius-xs)',
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-subtle)',
             }}
-            title={
-              activeSequenceOrTimeline
-                ? `${activeProjectName || 'Project'} • ${activeSequenceOrTimeline}`
-                : activeProjectName || 'Ready'
-            }
+            title={`${activeProjectName || ''}${activeSequenceOrTimeline ? ` • ${activeSequenceOrTimeline}` : ''}`}
           >
-            {activeProjectName || 'Project Ready'}
-            {activeSequenceOrTimeline ? ` • ${activeSequenceOrTimeline}` : ''}
+            {activeSequenceOrTimeline || activeProjectName}
           </span>
-        </div>
-      )}
+        )}
+
+        <button
+          type="button"
+          onClick={() => refreshEditorsStatus()}
+          disabled={isRefreshing}
+          className="btn btn-sm btn-ghost"
+          style={{
+            padding: '3px 6px',
+            height: '24px',
+            borderRadius: 'var(--radius-xs)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontSize: '10px',
+            color: 'var(--text-muted)',
+          }}
+          title="Refresh editor connection and project status"
+        >
+          <RefreshCw
+            size={11}
+            strokeWidth={2}
+            className={isRefreshing ? 'spin' : ''}
+          />
+        </button>
+      </div>
     </header>
   );
 };

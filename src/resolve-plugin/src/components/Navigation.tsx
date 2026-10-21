@@ -18,101 +18,106 @@ export const Navigation: React.FC<NavigationProps> = ({
     {
       id: 'import',
       label: 'Import',
-      icon: <ArrowDownToLine size={13} strokeWidth={2} />,
+      icon: <ArrowDownToLine size={12} strokeWidth={2.2} />,
     },
     {
       id: 'queue',
       label: 'Queue',
-      icon: <ListTree size={13} strokeWidth={2} />,
+      icon: <ListTree size={12} strokeWidth={2.2} />,
       badge: activeQueueCount > 0 ? activeQueueCount : undefined,
     },
     {
       id: 'settings',
       label: 'Settings',
-      icon: <Settings size={13} strokeWidth={2} />,
+      icon: <Settings size={12} strokeWidth={2.2} />,
     },
   ];
 
   return (
     <nav
       style={{
-        display: 'flex',
-        alignItems: 'stretch',
+        padding: '6px 10px',
         backgroundColor: 'var(--bg-void)',
-        borderBottom: '1px solid var(--border-default)',
-        padding: '0 8px',
-        gap: '2px',
         userSelect: 'none',
-        width: '100%',
+        flexShrink: 0,
       }}
     >
-      {tabs.map((tab) => {
-        const isActive = currentTab === tab.id;
-        return (
-          <button
-            key={tab.id}
-            onClick={() => onSelectTab(tab.id)}
-            style={{
-              position: 'relative',
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              padding: '7px 4px',
-              backgroundColor: isActive ? 'var(--bg-secondary)' : 'transparent',
-              border: isActive ? '1px solid var(--border-default)' : '1px solid transparent',
-              borderBottom: 'none',
-              borderRadius: 'var(--radius-xs) var(--radius-xs) 0 0',
-              color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
-              fontWeight: isActive ? 600 : 500,
-              fontSize: '11px',
-              letterSpacing: '0.01em',
-              cursor: 'pointer',
-              transition: 'all 0.12s ease',
-              marginBottom: isActive ? '-1px' : '0',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <span style={{ color: isActive ? '#ffffff' : 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
-              {tab.icon}
-            </span>
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{tab.label}</span>
-
-            {tab.badge !== undefined && (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          backgroundColor: 'var(--bg-primary)',
+          borderRadius: '7px',
+          border: '1px solid var(--border-default)',
+          padding: '2px',
+          gap: '2px',
+        }}
+      >
+        {tabs.map((tab) => {
+          const isActive = currentTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => onSelectTab(tab.id)}
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '5px',
+                height: '27px',
+                padding: '0 8px',
+                borderRadius: '5px',
+                backgroundColor: isActive ? 'var(--bg-elevated)' : 'transparent',
+                border: isActive ? '1px solid var(--border-strong)' : '1px solid transparent',
+                color: isActive ? '#ffffff' : 'var(--text-muted)',
+                fontWeight: isActive ? 600 : 500,
+                fontSize: '11px',
+                letterSpacing: '0.01em',
+                cursor: 'pointer',
+                boxShadow: isActive ? '0 1px 3px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08)' : 'none',
+                transition: 'all 120ms var(--ease-out)',
+                whiteSpace: 'nowrap',
+                outline: 'none',
+              }}
+            >
               <span
                 style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                  color: '#ffffff',
-                  fontSize: '9px',
-                  fontWeight: 600,
-                  borderRadius: '3px',
-                  padding: '1px 5px',
-                  lineHeight: 1.1,
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  color: isActive ? '#ffffff' : 'var(--text-muted)',
+                  transition: 'color 120ms var(--ease-out)',
                 }}
               >
-                {tab.badge}
+                {tab.icon}
               </span>
-            )}
+              <span>{tab.label}</span>
 
-            {/* Minimalist active indicator line */}
-            {isActive && (
-              <span
-                style={{
-                  position: 'absolute',
-                  top: '-1px',
-                  left: '-1px',
-                  right: '-1px',
-                  height: '2px',
-                  backgroundColor: 'var(--accent-primary)',
-                  borderRadius: '2px 2px 0 0',
-                }}
-              />
-            )}
-          </button>
-        );
-      })}
+              {tab.badge !== undefined && (
+                <span
+                  style={{
+                    backgroundColor: isActive ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.08)',
+                    color: '#ffffff',
+                    fontSize: '9px',
+                    fontWeight: 600,
+                    fontFamily: 'var(--font-mono)',
+                    borderRadius: '10px',
+                    padding: '0 5px',
+                    height: '14px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginLeft: '2px',
+                  }}
+                >
+                  {tab.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
     </nav>
   );
 };

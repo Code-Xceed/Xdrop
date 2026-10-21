@@ -272,6 +272,7 @@ export const App: React.FC = () => {
                     downloads={downloads}
                     onRefresh={refreshDownloads}
                     showToast={showToast}
+                    onSwitchToImport={() => handleSelectTab('import')}
                   />
                 </div>
               )}

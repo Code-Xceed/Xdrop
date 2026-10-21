@@ -2,93 +2,72 @@
   color-scheme: dark;
 
   /* ==========================================================================
-     1. MONOCHROMATIC STUDIO FOUNDATIONS (Neutral Matte Obsidian & Charcoal)
-     Seamlessly matches DaVinci Resolve, Premiere Pro, After Effects & Final Cut Pro
+     1. STUDIO MONOCHROMATIC PALETTE (Neutral Matte Slate & Charcoal)
+     Designed to feel native inside Premiere Pro, DaVinci Resolve, After Effects & Final Cut
      ========================================================================== */
-  --bg-void: #090a0c;
-  --bg-primary: #101114;
-  --bg-secondary: #15171c;
-  --bg-tertiary: #1b1d23;
-  --bg-elevated: #22252d;
-  --bg-hover: #292d37;
-  --bg-active: #323743;
+  --bg-void: #09090b;
+  --bg-primary: #0f1013;
+  --bg-secondary: #14161b;
+  --bg-tertiary: #1a1d24;
+  --bg-elevated: #222631;
+  --bg-hover: #292d3b;
+  --bg-active: #323847;
 
-  /* Minimalist 1px Precision Borders */
+  /* Precision 1px Studio Borders */
   --border-subtle: rgba(255, 255, 255, 0.05);
   --border-default: rgba(255, 255, 255, 0.09);
   --border-strong: rgba(255, 255, 255, 0.16);
-  --border-focus: rgba(255, 255, 255, 0.35);
+  --border-focus: rgba(255, 255, 255, 0.32);
 
-  /* Clean High-Legibility Typography */
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
+  /* Typography Colors */
+  --text-primary: #f4f4f5;
+  --text-secondary: #a1a1aa;
   --text-muted: #71717a;
-  --text-disabled: #4b5260;
+  --text-disabled: #52525b;
 
-  /* ==========================================================================
-     2. MONOCHROMATIC HIGH-CONTRAST ACCENTS
-     ========================================================================== */
-  --accent-primary: #f4f4f5;
-  --accent-hover: #ffffff;
-  --accent-text: #090a0c;
-  --accent-subtle: rgba(255, 255, 255, 0.07);
-  --accent-border: rgba(255, 255, 255, 0.22);
-  --accent-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  /* High-Contrast Studio Accent */
+  --accent-primary: #ffffff;
+  --accent-hover: #e4e4e7;
+  --accent-text: #09090b;
+  --accent-subtle: rgba(255, 255, 255, 0.08);
+  --accent-border: rgba(255, 255, 255, 0.24);
 
-  /* Unified Professional Editor Color Palette (Clean Monochromatic Neutral) */
-  --color-resolve: #e4e4e7;
-  --color-resolve-hover: #ffffff;
-  --color-resolve-subtle: rgba(255, 255, 255, 0.08);
-  --color-resolve-border: rgba(255, 255, 255, 0.18);
-  --color-resolve-shadow: none;
+  /* Status Tokens */
+  --success: #34d399;
+  --success-subtle: rgba(52, 211, 153, 0.12);
+  --success-border: rgba(52, 211, 153, 0.28);
+  --warning: #fbbf24;
+  --warning-subtle: rgba(251, 191, 36, 0.12);
+  --danger: #f87171;
+  --danger-subtle: rgba(248, 113, 113, 0.12);
+  --danger-border: rgba(248, 113, 113, 0.28);
 
-  --color-premiere: #e4e4e7;
-  --color-premiere-hover: #ffffff;
-  --color-premiere-subtle: rgba(255, 255, 255, 0.08);
-  --color-premiere-border: rgba(255, 255, 255, 0.18);
-  --color-premiere-shadow: none;
-
-  --color-ae: #e4e4e7;
-  --color-ae-hover: #ffffff;
-  --color-ae-subtle: rgba(255, 255, 255, 0.08);
-  --color-ae-border: rgba(255, 255, 255, 0.18);
-  --color-ae-shadow: none;
-
-  /* Subtle Status Colors */
-  --success: #22c55e;
-  --success-subtle: rgba(34, 197, 94, 0.12);
-  --warning: #eab308;
-  --warning-subtle: rgba(234, 179, 8, 0.12);
-  --danger: #ef4444;
-  --danger-subtle: rgba(239, 68, 68, 0.12);
-
-  /* Geometry & Radii */
-  --font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Geometry & Typography */
+  --font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 
-  --radius-xs: 3px;
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
 
-  /* Clean Minimalist Ambient Shadows */
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.25);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
-  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.3);
+  /* Layered Studio Elevation Shadows */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.55);
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.4);
 
-  /* Deprecated neo-shadow aliases mapped cleanly to subtle shadows */
-  --neo-shadow-xs: none;
-  --neo-shadow-sm: var(--shadow-xs);
-  --neo-shadow-md: var(--shadow-sm);
-  --neo-shadow-card: var(--shadow-card);
+  /* Custom Easing Curves for UI Interactions (Emil Kowalski framework) */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --spring-press: cubic-bezier(0.2, 0, 0, 1);
 
-  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
   scrollbar-width: thin;
 }
 
 /* ==========================================================================
-   3. BASE RESET & MINIMALIST STUDIO SURFACE
+   2. GLOBAL RESET & BASE STYLING
    ========================================================================== */
 * {
   box-sizing: border-box;
@@ -115,7 +94,7 @@ input, textarea, select, button {
   color: inherit;
 }
 
-/* Minimalist Scrollbars */
+/* Precision Scrollbars */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
@@ -124,15 +103,15 @@ input, textarea, select, button {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.14);
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.26);
+  background: rgba(255, 255, 255, 0.22);
 }
 
 /* ==========================================================================
-   4. MINIMALIST PROFESSIONAL BUTTONS
+   3. STUDIO CONTROLS & BUTTONS
    ========================================================================== */
 .btn {
   display: inline-flex;
@@ -141,39 +120,41 @@ input, textarea, select, button {
   gap: 6px;
   padding: 6px 12px;
   font-size: 11.5px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.01em;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-default);
-  background: var(--bg-tertiary);
+  background: var(--bg-secondary);
   color: var(--text-primary);
   cursor: pointer;
   box-shadow: var(--shadow-xs);
-  transition: all 0.12s ease;
+  transition: background 120ms var(--ease-out), border-color 120ms var(--ease-out), transform 100ms var(--ease-out), color 120ms var(--ease-out);
   white-space: nowrap;
+  outline: none;
 }
 
 .btn:hover:not(:disabled) {
-  background: var(--bg-hover);
+  background: var(--bg-tertiary);
   border-color: var(--border-strong);
   color: #ffffff;
 }
 
 .btn:active:not(:disabled) {
-  background: var(--bg-active);
-  transform: translateY(0.5px);
+  transform: scale(0.97);
+  background: var(--bg-hover);
 }
 
 .btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
   box-shadow: none;
+  transform: none !important;
 }
 
 .btn-sm {
-  padding: 3px 8px;
+  padding: 4px 8px;
   font-size: 10.5px;
-  font-weight: 500;
+  border-radius: var(--radius-xs);
 }
 
 .btn-lg {
@@ -182,59 +163,30 @@ input, textarea, select, button {
   font-weight: 600;
 }
 
-/* High-Contrast Monochromatic Primary CTA */
+/* Hero High-Contrast Primary CTA */
 .btn-primary {
   background: var(--accent-primary);
   color: var(--accent-text);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.8);
   font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .btn-primary:hover:not(:disabled) {
   background: var(--accent-hover);
   color: #000000;
   border-color: #ffffff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .btn-primary:active:not(:disabled) {
-  background: #e4e4e7;
-}
-
-/* Editor-specific CTA aliases seamlessly mapped to sleek monochromatic studio style */
-.btn-resolve,
-.btn-premiere,
-.btn-ae {
-  background: var(--accent-primary);
-  color: var(--accent-text);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  font-weight: 600;
-}
-
-.btn-resolve:hover:not(:disabled),
-.btn-premiere:hover:not(:disabled),
-.btn-ae:hover:not(:disabled) {
-  background: var(--accent-hover);
-  color: #000000;
-  border-color: #ffffff;
-}
-
-.btn-secondary {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-default);
-  color: var(--text-secondary);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--bg-tertiary);
-  border-color: var(--border-strong);
-  color: #ffffff;
+  background: #d4d4d8;
+  transform: scale(0.97);
 }
 
 .btn-ghost {
   background: transparent;
-  border: 1px solid transparent;
+  border-color: transparent;
   box-shadow: none;
   color: var(--text-muted);
 }
@@ -242,41 +194,45 @@ input, textarea, select, button {
 .btn-ghost:hover:not(:disabled) {
   background: var(--accent-subtle);
   border-color: var(--border-subtle);
-  color: #ffffff;
+  color: var(--text-primary);
+}
+
+.btn-ghost:active:not(:disabled) {
+  transform: scale(0.96);
 }
 
 .btn-danger {
   background: var(--danger-subtle);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.28);
+  color: var(--danger);
+  border: 1px solid var(--danger-border);
 }
 
 .btn-danger:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.45);
-  color: #fca5a5;
+  background: rgba(248, 113, 113, 0.2);
+  border-color: rgba(248, 113, 113, 0.45);
+  color: #ffffff;
 }
 
 /* ==========================================================================
-   5. MINIMALIST INPUTS & CONTROLS
+   4. FORM INPUTS & SELECTS
    ========================================================================== */
 .input {
   background: var(--bg-primary);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
   padding: 7px 10px;
-  color: #ffffff;
-  font-size: 12px;
+  color: var(--text-primary);
+  font-size: 11.5px;
   font-weight: 400;
   outline: none;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
-  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+  transition: border-color 120ms var(--ease-out), box-shadow 120ms var(--ease-out), background 120ms var(--ease-out);
   width: 100%;
 }
 
 .input:focus {
   border-color: var(--border-focus);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12), inset 0 1px 2px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15), inset 0 1px 2px rgba(0, 0, 0, 0.25);
   background: var(--bg-secondary);
 }
 
@@ -285,7 +241,7 @@ input, textarea, select, button {
 }
 
 /* ==========================================================================
-   6. MINIMALIST PANELS & CARDS
+   5. STUDIO SURFACES & CARDS
    ========================================================================== */
 .panel {
   background: var(--bg-secondary);
@@ -301,7 +257,7 @@ input, textarea, select, button {
   border-radius: var(--radius-sm);
   padding: 10px 12px;
   box-shadow: var(--shadow-xs);
-  transition: border-color 0.12s ease, background 0.12s ease;
+  transition: border-color 120ms var(--ease-out), background 120ms var(--ease-out), transform 120ms var(--ease-out);
 }
 
 .card:hover {
@@ -310,7 +266,7 @@ input, textarea, select, button {
 }
 
 /* ==========================================================================
-   7. REFINED MONOCHROMATIC BADGES
+   6. MINIMALIST STUDIO BADGES
    ========================================================================== */
 .badge {
   display: inline-flex;
@@ -319,8 +275,6 @@ input, textarea, select, button {
   padding: 2px 6px;
   font-size: 9.5px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
   border-radius: var(--radius-xs);
   border: 1px solid var(--border-default);
   background: var(--bg-tertiary);
@@ -328,49 +282,79 @@ input, textarea, select, button {
   line-height: 1.2;
 }
 
-.badge-resolve,
-.badge-premiere,
-.badge-ae {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: var(--text-primary);
-}
-
-.badge-info {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  color: #ffffff;
+.badge-neutral {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
 }
 
 .badge-success {
   background: var(--success-subtle);
-  border: 1px solid rgba(34, 197, 94, 0.25);
-  color: #4ade80;
+  border: 1px solid var(--success-border);
+  color: var(--success);
 }
 
 .badge-warning {
   background: var(--warning-subtle);
-  border: 1px solid rgba(234, 179, 8, 0.25);
-  color: #facc15;
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  color: var(--warning);
 }
 
 .badge-danger {
   background: var(--danger-subtle);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  color: #f87171;
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
 }
 
-.badge-neutral {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-strong);
-  color: var(--text-secondary);
+/* Studio Toggle Switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 30px;
+  height: 17px;
+  flex-shrink: 0;
+}
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-default);
+  transition: all 140ms var(--ease-out);
+  border-radius: 20px;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 11px;
+  width: 11px;
+  left: 2px;
+  bottom: 2px;
+  background-color: var(--text-muted);
+  transition: all 140ms var(--ease-out);
+  border-radius: 50%;
+}
+.switch input:checked + .slider {
+  background-color: var(--accent-primary);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+.switch input:checked + .slider:before {
+  transform: translateX(13px);
+  background-color: #09090b;
 }
 
-/* ==========================================================================
-   8. RESPONSIVE HELPERS & UTILITIES
-   ========================================================================== */
+/* Animations */
 .spin {
-  animation: spin 1s linear infinite;
+  animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
@@ -378,15 +362,14 @@ input, textarea, select, button {
   to { transform: rotate(360deg); }
 }
 
-@media (max-width: 480px) {
-  .hide-on-compact {
-    display: none !important;
-  }
-  .stack-on-compact {
-    flex-direction: column !important;
-    align-items: stretch !important;
-  }
-  .grid-on-compact {
-    grid-template-columns: 1fr !important;
-  }
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
+.pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  animation: pulseGlow 2s infinite ease-in-out;
 }

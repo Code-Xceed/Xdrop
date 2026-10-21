@@ -1,25 +1,25 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { MediaInfo } from '@xdrop/shared-types';
-import { analyzeUrl, createDownload } from '../services/api';
-import { extractUrlsFromText, formatBytes, formatDuration } from '@xdrop/utilities';
+import { formatBytes, formatDuration, extractUrlsFromText } from '@xdrop/utilities';
 import { useEditorContext } from '../context/EditorContext';
+import { analyzeUrl, createDownload } from '../services/api';
 import {
   Search,
   Clipboard,
   X,
+  Sparkles,
   Film,
   Music,
-  Image as ImageIcon,
-  CheckCircle,
+  ImageIcon,
+  CheckCircle2,
   AlertTriangle,
-  Download,
-  Sparkles,
+  Folder,
   Layers,
   ArrowRight,
-  ShieldCheck,
-  Radio,
   SlidersHorizontal,
   Zap,
+  Radio,
+  Download,
 } from 'lucide-react';
 
 interface ImportPageProps {
@@ -30,8 +30,6 @@ interface ImportPageProps {
 export interface PlatformDef {
   id: string;
   name: string;
-  color: string;
-  textColor: string;
   regex: RegExp;
   placeholder: string;
 }
@@ -40,73 +38,49 @@ export const SUPPORTED_PLATFORMS: PlatformDef[] = [
   {
     id: 'youtube',
     name: 'YouTube',
-    color: '#f4f4f5',
-    textColor: '#090a0c',
     regex: /(?:https?:\/\/)?(?:(?:www\.|m\.|music\.)?youtube\.com\/(?:watch\?|shorts\/|embed\/|live\/|v\/|clip\/)|youtu\.be\/)/i,
     placeholder: 'https://youtube.com/watch?v=...',
   },
   {
     id: 'tiktok',
     name: 'TikTok',
-    color: '#f4f4f5',
-    textColor: '#090a0c',
     regex: /(?:https?:\/\/)?(?:(?:www\.|vm\.|vt\.|m\.)?tiktok\.com\/)/i,
     placeholder: 'https://tiktok.com/@creator/video/...',
   },
   {
     id: 'instagram',
     name: 'Instagram',
-    color: '#f4f4f5',
-    textColor: '#090a0c',
     regex: /(?:https?:\/\/)?(?:(?:www\.|m\.)?instagram\.com|instagr\.am)\/(?:reel|reels|p|tv|stories|share)\//i,
     placeholder: 'https://instagram.com/reel/...',
   },
   {
     id: 'x',
     name: 'X (Twitter)',
-    color: '#f4f4f5',
-    textColor: '#090a0c',
     regex: /(?:https?:\/\/)?(?:(?:www\.|mobile\.)?(?:twitter\.com|x\.com)\/(?:[^/]+\/status\/\d+|i\/status\/\d+)|t\.co\/[a-zA-Z0-9]+)/i,
     placeholder: 'https://x.com/user/status/...',
   },
   {
+    id: 'vimeo',
+    name: 'Vimeo',
+    regex: /(?:https?:\/\/)?(?:(?:www\.|player\.)?vimeo\.com\/(?:channels\/[^/]+\/|groups\/[^/]+\/videos\/|showcase\/[^/]+\/video\/|manage\/videos\/|video\/)?\d+)/i,
+    placeholder: 'https://vimeo.com/...',
+  },
+  {
     id: 'reddit',
     name: 'Reddit',
-    color: '#f4f4f5',
-    textColor: '#090a0c',
     regex: /(?:https?:\/\/)?(?:(?:www\.|old\.|new\.|m\.)?reddit\.com\/(?:r\/[^/]+\/(?:comments|s)\/|clip\/)|v\.redd\.it\/[a-zA-Z0-9]+|redd\.it\/[a-zA-Z0-9]+)/i,
     placeholder: 'https://reddit.com/r/videos/...',
   },
   {
     id: 'facebook',
     name: 'Facebook',
-    color: '#f4f4f5',
-    textColor: '#090a0c',
     regex: /(?:https?:\/\/)?(?:(?:www\.|m\.|fb\.)?facebook\.com\/(?:watch\/?\?|reel\/|reels\/|share\/[rv]\/|[^/]+\/videos\/)|fb\.watch\/[a-zA-Z0-9_\-]+)/i,
     placeholder: 'https://fb.watch/...',
   },
   {
-    id: 'pinterest',
-    name: 'Pinterest',
-    color: '#f4f4f5',
-    textColor: '#090a0c',
-    regex: /(?:https?:\/\/)?(?:(?:www\.)?pinterest\.(?:com|[a-z]{2,3}(?:\.[a-z]{2})?)\/pin\/|pin\.it\/[a-zA-Z0-9]+)/i,
-    placeholder: 'https://pin.it/...',
-  },
-  {
-    id: 'vimeo',
-    name: 'Vimeo',
-    color: '#f4f4f5',
-    textColor: '#090a0c',
-    regex: /(?:https?:\/\/)?(?:(?:www\.|player\.)?vimeo\.com\/(?:channels\/[^/]+\/|groups\/[^/]+\/videos\/|showcase\/[^/]+\/video\/|manage\/videos\/|video\/)?\d+)/i,
-    placeholder: 'https://vimeo.com/...',
-  },
-  {
     id: 'direct',
     name: 'Direct Media',
-    color: '#f4f4f5',
-    textColor: '#090a0c',
-    regex: /\.(mp4|mov|webm|m4v|mkv|avi|flv|mp3|wav|m4a|aac|flac|ogg|aiff|wma|jpg|jpeg|png|webp|gif)(\?.*)?$/i,
+    regex: /\.(mp4|mov|webm|m4v|mkv|avi|flv|mp3|wav|m4a|aac|flac|ogg|aiff|jpg|jpeg|png|webp)(\?.*)?$/i,
     placeholder: 'https://.../video.mp4',
   },
 ];
@@ -115,27 +89,11 @@ export function detectPlatformFromUrl(inputUrl: string): PlatformDef | null {
   const trimmed = inputUrl.trim();
   if (!trimmed) return null;
 
-  // 1. Direct media file extension check
-  const direct = SUPPORTED_PLATFORMS.find((p) => p.id === 'direct');
-  if (direct && direct.regex.test(trimmed)) {
-    return direct;
-  }
-
-  // 2. Specific social media platform patterns
   for (const plat of SUPPORTED_PLATFORMS) {
-    if (plat.id !== 'direct' && plat.regex.test(trimmed)) {
+    if (plat.regex.test(trimmed)) {
       return plat;
     }
   }
-
-  // 3. Fallback domain string check
-  const lower = trimmed.toLowerCase();
-  for (const plat of SUPPORTED_PLATFORMS) {
-    if (plat.id !== 'direct' && (lower.includes(plat.id) || (plat.id === 'x' && lower.includes('twitter')))) {
-      return plat;
-    }
-  }
-
   return null;
 }
 
@@ -220,14 +178,13 @@ export const ImportPage: React.FC<ImportPageProps> = ({
     }
   };
 
-  // Synchronize autoImportEditor with activeEditor if user hasn't manually selected one
   useEffect(() => {
-    if (!userSelectedEditor && (activeEditor === 'premiere' || activeEditor === 'aftereffects' || activeEditor === 'resolve')) {
+    if (!userSelectedEditor && (activeEditor === 'premiere' || activeEditor === 'aftereffects' || activeEditor === 'resolve' || activeEditor === 'audition')) {
       setAutoImportEditor(activeEditor);
     }
   }, [activeEditor, userSelectedEditor]);
 
-  // Thumbnail state with resilient proxy fallback
+  // Thumbnail state
   const [thumbSrc, setThumbSrc] = useState<string | null>(null);
   const [thumbError, setThumbError] = useState(false);
 
@@ -247,15 +204,12 @@ export const ImportPage: React.FC<ImportPageProps> = ({
     if (!rawThumb) return;
     const proxyUrl = `/api/analyze/thumbnail-proxy?url=${encodeURIComponent(rawThumb)}`;
     if (thumbSrc !== proxyUrl) {
-      // Retry via local proxy endpoint to bypass any CDN referer or CORS blocks
       setThumbSrc(proxyUrl);
     } else {
-      // Both direct and proxy failed
       setThumbError(true);
     }
   };
 
-  // Auto-detect platform dynamically as the user types or pastes
   const detectedPlatform = useMemo(() => {
     return detectPlatformFromUrl(urlInput);
   }, [urlInput]);
@@ -277,16 +231,10 @@ export const ImportPage: React.FC<ImportPageProps> = ({
     setMediaInfo(null);
   };
 
-  const handleSelectPlatformChip = (plat: PlatformDef) => {
-    if (!urlInput.trim()) {
-      setUrlInput(plat.placeholder);
-    }
-  };
-
   const handleAnalyze = async () => {
     const urls = extractUrlsFromText(urlInput);
     if (urls.length === 0) {
-      setAnalysisError('Please enter a valid HTTP or HTTPS media URL.');
+      setAnalysisError('Please enter a valid video or media link.');
       return;
     }
 
@@ -307,7 +255,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
         setCustomFormat(defAsset.format || (mType === 'audio' ? 'wav' : 'mp4'));
       }
     } catch (err: any) {
-      setAnalysisError(err.message || 'Failed to inspect media from this URL.');
+      setAnalysisError(err.message || 'Could not fetch media from this link.');
     } finally {
       setIsAnalyzing(false);
     }
@@ -316,17 +264,21 @@ export const ImportPage: React.FC<ImportPageProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey || !urlInput.includes('\n'))) {
       e.preventDefault();
-      handleAnalyze();
+      if (mediaInfo) {
+        handleStartDownload();
+      } else {
+        handleAnalyze();
+      }
     }
   };
 
-  const handleStartDownload = async (overrideEditor?: 'resolve' | 'premiere' | 'aftereffects') => {
+  const handleStartDownload = async (overrideEditor?: 'resolve' | 'premiere' | 'aftereffects' | 'audition') => {
     if (!mediaInfo) return;
     const editorToUse = overrideEditor || (autoImport ? autoImportEditor : 'none');
 
     let assetId = selectedAssetId;
     let format = 'mp4';
-    let qualityLabel = 'Standard';
+    let qualityLabel = 'Best Quality';
     let mediaType = 'video';
     let transcodeVfmt: string | undefined = undefined;
     let transcodeAfmt: string | undefined = undefined;
@@ -348,11 +300,11 @@ export const ImportPage: React.FC<ImportPageProps> = ({
         }
       } else if (customMediaType === 'audio') {
         assetId = customQualityAssetId || 'audio_wav';
-        qualityLabel = `Custom Audio (${customFormat.toUpperCase()})`;
+        qualityLabel = `Audio (${customFormat.toUpperCase()})`;
         transcodeAfmt = customFormat;
       } else {
         assetId = 'thumbnail_image';
-        qualityLabel = 'Custom Image';
+        qualityLabel = 'Artwork';
       }
     } else {
       const assets = mediaInfo.assets || [];
@@ -393,7 +345,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
         extract_audio_only: extractAudioOnly,
       });
 
-      showToast(`Download started: ${mediaInfo.title}`, 'success');
+      showToast(`Added to queue: ${mediaInfo.title}`, 'success');
       onJobStarted();
     } catch (err: any) {
       showToast(err.message || 'Failed to queue download.', 'error');
@@ -405,19 +357,18 @@ export const ImportPage: React.FC<ImportPageProps> = ({
   const selectedAsset = mediaInfo?.assets?.find((a) => a.id === selectedAssetId);
 
   return (
-    <div style={{ padding: '12px 10px', maxWidth: '820px', margin: '0 auto' }}>
-      {/* 1. Main Search & Import Bar Panel */}
+    <div style={{ padding: '8px 10px', maxWidth: '780px', margin: '0 auto' }}>
+      {/* 1. Main Search & Command Bar */}
       <div
         className="panel"
         style={{
-          marginBottom: '12px',
-          border: '1px solid var(--border-default)',
-          boxShadow: 'var(--shadow-sm)',
-          backgroundColor: 'var(--bg-secondary)',
-          padding: '12px',
+          marginBottom: '10px',
+          padding: '10px 12px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
         }}
       >
-        {/* Interactive URL Input */}
         <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
           <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
             <input
@@ -426,20 +377,17 @@ export const ImportPage: React.FC<ImportPageProps> = ({
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Paste public video or media link..."
+              placeholder="Paste media link from YouTube, TikTok, Instagram, X..."
               style={{
                 paddingLeft: '32px',
                 paddingRight: urlInput ? '56px' : '32px',
                 height: '36px',
                 fontSize: '11.5px',
-                fontWeight: 500,
-                backgroundColor: 'var(--bg-primary)',
-                borderColor: detectedPlatform ? 'rgba(255, 255, 255, 0.35)' : 'var(--border-default)',
-                boxShadow: 'none',
+                fontWeight: 450,
               }}
             />
 
-            {/* Left Dynamic Platform Icon */}
+            {/* Left Dynamic Icon */}
             <div
               style={{
                 position: 'absolute',
@@ -448,18 +396,18 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: detectedPlatform ? 'var(--text-primary)' : 'var(--text-muted)',
-                transition: 'color 0.15s ease',
+                color: detectedPlatform ? '#ffffff' : 'var(--text-muted)',
+                transition: 'color 120ms ease',
               }}
             >
               {detectedPlatform ? (
-                <Radio size={14} strokeWidth={2} />
+                <Radio size={14} strokeWidth={2.2} />
               ) : (
                 <Search size={14} strokeWidth={2} />
               )}
             </div>
 
-            {/* Right Action Icons: Clear & Paste */}
+            {/* Right Icons: Clear & Paste */}
             <div
               style={{
                 position: 'absolute',
@@ -510,7 +458,7 @@ export const ImportPage: React.FC<ImportPageProps> = ({
             </div>
           </div>
 
-          {/* Fetch CTA Button */}
+          {/* Fetch Button */}
           <button
             type="button"
             className="btn btn-primary"
@@ -526,105 +474,78 @@ export const ImportPage: React.FC<ImportPageProps> = ({
           >
             {isAnalyzing ? (
               <>
-                <span className="spin">⟳</span>
-                <span style={{ fontSize: '11px' }}>Inspecting...</span>
+                <span className="spin">
+                  <Sparkles size={13} />
+                </span>
+                <span>Inspecting...</span>
               </>
             ) : (
               <>
-                <Sparkles size={12} strokeWidth={2} />
+                <Sparkles size={13} strokeWidth={2.2} />
                 <span>Fetch</span>
               </>
             )}
           </button>
         </div>
 
-        {/* 2. Platform Chips (Compact horizontal scroll without wrapping) */}
+        {/* Minimal Platform Strip */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '4px',
-            marginTop: '8px',
             overflowX: 'auto',
             scrollbarWidth: 'none',
-            paddingBottom: '2px',
           }}
         >
           {SUPPORTED_PLATFORMS.map((plat) => {
             const isMatched = detectedPlatform?.id === plat.id;
             return (
-              <button
+              <span
                 key={plat.id}
-                type="button"
-                onClick={() => handleSelectPlatformChip(plat)}
                 style={{
                   fontSize: '9.5px',
-                  fontWeight: isMatched ? 600 : 500,
-                  padding: '2px 7px',
+                  fontWeight: isMatched ? 600 : 450,
+                  padding: '2px 6px',
                   borderRadius: 'var(--radius-xs)',
-                  border: isMatched ? '1px solid rgba(255, 255, 255, 0.35)' : '1px solid var(--border-subtle)',
-                  backgroundColor: isMatched ? 'rgba(255, 255, 255, 0.12)' : 'var(--bg-tertiary)',
+                  border: isMatched ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid var(--border-subtle)',
+                  backgroundColor: isMatched ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
                   color: isMatched ? '#ffffff' : 'var(--text-muted)',
-                  boxShadow: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.12s ease',
                   whiteSpace: 'nowrap',
-                  lineHeight: '1.4',
+                  lineHeight: '1.3',
                   flexShrink: 0,
+                  transition: 'all 120ms ease',
                 }}
-                title={isMatched ? `${plat.name} link auto-detected` : `Supported: ${plat.name}`}
               >
                 {plat.name}
-              </button>
+              </span>
             );
           })}
         </div>
 
-        {/* 3. Analyzing State */}
-        {isAnalyzing && (
-          <div
-            style={{
-              marginTop: '8px',
-              padding: '9px 12px',
-              backgroundColor: 'var(--bg-tertiary)',
-              border: '1px solid var(--border-default)',
-              borderRadius: 'var(--radius-sm)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontSize: '11px',
-              color: 'var(--text-secondary)',
-            }}
-          >
-            <div className="spin" style={{ color: 'var(--text-primary)', fontSize: '12px', flexShrink: 0 }}>⟳</div>
-            <span>Fetching media...</span>
-          </div>
-        )}
-
-        {/* 4. Error Alert Notification */}
+        {/* Error Notification */}
         {analysisError && (
           <div
             style={{
-              marginTop: '10px',
-              padding: '8px 12px',
+              padding: '8px 10px',
               backgroundColor: 'var(--danger-subtle)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
+              border: '1px solid var(--danger-border)',
               borderRadius: 'var(--radius-sm)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               gap: '8px',
               fontSize: '11px',
-              color: '#f87171',
+              color: 'var(--danger)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <AlertTriangle size={14} strokeWidth={2} color="#f87171" style={{ flexShrink: 0 }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <AlertTriangle size={13} strokeWidth={2} style={{ flexShrink: 0 }} />
               <span>{analysisError}</span>
             </div>
             <button
               onClick={() => setAnalysisError(null)}
-              style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: '2px' }}
+              style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '2px' }}
             >
               <X size={12} />
             </button>
@@ -632,7 +553,50 @@ export const ImportPage: React.FC<ImportPageProps> = ({
         )}
       </div>
 
-      {/* 4. Inspected Asset Card */}
+      {/* 2. Empty State (When no media is loaded) */}
+      {!mediaInfo && !isAnalyzing && (
+        <div
+          className="panel"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            padding: '40px 20px',
+            gap: '10px',
+            backgroundColor: 'transparent',
+            border: '1px dashed var(--border-default)',
+          }}
+        >
+          <div
+            style={{
+              width: '42px',
+              height: '42px',
+              borderRadius: '50%',
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-strong)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--text-secondary)',
+            }}
+          >
+            <Download size={18} strokeWidth={2} />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            <h4 style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
+              Paste any media link above
+            </h4>
+            <p style={{ fontSize: '11px', color: 'var(--text-muted)', maxWidth: '340px', lineHeight: 1.4 }}>
+              YouTube, TikTok, Instagram, X, and Vimeo files are fetched in the highest available resolution and placed directly into your editor bin.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* 3. Inspected Media Showcase */}
       {mediaInfo && (
         <div
           className="panel"
@@ -640,20 +604,17 @@ export const ImportPage: React.FC<ImportPageProps> = ({
             display: 'flex',
             flexDirection: 'column',
             gap: '12px',
-            backgroundColor: 'var(--bg-secondary)',
-            border: '1px solid var(--border-default)',
-            boxShadow: 'var(--shadow-sm)',
-            padding: '14px',
+            padding: '12px',
           }}
         >
-          {/* Media Header (Responsive Flex) */}
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          {/* Media Header */}
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
             {thumbSrc && !thumbError ? (
               <div
                 style={{
                   position: 'relative',
-                  width: '125px',
-                  height: '78px',
+                  width: '120px',
+                  height: '68px',
                   borderRadius: 'var(--radius-sm)',
                   overflow: 'hidden',
                   backgroundColor: '#000000',
@@ -675,10 +636,11 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                       position: 'absolute',
                       bottom: '3px',
                       right: '3px',
-                      backgroundColor: 'rgba(0,0,0,0.8)',
+                      backgroundColor: 'rgba(0,0,0,0.85)',
                       color: '#ffffff',
-                      fontSize: '9px',
+                      fontSize: '8.5px',
                       fontWeight: 600,
+                      fontFamily: 'var(--font-mono)',
                       padding: '1px 4px',
                       borderRadius: '2px',
                     }}
@@ -690,42 +652,37 @@ export const ImportPage: React.FC<ImportPageProps> = ({
             ) : (
               <div
                 style={{
-                  width: '125px',
-                  height: '78px',
+                  width: '120px',
+                  height: '68px',
                   borderRadius: 'var(--radius-sm)',
                   backgroundColor: 'var(--bg-tertiary)',
                   border: '1px solid var(--border-default)',
                   display: 'flex',
-                  flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: 'var(--text-muted)',
-                  gap: '4px',
                   flexShrink: 0,
                 }}
               >
-                <Film size={22} strokeWidth={2} />
-                <span style={{ fontSize: '9px', fontWeight: 600, color: 'var(--text-muted)' }}>
-                  {mediaInfo.platformName || mediaInfo.platform || 'Media'}
-                </span>
+                <Film size={20} strokeWidth={2} />
               </div>
             )}
 
             <div style={{ flex: 1, minWidth: '180px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                <span
-                  className="badge badge-neutral"
-                  style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                    color: '#ffffff',
-                    border: '1px solid rgba(255, 255, 255, 0.16)',
-                    textTransform: 'none',
-                  }}
-                >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+                <span className="badge badge-neutral">
                   {mediaInfo.platformName || mediaInfo.platform || 'Media'}
                 </span>
                 {mediaInfo.author && (
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span
+                    style={{
+                      fontSize: '10.5px',
+                      color: 'var(--text-muted)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
                     {mediaInfo.author}
                   </span>
                 )}
@@ -733,9 +690,9 @@ export const ImportPage: React.FC<ImportPageProps> = ({
 
               <h3
                 style={{
-                  fontSize: '13px',
-                  fontWeight: 800,
-                  lineHeight: 1.3,
+                  fontSize: '12.5px',
+                  fontWeight: 600,
+                  lineHeight: 1.35,
                   color: '#ffffff',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -752,26 +709,25 @@ export const ImportPage: React.FC<ImportPageProps> = ({
 
           <hr style={{ border: 'none', borderTop: '1px solid var(--border-subtle)' }} />
 
-          {/* Quality Mode Switcher & Selector */}
+          {/* Quality Mode Switcher */}
           <div>
             <div
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                flexWrap: 'wrap',
                 gap: '8px',
-                marginBottom: '10px',
+                marginBottom: '8px',
               }}
             >
-              {/* Segmented Control: Presets vs Custom */}
+              {/* Segmented Control */}
               <div
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
                   padding: '2px',
-                  backgroundColor: 'var(--bg-tertiary)',
-                  borderRadius: 'var(--radius-xs)',
+                  backgroundColor: 'var(--bg-primary)',
+                  borderRadius: '6px',
                   border: '1px solid var(--border-default)',
                   gap: '2px',
                 }}
@@ -782,20 +738,21 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '5px',
-                    padding: '4px 10px',
-                    fontSize: '11px',
+                    gap: '4px',
+                    padding: '3px 8px',
+                    fontSize: '10.5px',
                     fontWeight: qualityMode === 'presets' ? 600 : 500,
-                    borderRadius: 'var(--radius-xs)',
-                    border: 'none',
-                    backgroundColor: qualityMode === 'presets' ? 'var(--accent-primary)' : 'transparent',
-                    color: qualityMode === 'presets' ? 'var(--accent-text)' : 'var(--text-muted)',
+                    borderRadius: '4px',
+                    border: qualityMode === 'presets' ? '1px solid var(--border-strong)' : '1px solid transparent',
+                    backgroundColor: qualityMode === 'presets' ? 'var(--bg-elevated)' : 'transparent',
+                    color: qualityMode === 'presets' ? '#ffffff' : 'var(--text-muted)',
                     cursor: 'pointer',
-                    transition: 'all 0.1s ease',
+                    transition: 'all 120ms ease',
+                    boxShadow: qualityMode === 'presets' ? '0 1px 2px rgba(0,0,0,0.4)' : 'none',
                   }}
                 >
-                  <Zap size={12} strokeWidth={2} />
-                  <span>Presets ({mediaInfo.assets?.length || 0})</span>
+                  <Zap size={11} strokeWidth={2.2} />
+                  <span>Presets</span>
                 </button>
 
                 <button
@@ -813,240 +770,170 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '5px',
-                    padding: '4px 10px',
-                    fontSize: '11px',
+                    gap: '4px',
+                    padding: '3px 8px',
+                    fontSize: '10.5px',
                     fontWeight: qualityMode === 'custom' ? 600 : 500,
-                    borderRadius: 'var(--radius-xs)',
-                    border: 'none',
-                    backgroundColor: qualityMode === 'custom' ? 'var(--accent-primary)' : 'transparent',
-                    color: qualityMode === 'custom' ? 'var(--accent-text)' : 'var(--text-muted)',
+                    borderRadius: '4px',
+                    border: qualityMode === 'custom' ? '1px solid var(--border-strong)' : '1px solid transparent',
+                    backgroundColor: qualityMode === 'custom' ? 'var(--bg-elevated)' : 'transparent',
+                    color: qualityMode === 'custom' ? '#ffffff' : 'var(--text-muted)',
                     cursor: 'pointer',
-                    transition: 'all 0.1s ease',
+                    transition: 'all 120ms ease',
+                    boxShadow: qualityMode === 'custom' ? '0 1px 2px rgba(0,0,0,0.4)' : 'none',
                   }}
                 >
-                  <SlidersHorizontal size={12} strokeWidth={2} />
+                  <SlidersHorizontal size={11} strokeWidth={2.2} />
                   <span>Custom Settings</span>
                 </button>
               </div>
 
-              {/* Status / NLE Badge */}
-              <span
-                style={{
-                  fontSize: '9.5px',
-                  color: 'var(--text-muted)',
-                  fontWeight: 500,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}
-              >
-                <ShieldCheck size={11} strokeWidth={2} /> Timeline ready
-              </span>
-            </div>
-
-            {/* TAB 1: PRESETS MODE */}
-            {qualityMode === 'presets' && (
-              <div>
-                {/* Category Filter Pills (All, Video, Audio, Image) */}
-                <div style={{ display: 'flex', gap: '5px', marginBottom: '8px', flexWrap: 'wrap' }}>
+              {/* Category Filters (when in presets mode) */}
+              {qualityMode === 'presets' && (
+                <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
                   {[
-                    { id: 'all', label: 'All', count: mediaInfo.assets?.length || 0 },
-                    { id: 'video', label: 'Video', count: videoAssets.length },
-                    { id: 'audio', label: 'Audio Only', count: audioAssets.length },
-                    ...(imageAssets.length > 0
-                      ? [{ id: 'image', label: 'Artwork / Cover', count: imageAssets.length }]
-                      : []),
+                    { id: 'all', label: 'All' },
+                    { id: 'video', label: 'Video' },
+                    { id: 'audio', label: 'Audio' },
                   ].map((cat) => (
                     <button
                       key={cat.id}
                       type="button"
                       onClick={() => setPresetCategory(cat.id as any)}
                       style={{
-                        padding: '3px 8px',
-                        fontSize: '10px',
+                        padding: '2px 6px',
+                        fontSize: '9.5px',
                         fontWeight: presetCategory === cat.id ? 600 : 500,
                         borderRadius: 'var(--radius-xs)',
-                        border: presetCategory === cat.id
-                          ? '1px solid rgba(255, 255, 255, 0.35)'
-                          : '1px solid var(--border-subtle)',
-                        backgroundColor: presetCategory === cat.id
-                          ? 'rgba(255, 255, 255, 0.1)'
-                          : 'var(--bg-tertiary)',
+                        border: 'none',
+                        backgroundColor: presetCategory === cat.id ? 'rgba(255, 255, 255, 0.12)' : 'transparent',
                         color: presetCategory === cat.id ? '#ffffff' : 'var(--text-muted)',
                         cursor: 'pointer',
-                        transition: 'all 0.12s ease',
+                        transition: 'all 120ms ease',
                       }}
                     >
-                      {cat.label} ({cat.count})
+                      {cat.label}
                     </button>
                   ))}
                 </div>
+              )}
+            </div>
 
-                {/* Preset Cards Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '6px' }}>
-                  {filteredPresetAssets.map((asset) => {
-                    const isSelected = selectedAssetId === asset.id;
-                    const mType = asset.mediaType || (asset as any).media_type || 'video';
-                    const isVideo = mType === 'video';
-                    const isAudio = mType === 'audio';
-                    const isImage = mType === 'image';
-                    const qLabel = asset.qualityLabel || (asset as any).quality_label || (asset.format ? asset.format.toUpperCase() : 'Best');
-                    const fSize = asset.filesizeApprox ?? (asset as any).filesize_approx;
-                    const fmtUpper = (asset.format || 'MP4').toUpperCase();
-                    const isProRes = asset.id.includes('prores') || (asset.format === 'mov' && isVideo);
+            {/* TAB 1: PRESETS MODE */}
+            {qualityMode === 'presets' && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '6px' }}>
+                {filteredPresetAssets.map((asset) => {
+                  const isSelected = selectedAssetId === asset.id;
+                  const mType = asset.mediaType || (asset as any).media_type || 'video';
+                  const isVideo = mType === 'video';
+                  const isAudio = mType === 'audio';
+                  const isImage = mType === 'image';
+                  const qLabel = asset.qualityLabel || (asset as any).quality_label || (asset.format ? asset.format.toUpperCase() : 'Best');
+                  const fSize = asset.filesizeApprox ?? (asset as any).filesize_approx;
+                  const fmtUpper = (asset.format || 'MP4').toUpperCase();
+                  const isProRes = asset.id.includes('prores') || (asset.format === 'mov' && isVideo);
 
-                    return (
-                      <div
-                        key={asset.id}
-                        onClick={() => setSelectedAssetId(asset.id)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          padding: '8px 10px',
-                          borderRadius: 'var(--radius-sm)',
-                          border: isSelected
-                            ? '1px solid #ffffff'
-                            : '1px solid var(--border-default)',
-                          backgroundColor: isSelected
-                            ? 'rgba(255, 255, 255, 0.08)'
-                            : 'var(--bg-tertiary)',
-                          boxShadow: 'none',
-                          cursor: 'pointer',
-                          transition: 'all 0.12s ease',
-                          minHeight: '44px',
-                        }}
-                      >
-                        <div style={{ color: isSelected ? '#ffffff' : 'var(--text-muted)', flexShrink: 0 }}>
-                          {isVideo && (isProRes ? <Sparkles size={14} strokeWidth={2} /> : <Film size={14} strokeWidth={2} />)}
-                          {isAudio && <Music size={14} strokeWidth={2} />}
-                          {isImage && <ImageIcon size={14} strokeWidth={2} />}
+                  return (
+                    <div
+                      key={asset.id}
+                      onClick={() => setSelectedAssetId(asset.id)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '7px 9px',
+                        borderRadius: 'var(--radius-sm)',
+                        border: isSelected
+                          ? '1px solid #ffffff'
+                          : '1px solid var(--border-default)',
+                        backgroundColor: isSelected
+                          ? 'var(--bg-elevated)'
+                          : 'var(--bg-tertiary)',
+                        boxShadow: isSelected ? '0 1px 4px rgba(0, 0, 0, 0.5)' : 'none',
+                        cursor: 'pointer',
+                        transition: 'all 100ms ease',
+                        minHeight: '40px',
+                      }}
+                    >
+                      <div style={{ color: isSelected ? '#ffffff' : 'var(--text-muted)', flexShrink: 0 }}>
+                        {isVideo && (isProRes ? <Sparkles size={13} strokeWidth={2.2} /> : <Film size={13} strokeWidth={2} />)}
+                        {isAudio && <Music size={13} strokeWidth={2} />}
+                        {isImage && <ImageIcon size={13} strokeWidth={2} />}
+                      </div>
+
+                      <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                        <div
+                          style={{
+                            fontSize: '10.5px',
+                            fontWeight: 600,
+                            color: isSelected ? '#ffffff' : 'var(--text-primary)',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            lineHeight: '1.3',
+                          }}
+                          title={qLabel}
+                        >
+                          {qLabel}
                         </div>
-
-                        <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-                          <div
-                            style={{
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              color: isSelected ? '#ffffff' : 'var(--text-primary)',
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              lineHeight: '1.3',
-                            }}
-                            title={qLabel}
-                          >
-                            {qLabel}
-                          </div>
-                          <div
-                            style={{
-                              fontSize: '9.5px',
-                              color: isSelected ? 'var(--text-secondary)' : 'var(--text-muted)',
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              marginTop: '1px',
-                            }}
-                          >
-                            <span style={{ fontWeight: 600 }}>{fmtUpper}</span>
-                            {asset.resolution ? ` • ${asset.resolution}` : ''}
-                            {fSize ? ` • ${formatBytes(fSize)}` : ''}
-                          </div>
+                        <div
+                          style={{
+                            fontSize: '9px',
+                            color: isSelected ? 'var(--text-secondary)' : 'var(--text-muted)',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            fontFamily: 'var(--font-mono)',
+                            marginTop: '1px',
+                          }}
+                        >
+                          <span>{fmtUpper}</span>
+                          {asset.resolution ? ` • ${asset.resolution}` : ''}
+                          {fSize ? ` • ${formatBytes(fSize)}` : ''}
                         </div>
+                      </div>
 
-                        {isSelected && (
-                          <CheckCircle
-                            size={13}
-                            strokeWidth={2}
-                            color="#ffffff"
-                            style={{ flexShrink: 0 }}
-                          />
-                        )}
-                      </div>
-                    );
-                  })}
-
-                  {/* Switch to Custom Card */}
-                  <div
-                    onClick={() => {
-                      setQualityMode('custom');
-                      const targetAsset = (mediaInfo.assets || []).find((a) => a.id === selectedAssetId) || mediaInfo.assets?.[0];
-                      if (targetAsset) {
-                        const mType = ((targetAsset.mediaType || (targetAsset as any).media_type || 'video') as 'video' | 'audio' | 'image');
-                        setCustomMediaType(mType);
-                        setCustomQualityAssetId(targetAsset.id);
-                        setCustomFormat(targetAsset.format || (mType === 'audio' ? 'wav' : 'mp4'));
-                      }
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '8px 10px',
-                      borderRadius: 'var(--radius-sm)',
-                      border: '1px dashed var(--border-strong)',
-                      backgroundColor: 'transparent',
-                      cursor: 'pointer',
-                      transition: 'all 0.12s ease',
-                      minHeight: '44px',
-                      opacity: 0.85,
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255, 255, 255, 0.4)';
-                      (e.currentTarget as HTMLElement).style.opacity = '1';
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-strong)';
-                      (e.currentTarget as HTMLElement).style.opacity = '0.85';
-                    }}
-                  >
-                    <SlidersHorizontal size={13} strokeWidth={2} color="var(--text-muted)" style={{ flexShrink: 0 }} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                        + Custom Options...
-                      </div>
-                      <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>
-                        Configure Type, Quality & Codec
-                      </div>
+                      {isSelected && (
+                        <CheckCircle2
+                          size={13}
+                          strokeWidth={2.5}
+                          color="#ffffff"
+                          style={{ flexShrink: 0 }}
+                        />
+                      )}
                     </div>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
             )}
 
-            {/* TAB 2: CUSTOM CONFIGURATION DROPDOWNS */}
+            {/* TAB 2: CUSTOM CONFIGURATION */}
             {qualityMode === 'custom' && (
               <div
                 style={{
                   backgroundColor: 'var(--bg-tertiary)',
                   border: '1px solid var(--border-default)',
                   borderRadius: 'var(--radius-sm)',
-                  boxShadow: 'var(--shadow-xs)',
-                  padding: '12px',
+                  padding: '10px 12px',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '12px',
+                  gap: '10px',
                 }}
               >
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px' }}>
                   {/* Dropdown 1: Media Type */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <label style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)' }}>
-                      Format
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    <label style={{ fontSize: '9.5px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                      Media Type
                     </label>
                     <select
                       className="input"
                       value={customMediaType}
                       onChange={(e) => handleCustomMediaTypeChange(e.target.value as 'video' | 'audio' | 'image')}
                       style={{
-                        height: '32px',
+                        height: '30px',
                         fontSize: '11px',
-                        fontWeight: 500,
                         backgroundColor: 'var(--bg-secondary)',
-                        color: 'var(--text-primary)',
-                        border: '1px solid var(--border-default)',
-                        cursor: 'pointer',
                       }}
                     >
                       <option value="video">Video & Audio</option>
@@ -1056,22 +943,18 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                   </div>
 
                   {/* Dropdown 2: Stream Quality / Resolution */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <label style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)' }}>
-                      Quality
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    <label style={{ fontSize: '9.5px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                      Stream Quality
                     </label>
                     <select
                       className="input"
                       value={customQualityAssetId}
                       onChange={(e) => setCustomQualityAssetId(e.target.value)}
                       style={{
-                        height: '32px',
+                        height: '30px',
                         fontSize: '11px',
-                        fontWeight: 500,
                         backgroundColor: 'var(--bg-secondary)',
-                        color: 'var(--text-primary)',
-                        border: '1px solid var(--border-default)',
-                        cursor: 'pointer',
                       }}
                     >
                       {customMediaType === 'video' &&
@@ -1133,22 +1016,18 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                   </div>
 
                   {/* Dropdown 3: Target Output Codec / Format */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <label style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)' }}>
-                      Codec
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    <label style={{ fontSize: '9.5px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                      Output Format
                     </label>
                     <select
                       className="input"
                       value={customFormat}
                       onChange={(e) => setCustomFormat(e.target.value)}
                       style={{
-                        height: '32px',
+                        height: '30px',
                         fontSize: '11px',
-                        fontWeight: 500,
                         backgroundColor: 'var(--bg-secondary)',
-                        color: 'var(--text-primary)',
-                        border: '1px solid var(--border-default)',
-                        cursor: 'pointer',
                       }}
                     >
                       {customMediaType === 'video' && (
@@ -1178,58 +1057,31 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                     </select>
                   </div>
                 </div>
-
-                {/* Pipeline Summary & Preview Info */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    flexWrap: 'wrap',
-                    gap: '8px',
-                    padding: '6px 10px',
-                    borderRadius: 'var(--radius-xs)',
-                    backgroundColor: 'var(--bg-secondary)',
-                    border: '1px solid var(--border-subtle)',
-                    fontSize: '10px',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)' }}>
-                    <span>Ready for timeline:</span>
-                    <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>
-                      {customFormat.toUpperCase()} ({customMediaType})
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--success)', fontWeight: 500 }}>
-                    <CheckCircle size={11} strokeWidth={2} />
-                    <span>NLE ready</span>
-                  </div>
-                </div>
               </div>
             )}
           </div>
 
           <hr style={{ border: 'none', borderTop: '1px solid var(--border-subtle)' }} />
 
-          {/* Destination & Action */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {/* Destination Strip & Action CTA */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                Bin:
-              </span>
-              <input
-                type="text"
-                className="input"
-                value={targetBin}
-                onChange={(e) => setTargetBin(e.target.value)}
-                placeholder="000_Xdrop Assets"
-                style={{ height: '30px', fontSize: '11px', flex: '1 1 120px', minWidth: '100px' }}
-              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flex: '1 1 140px', minWidth: '120px' }}>
+                <Folder size={13} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+                <input
+                  type="text"
+                  className="input"
+                  value={targetBin}
+                  onChange={(e) => setTargetBin(e.target.value)}
+                  placeholder="000_Xdrop Assets"
+                  style={{ height: '30px', fontSize: '11px' }}
+                  title="Target project bin name"
+                />
+              </div>
 
-              {/* Auto-import Checkbox + Software Selection Dropdown */}
+              {/* Auto-import Checkbox + Software Dropdown */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                   <input
                     type="checkbox"
                     checked={autoImport}
@@ -1251,17 +1103,10 @@ export const ImportPage: React.FC<ImportPageProps> = ({
                       height: '30px',
                       padding: '2px 8px',
                       fontSize: '11px',
-                      fontWeight: 500,
-                      borderRadius: 'var(--radius-xs)',
-                      border: '1px solid var(--border-default)',
                       backgroundColor: 'var(--bg-tertiary)',
-                      color: 'var(--text-primary)',
-                      boxShadow: 'none',
-                      cursor: 'pointer',
                       width: 'auto',
-                      minWidth: '130px',
+                      minWidth: '125px',
                     }}
-                    title="Select software to automatically import media into after download"
                   >
                     <option value="resolve">DaVinci Resolve</option>
                     <option value="premiere">Premiere Pro</option>
@@ -1272,42 +1117,46 @@ export const ImportPage: React.FC<ImportPageProps> = ({
               </div>
             </div>
 
-            {/* Action Buttons: Primary Download CTA Button */}
-            <div style={{ display: 'flex', gap: '6px', width: '100%', alignItems: 'center' }}>
-              <button
-                type="button"
-                className="btn btn-primary btn-lg"
-                onClick={() => handleStartDownload()}
-                disabled={isSubmitting || (qualityMode === 'presets' && !selectedAsset)}
-                style={{ flex: 1, padding: '8px 14px', fontSize: '11.5px', fontWeight: 600 }}
-              >
-                {autoImport ? (
-                  autoImportEditor === 'aftereffects' ? (
-                    <Sparkles size={13} strokeWidth={2} />
-                  ) : autoImportEditor === 'premiere' ? (
-                    <Layers size={13} strokeWidth={2} />
-                  ) : (
-                    <Film size={13} strokeWidth={2} />
-                  )
+            {/* Primary Action Button */}
+            <button
+              type="button"
+              className="btn btn-primary btn-lg"
+              onClick={() => handleStartDownload()}
+              disabled={isSubmitting || (qualityMode === 'presets' && !selectedAsset)}
+              style={{
+                width: '100%',
+                padding: '8px 14px',
+                fontSize: '12px',
+                fontWeight: 600,
+                height: '38px',
+              }}
+            >
+              {autoImport ? (
+                autoImportEditor === 'aftereffects' ? (
+                  <Sparkles size={13} strokeWidth={2.2} />
+                ) : autoImportEditor === 'premiere' ? (
+                  <Layers size={13} strokeWidth={2.2} />
                 ) : (
-                  <Download size={13} strokeWidth={2} />
-                )}
-                <span>
-                  {autoImport
-                    ? `Import to ${
-                        autoImportEditor === 'resolve'
-                          ? 'DaVinci Resolve'
-                          : autoImportEditor === 'premiere'
-                          ? 'Premiere Pro'
-                          : autoImportEditor === 'aftereffects'
-                          ? 'After Effects'
-                          : 'Audition'
-                      }`
-                    : 'Download'}
-                </span>
-                <ArrowRight size={12} strokeWidth={2} />
-              </button>
-            </div>
+                  <Film size={13} strokeWidth={2.2} />
+                )
+              ) : (
+                <Download size={13} strokeWidth={2.2} />
+              )}
+              <span>
+                {autoImport
+                  ? `Import to ${
+                      autoImportEditor === 'resolve'
+                        ? 'DaVinci Resolve'
+                        : autoImportEditor === 'premiere'
+                        ? 'Premiere Pro'
+                        : autoImportEditor === 'aftereffects'
+                        ? 'After Effects'
+                        : 'Audition'
+                    }`
+                  : 'Download Media'}
+              </span>
+              <ArrowRight size={13} strokeWidth={2.2} />
+            </button>
           </div>
         </div>
       )}
