@@ -1,0 +1,45 @@
+{
+  "generatedAt": "2026-10-21T02:42:45.937615+00:00",
+  "version": "1.0.0",
+  "packages": [
+    {
+      "host": "premiere",
+      "label": "Premiere Pro",
+      "path": "C:\\Users\\CodeX\\Documents\\antigravity\\Xdrop\\dist\\xdrop-uxp-premiere-1.0.0.ccx",
+      "bytes": 6600,
+      "pluginId": "com.xdrop.panel.direct.premierepro",
+      "hostApp": "premierepro",
+      "minVersion": "25.6.0",
+      "members": [
+        "icons/iconDark.png",
+        "icons/iconNormal.png",
+        "index.html",
+        "main.js",
+        "manifest.json",
+        "styles.css"
+      ]
+    },
+    {
+      "host": "aftereffects",
+      "label": "After Effects",
+      "path": "C:\\Users\\CodeX\\Documents\\antigravity\\Xdrop\\dist\\xdrop-uxp-aftereffects-1.0.0.ccx",
+      "bytes": 6599,
+      "pluginId": "com.xdrop.panel.direct.aftereffects",
+      "hostApp": "aftereffects",
+      "minVersion": "26.0",
+      "members": [
+        "icons/iconDark.png",
+        "icons/iconNormal.png",
+        "index.html",
+        "main.js",
+        "manifest.json",
+        "styles.css"
+      ]
+    }
+  ],
+  "notes": [
+    "Install by opening the .ccx; Creative Cloud Desktop handles the rest. No signing and no timestamp are required.",
+    "One host per package is an Adobe production requirement, which is why Premiere Pro and After Effects get separate files.",
+    "The .direct. plugin ids are intentionally not the Marketplace id: an id that is distributed directly and listed in the Marketplace can be rejected at install."
+  ]
+}

@@ -39,8 +39,17 @@ if sys.stdout and hasattr(sys.stdout, "reconfigure"):
         pass
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SERVICE_DIR = REPO_ROOT / "apps" / "desktop-service"
+if REPO_ROOT.name == "src":
+    REPO_ROOT = REPO_ROOT.parent
+
+SERVICE_DIR = (
+    REPO_ROOT / "src" / "desktop-service"
+    if (REPO_ROOT / "src" / "desktop-service").exists()
+    else REPO_ROOT / "apps" / "desktop-service"
+)
+SRC_DIR = REPO_ROOT / "src"
 sys.path.insert(0, str(REPO_ROOT))
+sys.path.insert(0, str(SRC_DIR))
 sys.path.insert(0, str(SERVICE_DIR))
 
 
@@ -95,11 +104,11 @@ def install_davinci_resolve() -> Dict[str, bool]:
             if not item.is_file():
                 continue
             fname = item.name.lower()
-            is_canonical_comp_file = (
-                item.parent.name.lower() == "comp"
-                and fname in ["xdrop.lua", "xdrop - starter bin.drb"]
+            is_canonical_file = (
+                (item.parent.name.lower() == "comp" and fname in ["xdrop.lua", "xdrop - starter bin.drb", "xdroplogo.png"])
+                or (item.parent.name.lower() == "utility" and fname in ["xdrop.py"])
             )
-            if "resolvefetch" in fname or ("xdrop" in fname and not is_canonical_comp_file):
+            if "resolvefetch" in fname or ("xdrop" in fname and not is_canonical_file):
                 if "snap" in fname or "caption" in fname:
                     continue
                 try:
@@ -116,6 +125,7 @@ def install_davinci_resolve() -> Dict[str, bool]:
         find_resolve_studio_source,
         install_resolve_studio_plugin,
     )
+    from xdrop.integrations.resolve import install_resolve_script
     from xdrop.integrations.paths import detect
 
     host_paths = detect()
@@ -125,9 +135,23 @@ def install_davinci_resolve() -> Dict[str, bool]:
         log_success("DaVinci Resolve Studio: Workflow Integration installed!")
         log_info("  Access inside Studio: Workspace -> Workflow Integrations -> Xdrop")
 
+    res_script = install_resolve_script(host_paths, scope="user")
+    if res_script.ok:
+        results["utility_script"] = True
+        log_success(f"DaVinci Resolve: Desktop Utility Script installed at {res_script.path}")
+        log_info("  Access inside Resolve: Workspace -> Scripts -> Utility -> Xdrop")
+
     # 3. DaVinci Resolve Native Fusion UI Lua Extension (CANONICAL: Scripts/Comp/Xdrop.lua)
-    lua_source = REPO_ROOT / "apps" / "resolve-plugin" / "Xdrop.lua"
-    drb_source = REPO_ROOT / "apps" / "resolve-plugin" / "Xdrop - Starter Bin.drb"
+    lua_source = (
+        REPO_ROOT / "src" / "resolve-plugin" / "Xdrop.lua"
+        if (REPO_ROOT / "src" / "resolve-plugin" / "Xdrop.lua").is_file()
+        else REPO_ROOT / "apps" / "resolve-plugin" / "Xdrop.lua"
+    )
+    drb_source = (
+        REPO_ROOT / "src" / "resolve-plugin" / "Xdrop - Starter Bin.drb"
+        if (REPO_ROOT / "src" / "resolve-plugin" / "Xdrop - Starter Bin.drb").is_file()
+        else REPO_ROOT / "apps" / "resolve-plugin" / "Xdrop - Starter Bin.drb"
+    )
     if not drb_source.is_file():
         drb_source = REPO_ROOT / "dist" / "Xdrop - Starter Bin.drb"
 
@@ -159,9 +183,13 @@ def install_adobe_creative_cloud() -> Dict[str, bool]:
     log_step("Adobe Creative Cloud (Premiere Pro, After Effects, Audition)")
     results = {"cep_panel": False, "uxp_packages": False}
 
-    source_dir = REPO_ROOT / "apps" / "premiere-plugin"
+    source_dir = (
+        REPO_ROOT / "src" / "premiere-plugin"
+        if (REPO_ROOT / "src" / "premiere-plugin").exists()
+        else REPO_ROOT / "apps" / "premiere-plugin"
+    )
     if not source_dir.exists():
-        log_error("Adobe plugin source `apps/premiere-plugin` not found.")
+        log_error("Adobe plugin source (src/premiere-plugin) not found.")
         return results
 
     # Determine CEP extension targets

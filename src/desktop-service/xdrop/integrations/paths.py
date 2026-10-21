@@ -294,7 +294,7 @@ def repo_root() -> Path:
 
 
 def find_cep_source() -> Optional[Path]:
-    """Locates `apps/premiere-plugin` (the CEP panel that gets copied into Adobe's folder).
+    """Locates the CEP panel source that gets copied into Adobe's folder.
 
     Works from a source checkout and from a PyInstaller bundle, which is why several
     candidate roots are checked instead of one computed path.
@@ -302,8 +302,10 @@ def find_cep_source() -> Optional[Path]:
     here = Path(__file__).resolve()
 
     candidates = [
+        repo_root() / "src" / "premiere-plugin",
         repo_root() / "apps" / "premiere-plugin",
         here.parents[3] / "premiere-plugin",
+        Path.cwd() / "src" / "premiere-plugin",
         Path.cwd() / "apps" / "premiere-plugin",
         Path.cwd() / "premiere-plugin",
     ]

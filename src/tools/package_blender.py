@@ -19,7 +19,14 @@ from pathlib import Path
 from typing import List
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_SOURCE = REPO_ROOT / "apps" / "blender-addon" / "xdrop_blender.py"
+if REPO_ROOT.name == "src":
+    REPO_ROOT = REPO_ROOT.parent
+
+DEFAULT_SOURCE = (
+    REPO_ROOT / "src" / "blender-addon" / "xdrop_blender.py"
+    if (REPO_ROOT / "src" / "blender-addon" / "xdrop_blender.py").is_file()
+    else REPO_ROOT / "apps" / "blender-addon" / "xdrop_blender.py"
+)
 DEFAULT_OUT_DIR = REPO_ROOT / "dist"
 
 

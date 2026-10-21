@@ -72,11 +72,13 @@ def resolve_studio_plugin_dirs(paths: HostPlatformPaths) -> Tuple[Path, Path]:
 
 
 def find_resolve_studio_source() -> Optional[Path]:
-    """Locates the `apps/resolve-workflow-integration` plugin directory."""
+    """Locates the Resolve Workflow Integration plugin directory."""
     here = Path(__file__).resolve()
     candidates = [
+        repo_root() / "src" / "resolve-workflow-integration",
         repo_root() / "apps" / "resolve-workflow-integration",
         here.parents[3] / "resolve-workflow-integration",
+        Path.cwd() / "src" / "resolve-workflow-integration",
         Path.cwd() / "apps" / "resolve-workflow-integration",
         Path.cwd() / "resolve-workflow-integration",
     ]

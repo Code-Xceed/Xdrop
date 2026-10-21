@@ -24,7 +24,11 @@ if sys.stdout and hasattr(sys.stdout, "reconfigure"):
         pass
 
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent
-DESKTOP_SERVICE_DIR = ROOT_DIR / "apps" / "desktop-service"
+DESKTOP_SERVICE_DIR = (
+    ROOT_DIR / "src" / "desktop-service"
+    if (ROOT_DIR / "src" / "desktop-service").exists()
+    else ROOT_DIR / "apps" / "desktop-service"
+)
 sys.path.insert(0, str(DESKTOP_SERVICE_DIR))
 
 # ANSI Color Codes
@@ -96,12 +100,15 @@ def install_python_dependencies() -> bool:
 
 def verify_ui_bundle() -> bool:
     print(f"\n{BOLD}[3/7] Verifying Web User Interface...{RESET}")
-    dist_dir = ROOT_DIR / "apps" / "resolve-plugin" / "dist"
-    index_file = dist_dir / "index.html"
-
-    if index_file.is_file():
-        print(f"      {GREEN}[+] Pre-built UI bundle detected and ready.{RESET}")
-        return True
+    candidates = [
+        ROOT_DIR / "dist",
+        ROOT_DIR / "src" / "resolve-plugin" / "dist",
+        ROOT_DIR / "apps" / "resolve-plugin" / "dist",
+    ]
+    for c in candidates:
+        if (c / "index.html").is_file():
+            print(f"      {GREEN}[+] Pre-built UI bundle detected and ready ({c.name}).{RESET}")
+            return True
 
     print(f"      {YELLOW}[!] UI bundle not found. Attempting to build with npm...{RESET}")
     node_bin = shutil.which("node")
@@ -113,12 +120,20 @@ def verify_ui_bundle() -> bool:
         return False
 
     try:
-        print("      Running: npm install && npm run build:ui")
-        subprocess.run([npm_bin, "install"], cwd=str(ROOT_DIR), check=True)
-        subprocess.run([npm_bin, "run", "build:ui"], cwd=str(ROOT_DIR), check=True)
-        if index_file.is_file():
-            print(f"      {GREEN}[+] UI bundle compiled successfully!{RESET}")
-            return True
+        ui_src = ROOT_DIR / "src" / "resolve-plugin"
+        if ui_src.is_dir():
+            print(f"      Running: cd {ui_src.name} && npm install && npm run build")
+            subprocess.run([npm_bin, "install"], cwd=str(ui_src), check=True)
+            subprocess.run([npm_bin, "run", "build"], cwd=str(ui_src), check=True)
+        else:
+            print("      Running: npm install && npm run build:ui")
+            subprocess.run([npm_bin, "install"], cwd=str(ROOT_DIR), check=True)
+            subprocess.run([npm_bin, "run", "build:ui"], cwd=str(ROOT_DIR), check=True)
+
+        for c in candidates:
+            if (c / "index.html").is_file():
+                print(f"      {GREEN}[+] UI bundle compiled successfully!{RESET}")
+                return True
     except Exception as e:
         print(f"      {RED}[!] UI build failed: {e}{RESET}")
 
@@ -282,7 +297,11 @@ def detect_and_configure_editors() -> dict:
 
     # Always install CEP panel if Adobe folder exists or on Windows/Mac
     try:
-        source_dir = ROOT_DIR / "apps" / "premiere-plugin"
+        source_dir = (
+            ROOT_DIR / "src" / "premiere-plugin"
+            if (ROOT_DIR / "src" / "premiere-plugin").exists()
+            else ROOT_DIR / "apps" / "premiere-plugin"
+        )
         if platform.system() == "Windows":
             cep_dir = Path(os.environ.get("APPDATA", "")) / "Adobe" / "CEP" / "extensions"
         else:
@@ -491,7 +510,8 @@ pause
 exit /b 1
 
 :RunService
-"%PYTHON_EXE%" apps\\desktop-service\\xdrop\\main.py --gui
+set "PYTHONPATH=%~dp0src\\desktop-service;%PYTHONPATH%"
+"%PYTHON_EXE%" -m xdrop.main %*
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo Service stopped or encountered an error.
@@ -510,27 +530,31 @@ if %ERRORLEVEL% NEQ 0 (
 # Xdrop — macOS / Linux Desktop Service Launcher
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${{BASH_SOURCE[0]}}")" && pwd)"
-cd "$SCRIPT_DIR"
+DIR="$(cd "$(dirname "${{BASH_SOURCE[0]}}")" >/dev/null 2>&1 && pwd)"
+export PYTHONPATH="$DIR/src/desktop-service:$PYTHONPATH"
 
 PYTHON_BIN=""
-if [ -f "$SCRIPT_DIR/.venv/bin/python" ]; then
-    PYTHON_BIN="$SCRIPT_DIR/.venv/bin/python"
-elif [ -f "{sys.executable}" ]; then
-    PYTHON_BIN="{sys.executable}"
+if [ -f "$DIR/.venv/bin/python" ]; then
+    PYTHON_BIN="$DIR/.venv/bin/python"
 elif command -v python3 &>/dev/null; then
     PYTHON_BIN="python3"
+elif [ -f "/opt/homebrew/bin/python3" ]; then
+    PYTHON_BIN="/opt/homebrew/bin/python3"
+elif [ -f "/usr/local/bin/python3" ]; then
+    PYTHON_BIN="/usr/local/bin/python3"
+elif [ -f "/usr/bin/python3" ]; then
+    PYTHON_BIN="/usr/bin/python3"
 elif command -v python &>/dev/null; then
     PYTHON_BIN="python"
 fi
 
 if [ -z "$PYTHON_BIN" ]; then
-    echo "[!] Python 3 not found. Please run ./setup.sh first."
+    echo "[!] Python 3 not found. Please install Python 3."
     exit 1
 fi
 
 echo "Starting Xdrop Engine..."
-exec "$PYTHON_BIN" apps/desktop-service/xdrop/main.py --gui
+exec "$PYTHON_BIN" -m xdrop.main "$@"
 """
     try:
         run_sh.write_text(run_sh_content, encoding="utf-8")
@@ -554,9 +578,9 @@ def print_completion_summary(detected_editors: dict):
     print(f"\n{BOLD}How to Launch Xdrop:{RESET}")
     if platform.system() == "Windows":
         print(f"  {CYAN}👉 Double-click 'run.bat' in the project folder{RESET}")
-        print(f"  {CYAN}   or run: python apps/desktop-service/xdrop/main.py --gui{RESET}")
+        print(f"  {CYAN}   or run: python -m xdrop.main --gui{RESET}")
     else:
-        print(f"  {CYAN}👉 Run: python3 apps/desktop-service/xdrop/main.py --gui{RESET}")
+        print(f"  {CYAN}👉 Run: ./run.sh or python3 -m xdrop.main --gui{RESET}")
 
     print(f"\n{BOLD}Using in Your Video Editors:{RESET}")
     print("  • DaVinci Resolve:   Workspace -> Scripts -> Utility -> Xdrop")
