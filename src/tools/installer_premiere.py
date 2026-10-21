@@ -2,7 +2,7 @@
 """
 Xdrop Adobe Premiere Pro & Creative Cloud Native Extension Installer.
 
-Dedicated standalone installer specifically tailored for Adobe Premiere Pro,
+Minimal, usable, and professional installer for Adobe Premiere Pro,
 After Effects, and Audition:
 1. Deep-scans workstation drives, registry, and running processes to detect installed Adobe host applications.
 2. Supports standard per-user (%APPDATA%), system common files, and custom folder installations.
@@ -11,8 +11,7 @@ After Effects, and Audition:
 5. Generates extension runtime config.json linking directly to the local Xdrop service.
 6. Packages and provisions modern UXP .ccx bundles for Premiere Pro and After Effects.
 7. Installs and silently starts the Xdrop zero-flicker headless background engine (0 CMD windows).
-8. Configures FCPXML 1.11 drag-and-drop timeline generation.
-9. Provides a polished Adobe Creative Cloud dark GUI with automatic headless CLI fallback.
+8. Provides a minimal, studio-grade dark GUI with automatic headless CLI fallback.
 """
 
 from __future__ import annotations
@@ -92,18 +91,50 @@ except ImportError:
         log_warn,
     )
 
-# --- GUI Design Tokens (Adobe Creative Cloud Midnight Blue) ---------------------
-COLOR_ADOBE_BG = "#0b0d14"               # Creative Cloud Midnight Black
-COLOR_ADOBE_CARD = "#141724"             # Inset panel slate
-COLOR_ADOBE_CARD_BORDER = "#252b40"      # Subtle structural border
-COLOR_ADOBE_ACCENT = "#38bdf8"           # Adobe Sky / CC Blue
-COLOR_ADOBE_CYAN = "#00e5ff"             # Xdrop Electric Cyan
-COLOR_ADOBE_HOVER = "#60a5fa"            # Blue highlight hover
-COLOR_ADOBE_TEXT = "#fafafa"             # Crisp white
-COLOR_ADOBE_TEXT_MUTED = "#94a3b8"       # Secondary body text
-COLOR_ADOBE_TEXT_DIM = "#64748b"         # Footnote / path labels
-COLOR_ADOBE_SUCCESS = "#22c55e"          # Green verification accent
-COLOR_ADOBE_SUCCESS_BG = "#0f2318"       # Soft green container
+# --- Minimal Design Tokens (Creative Cloud Midnight / Blue) ---------------------
+COLOR_BG = "#0c0d12"             # Deep Midnight Black
+COLOR_CARD = "#141620"           # Inset surface
+COLOR_CARD_BORDER = "#222638"    # Subtle 1px boundary
+COLOR_ACCENT = "#38bdf8"         # Creative Cloud Sky Blue
+COLOR_ACCENT_HOVER = "#0284c7"   # Blue on press
+COLOR_CYAN = "#00e5ff"           # Xdrop Cyan
+COLOR_TEXT = "#fafafa"           # Crisp white
+COLOR_TEXT_MUTED = "#94a3b8"     # Secondary body text
+COLOR_TEXT_DIM = "#64748b"       # Footnote / meta
+COLOR_SUCCESS = "#22c55e"        # Emerald green
+COLOR_SUCCESS_BG = "#0d2218"     # Green container
+COLOR_SUCCESS_BORDER = "#1b4d32" # Green boundary
+COLOR_WARN = "#f59e0b"
+
+
+def load_app_icon_image(target_size: int = 34) -> Optional[object]:
+    """Safely loads a crisp, compact app icon for the header without heavy dependencies."""
+    import tkinter as tk
+    candidates = [
+        SCRIPT_DIR / "assets" / "logo-40.png",
+        REPO_ROOT / "src" / "tools" / "assets" / "logo-40.png",
+        REPO_ROOT / "src" / "tools" / "assets" / "logo-64.png",
+    ]
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        meipass = Path(sys._MEIPASS)
+        candidates = [
+            meipass / "src" / "tools" / "assets" / "logo-40.png",
+            meipass / "src" / "tools" / "assets" / "logo-64.png",
+            meipass / "assets" / "logo-40.png",
+        ] + candidates
+
+    for c in candidates:
+        if c.is_file():
+            try:
+                photo = tk.PhotoImage(file=str(c))
+                w = photo.width()
+                if w > target_size * 1.4:
+                    factor = max(1, round(w / target_size))
+                    return photo.subsample(factor, factor)
+                return photo
+            except Exception:
+                pass
+    return None
 
 
 class PremiereExtensionInstaller(ExtensionInstaller):
@@ -231,28 +262,29 @@ def get_default_adobe_paths() -> Dict[str, Path]:
 
 
 # ==============================================================================
-# GUI Installer Implementation
+# Minimal, Usable, Professional GUI
 # ==============================================================================
 
 class PremiereGuiInstaller:
-    """Modern dark-themed studio GUI installer tailored specifically for Adobe Creative Cloud."""
+    """Minimal, elegant studio installer tailored specifically for Adobe Creative Cloud."""
 
     def __init__(self, initial_custom_dir: Optional[Path] = None):
         import tkinter as tk
-        from tkinter import ttk, messagebox, filedialog
+        from tkinter import ttk, filedialog
 
         self.tk = tk
         self.ttk = ttk
-        self.messagebox = messagebox
         self.filedialog = filedialog
 
         self.root = tk.Tk()
-        self.root.title("Xdrop Setup — Adobe Premiere Pro & Creative Cloud Edition")
-        self.root.geometry("640x740")
-        self.root.minsize(600, 700)
-        self.root.configure(bg=COLOR_ADOBE_BG)
+        self.root.title("Xdrop Setup — Adobe Premiere Pro")
+        self.root.geometry("520x460")
+        self.root.minsize(520, 460)
+        self.root.maxsize(520, 460)
+        self.root.resizable(False, False)
+        self.root.configure(bg=COLOR_BG)
 
-        # Taskbar icon setup on Windows
+        # Windows taskbar AppUserModelID
         if sys.platform == "win32":
             try:
                 import ctypes
@@ -263,29 +295,15 @@ class PremiereGuiInstaller:
         self._load_app_icons()
         self._center_window()
 
-        # State Variables
-        self.install_cep_var = tk.BooleanVar(value=True)
-        self.enable_playerdebug_var = tk.BooleanVar(value=True)
-        self.install_uxp_var = tk.BooleanVar(value=True)
-        self.install_engine_var = tk.BooleanVar(value=True)
-
-        self.location_mode_var = tk.StringVar(value="user")
-        self.custom_path_var = tk.StringVar(value=str(initial_custom_dir) if initial_custom_dir else "")
-
         self.default_paths = get_default_adobe_paths()
+        self.target_dir = Path(initial_custom_dir).resolve() if initial_custom_dir else self.default_paths.get("user_cep")
+        self.is_custom_location = initial_custom_dir is not None
+
         self.discovered_adobe_apps: List[DiscoveredApp] = []
         self.is_installing = False
         self.is_completed = False
 
-        # Build UI layout
-        self._build_header()
-        self._build_detection_card()
-        self._build_location_card()
-        self._build_components_card()
-        self._build_progress_card()
-        self._build_action_bar()
-
-        # Run asynchronous scan
+        self._build_ui()
         threading.Thread(target=self._run_async_scan, daemon=True).start()
 
     def _load_app_icons(self):
@@ -293,7 +311,6 @@ class PremiereGuiInstaller:
             SCRIPT_DIR / "assets" / "xdrop.ico",
             REPO_ROOT / "src" / "assets" / "xdrop.ico",
             REPO_ROOT / "src" / "assets" / "logo.ico",
-            REPO_ROOT / "src" / "tools" / "assets" / "xdrop.ico",
         ]
         if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
             meipass = Path(sys._MEIPASS)
@@ -302,7 +319,6 @@ class PremiereGuiInstaller:
                 meipass / "src" / "assets" / "xdrop.ico",
                 meipass / "xdrop.ico",
             ])
-
         for c in candidates_ico:
             if c.is_file():
                 try:
@@ -311,249 +327,165 @@ class PremiereGuiInstaller:
                 except Exception:
                     pass
 
-        candidates_png = [
-            SCRIPT_DIR / "assets" / "logo-40.png",
-            REPO_ROOT / "src" / "tools" / "assets" / "logo-40.png",
-            REPO_ROOT / "src" / "assets" / "logo.png",
-        ]
-        if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
-            meipass = Path(sys._MEIPASS)
-            candidates_png.extend([
-                meipass / "src" / "assets" / "logo.png",
-                meipass / "logo.png",
-            ])
-
-        self._logo_img = None
-        for c in candidates_png:
-            if c.is_file():
-                try:
-                    self._logo_img = self.tk.PhotoImage(file=str(c))
-                    self.root.iconphoto(False, self._logo_img)
-                    break
-                except Exception:
-                    pass
+        self._logo_photo = load_app_icon_image(size=32)
 
     def _center_window(self):
         self.root.update_idletasks()
-        w, h = 640, 740
+        w, h = 520, 460
         x = max(0, (self.root.winfo_screenwidth() // 2) - (w // 2))
         y = max(0, (self.root.winfo_screenheight() // 2) - (h // 2))
         self.root.geometry(f"{w}x{h}+{x}+{y}")
 
-    def _build_header(self):
-        header = self.tk.Frame(self.root, bg=COLOR_ADOBE_BG, padx=24, pady=16)
-        header.pack(fill=self.tk.X)
+    def _build_ui(self):
+        self.container = self.tk.Frame(self.root, bg=COLOR_BG, padx=28, pady=24)
+        self.container.pack(fill=self.tk.BOTH, expand=True)
 
-        title_row = self.tk.Frame(header, bg=COLOR_ADOBE_BG)
+        # 1. Header Row
+        header = self.tk.Frame(self.container, bg=COLOR_BG)
+        header.pack(fill=self.tk.X, pady=(0, 16))
+
+        if self._logo_photo:
+            lbl_logo = self.tk.Label(header, image=self._logo_photo, bg=COLOR_BG)
+            lbl_logo.pack(side=self.tk.LEFT, padx=(0, 12))
+
+        title_col = self.tk.Frame(header, bg=COLOR_BG)
+        title_col.pack(side=self.tk.LEFT, fill=self.tk.Y)
+
+        title_row = self.tk.Frame(title_col, bg=COLOR_BG)
         title_row.pack(anchor="w")
 
-        if self._logo_img:
-            lbl_logo = self.tk.Label(title_row, image=self._logo_img, bg=COLOR_ADOBE_BG)
-            lbl_logo.pack(side=self.tk.LEFT, padx=(0, 10))
-
-        lbl_x = self.tk.Label(title_row, text="X", font=("Segoe UI", 24, "bold"), fg=COLOR_ADOBE_CYAN, bg=COLOR_ADOBE_BG)
-        lbl_x.pack(side=self.tk.LEFT)
-
-        lbl_drop = self.tk.Label(title_row, text="drop", font=("Segoe UI", 24, "bold"), fg=COLOR_ADOBE_TEXT, bg=COLOR_ADOBE_BG)
-        lbl_drop.pack(side=self.tk.LEFT)
-
-        badge_frame = self.tk.Frame(title_row, bg=COLOR_ADOBE_CARD, highlightbackground=COLOR_ADOBE_ACCENT, highlightthickness=1, padx=6, pady=2)
-        badge_frame.pack(side=self.tk.LEFT, padx=(12, 0), pady=(4, 0))
-
-        lbl_badge = self.tk.Label(badge_frame, text="ADOBE PREMIERE PRO EDITION", font=("Segoe UI", 8, "bold"), fg=COLOR_ADOBE_ACCENT, bg=COLOR_ADOBE_CARD)
-        lbl_badge.pack()
-
-        lbl_desc = self.tk.Label(
-            header,
-            text="Native Video Pipeline Importer • Supports Premiere Pro (2020-2026+), After Effects & Audition",
-            font=("Segoe UI", 9),
-            fg=COLOR_ADOBE_TEXT_MUTED,
-            bg=COLOR_ADOBE_BG
+        lbl_title = self.tk.Label(
+            title_row,
+            text="Xdrop",
+            font=("Segoe UI", 16, "bold"),
+            fg=COLOR_TEXT,
+            bg=COLOR_BG
         )
-        lbl_desc.pack(anchor="w", pady=(4, 0))
-
-        div = self.tk.Frame(self.root, bg=COLOR_ADOBE_CARD_BORDER, height=1)
-        div.pack(fill=self.tk.X, padx=24)
-
-    def _build_detection_card(self):
-        self.main_content = self.tk.Frame(self.root, bg=COLOR_ADOBE_BG, padx=24, pady=12)
-        self.main_content.pack(fill=self.tk.BOTH, expand=True)
-
-        card = self.tk.Frame(self.main_content, bg=COLOR_ADOBE_CARD, highlightbackground=COLOR_ADOBE_CARD_BORDER, highlightthickness=1, padx=14, pady=10)
-        card.pack(fill=self.tk.X, pady=(0, 10))
-
-        top_row = self.tk.Frame(card, bg=COLOR_ADOBE_CARD)
-        top_row.pack(fill=self.tk.X)
-
-        lbl_title = self.tk.Label(top_row, text="WORKSTATION INSTALLATION STATUS", font=("Segoe UI", 9, "bold"), fg=COLOR_ADOBE_ACCENT, bg=COLOR_ADOBE_CARD)
         lbl_title.pack(side=self.tk.LEFT)
 
-        self.detect_badge = self.tk.Label(top_row, text="● Deep Scanning Drives...", font=("Segoe UI", 9, "bold"), fg=COLOR_ADOBE_CYAN, bg=COLOR_ADOBE_CARD)
-        self.detect_badge.pack(side=self.tk.RIGHT)
-
-        self.detect_details = self.tk.Label(
-            card,
-            text="Scanning all system drives and registry keys for Adobe Premiere Pro, After Effects, and Audition...",
-            font=("Segoe UI", 9),
-            fg=COLOR_ADOBE_TEXT_MUTED,
-            bg=COLOR_ADOBE_CARD,
-            justify=self.tk.LEFT,
-            wraplength=570
+        lbl_pill = self.tk.Label(
+            title_row,
+            text=" Premiere Pro & CC ",
+            font=("Segoe UI", 9, "bold"),
+            fg=COLOR_ACCENT,
+            bg="#162438",
+            padx=6,
+            pady=2
         )
-        self.detect_details.pack(anchor="w", pady=(4, 0))
+        lbl_pill.pack(side=self.tk.LEFT, padx=(8, 0))
 
-    def _build_location_card(self):
-        card = self.tk.Frame(self.main_content, bg=COLOR_ADOBE_CARD, highlightbackground=COLOR_ADOBE_CARD_BORDER, highlightthickness=1, padx=14, pady=10)
-        card.pack(fill=self.tk.X, pady=(0, 10))
-
-        lbl_title = self.tk.Label(card, text="INSTALLATION TARGET LOCATION", font=("Segoe UI", 9, "bold"), fg=COLOR_ADOBE_CYAN, bg=COLOR_ADOBE_CARD)
-        lbl_title.pack(anchor="w", pady=(0, 6))
-
-        # Radio 1: User Profile CEP
-        user_path_str = str(self.default_paths.get("user_cep", "Standard User Profile CEP"))
-        r1 = self.tk.Radiobutton(
-            card,
-            text=f" Standard User CEP Directory (Recommended — zero admin permissions required)\n {user_path_str}",
-            variable=self.location_mode_var,
-            value="user",
+        lbl_sub = self.tk.Label(
+            title_col,
+            text="High-performance media importer for Adobe Premiere Pro, AE & Audition",
             font=("Segoe UI", 9),
-            fg=COLOR_ADOBE_TEXT,
-            bg=COLOR_ADOBE_CARD,
-            activebackground=COLOR_ADOBE_CARD,
-            activeforeground=COLOR_ADOBE_CYAN,
-            selectcolor=COLOR_ADOBE_BG,
-            justify=self.tk.LEFT,
-            command=self._on_location_mode_change
+            fg=COLOR_TEXT_DIM,
+            bg=COLOR_BG
         )
-        r1.pack(anchor="w", pady=(0, 4))
+        lbl_sub.pack(anchor="w", pady=(2, 0))
 
-        # Radio 2: Custom Directory
-        r2 = self.tk.Radiobutton(
-            card,
-            text=" Custom CEP Directory (Non-standard drives, portable Adobe setups, or custom plugin folders)",
-            variable=self.location_mode_var,
-            value="custom",
-            font=("Segoe UI", 9),
-            fg=COLOR_ADOBE_TEXT,
-            bg=COLOR_ADOBE_CARD,
-            activebackground=COLOR_ADOBE_CARD,
-            activeforeground=COLOR_ADOBE_CYAN,
-            selectcolor=COLOR_ADOBE_BG,
-            justify=self.tk.LEFT,
-            command=self._on_location_mode_change
+        # 2. Status Detection Strip
+        self.detect_card = self.tk.Frame(
+            self.container,
+            bg=COLOR_CARD,
+            highlightbackground=COLOR_CARD_BORDER,
+            highlightthickness=1,
+            padx=14,
+            pady=10
         )
-        r2.pack(anchor="w", pady=(0, 4))
+        self.detect_card.pack(fill=self.tk.X, pady=(0, 14))
 
-        # Custom Folder Row
-        self.custom_row = self.tk.Frame(card, bg=COLOR_ADOBE_CARD)
-        self.custom_row.pack(fill=self.tk.X, padx=(22, 0), pady=(2, 0))
+        strip_row = self.tk.Frame(self.detect_card, bg=COLOR_CARD)
+        strip_row.pack(fill=self.tk.X)
 
-        self.txt_custom_path = self.tk.Entry(
-            self.custom_row,
-            textvariable=self.custom_path_var,
-            font=("Consolas", 9),
-            bg=COLOR_ADOBE_BG,
-            fg=COLOR_ADOBE_TEXT,
-            insertbackground=COLOR_ADOBE_CYAN,
-            relief=self.tk.SOLID,
-            bd=1
+        self.lbl_detect_dot = self.tk.Label(strip_row, text="●", font=("Segoe UI", 10), fg=COLOR_CYAN, bg=COLOR_CARD)
+        self.lbl_detect_dot.pack(side=self.tk.LEFT, padx=(0, 6))
+
+        self.lbl_detect_text = self.tk.Label(
+            strip_row,
+            text="Scanning workstation for Adobe applications...",
+            font=("Segoe UI", 9, "bold"),
+            fg=COLOR_TEXT,
+            bg=COLOR_CARD
         )
-        self.txt_custom_path.pack(side=self.tk.LEFT, fill=self.tk.X, expand=True, ipady=3)
+        self.lbl_detect_text.pack(side=self.tk.LEFT)
 
-        btn_browse = self.tk.Button(
-            self.custom_row,
-            text=" Browse... ",
-            font=("Segoe UI", 9),
-            bg=COLOR_ADOBE_CARD_BORDER,
-            fg=COLOR_ADOBE_TEXT,
-            activebackground=COLOR_ADOBE_ACCENT,
-            activeforeground="#000000",
+        self.lbl_detect_ver = self.tk.Label(strip_row, text="", font=("Segoe UI", 9), fg=COLOR_TEXT_DIM, bg=COLOR_CARD)
+        self.lbl_detect_ver.pack(side=self.tk.RIGHT)
+
+        self.lbl_detect_warn = self.tk.Label(
+            self.detect_card,
+            text="",
+            font=("Segoe UI", 8),
+            fg=COLOR_WARN,
+            bg=COLOR_CARD
+        )
+
+        # 3. Features Card (Clean, minimal bullet overview)
+        feat_card = self.tk.Frame(
+            self.container,
+            bg=COLOR_CARD,
+            highlightbackground=COLOR_CARD_BORDER,
+            highlightthickness=1,
+            padx=14,
+            pady=12
+        )
+        feat_card.pack(fill=self.tk.X, pady=(0, 16))
+
+        feats = [
+            ("✓", "Native docked panel (Window → Extensions → Xdrop)"),
+            ("✓", "Automatic bin import & playhead timeline insertion"),
+            ("✓", "Zero-flicker background engine (auto-starts on demand, 0 CMD windows)"),
+        ]
+        for mark, desc in feats:
+            row = self.tk.Frame(feat_card, bg=COLOR_CARD)
+            row.pack(fill=self.tk.X, pady=2)
+            self.tk.Label(row, text=mark, font=("Segoe UI", 9, "bold"), fg=COLOR_SUCCESS, bg=COLOR_CARD).pack(side=self.tk.LEFT, padx=(0, 8))
+            self.tk.Label(row, text=desc, font=("Segoe UI", 9), fg=COLOR_TEXT_MUTED, bg=COLOR_CARD).pack(side=self.tk.LEFT)
+
+        # Inset Target Folder Row
+        dest_div = self.tk.Frame(feat_card, bg=COLOR_CARD_BORDER, height=1)
+        dest_div.pack(fill=self.tk.X, pady=(10, 8))
+
+        dest_row = self.tk.Frame(feat_card, bg=COLOR_CARD)
+        dest_row.pack(fill=self.tk.X)
+
+        lbl_dest_tag = self.tk.Label(dest_row, text="Install to:", font=("Segoe UI", 8, "bold"), fg=COLOR_TEXT_DIM, bg=COLOR_CARD)
+        lbl_dest_tag.pack(side=self.tk.LEFT, padx=(0, 6))
+
+        self.lbl_dest_path = self.tk.Label(
+            dest_row,
+            text=self._format_path_short(self.target_dir),
+            font=("Consolas", 8),
+            fg=COLOR_TEXT_MUTED,
+            bg=COLOR_CARD
+        )
+        self.lbl_dest_path.pack(side=self.tk.LEFT, fill=self.tk.X, expand=True)
+
+        btn_change = self.tk.Button(
+            dest_row,
+            text="Change...",
+            font=("Segoe UI", 8),
+            fg=COLOR_CYAN,
+            bg=COLOR_CARD,
+            activeforeground="#ffffff",
+            activebackground=COLOR_CARD,
             relief=self.tk.FLAT,
-            padx=10,
+            bd=0,
             cursor="hand2",
-            command=self._browse_custom_directory
+            command=self._choose_custom_folder
         )
-        btn_browse.pack(side=self.tk.RIGHT, padx=(6, 0))
+        btn_change.pack(side=self.tk.RIGHT)
 
-        self._on_location_mode_change()
-
-    def _build_components_card(self):
-        card = self.tk.Frame(self.main_content, bg=COLOR_ADOBE_CARD, highlightbackground=COLOR_ADOBE_CARD_BORDER, highlightthickness=1, padx=14, pady=10)
-        card.pack(fill=self.tk.X, pady=(0, 10))
-
-        lbl_title = self.tk.Label(card, text="COMPONENTS & INTEGRATIONS", font=("Segoe UI", 9, "bold"), fg=COLOR_ADOBE_CYAN, bg=COLOR_ADOBE_CARD)
-        lbl_title.pack(anchor="w", pady=(0, 6))
-
-        # Checkbox 1: CEP Panel
-        cb1 = self.tk.Checkbutton(
-            card,
-            text=" Native Docked CEP Extension Panel (com.xdrop.panel with ExtendScript hostscripts)",
-            variable=self.install_cep_var,
-            font=("Segoe UI", 9),
-            fg=COLOR_ADOBE_TEXT,
-            bg=COLOR_ADOBE_CARD,
-            activebackground=COLOR_ADOBE_CARD,
-            activeforeground=COLOR_ADOBE_CYAN,
-            selectcolor=COLOR_ADOBE_BG,
-            relief=self.tk.FLAT
-        )
-        cb1.pack(anchor="w")
-
-        # Checkbox 2: PlayerDebugMode
-        cb2 = self.tk.Checkbutton(
-            card,
-            text=" Configure CSXS PlayerDebugMode across versions 6..18 in Registry (No Admin Required)",
-            variable=self.enable_playerdebug_var,
-            font=("Segoe UI", 9),
-            fg=COLOR_ADOBE_TEXT,
-            bg=COLOR_ADOBE_CARD,
-            activebackground=COLOR_ADOBE_CARD,
-            activeforeground=COLOR_ADOBE_CYAN,
-            selectcolor=COLOR_ADOBE_BG,
-            relief=self.tk.FLAT
-        )
-        cb2.pack(anchor="w")
-
-        # Checkbox 3: UXP Packages
-        cb3 = self.tk.Checkbutton(
-            card,
-            text=" Package Modern UXP Extension Bundles (.ccx for Premiere Pro & After Effects)",
-            variable=self.install_uxp_var,
-            font=("Segoe UI", 9),
-            fg=COLOR_ADOBE_TEXT,
-            bg=COLOR_ADOBE_CARD,
-            activebackground=COLOR_ADOBE_CARD,
-            activeforeground=COLOR_ADOBE_CYAN,
-            selectcolor=COLOR_ADOBE_BG,
-            relief=self.tk.FLAT
-        )
-        cb3.pack(anchor="w")
-
-        # Checkbox 4: Background Engine
-        cb4 = self.tk.Checkbutton(
-            card,
-            text=" Zero-Trace Headless Background Engine (Auto-starts on demand, 0 CMD windows)",
-            variable=self.install_engine_var,
-            font=("Segoe UI", 9),
-            fg=COLOR_ADOBE_TEXT,
-            bg=COLOR_ADOBE_CARD,
-            activebackground=COLOR_ADOBE_CARD,
-            activeforeground=COLOR_ADOBE_CYAN,
-            selectcolor=COLOR_ADOBE_BG,
-            relief=self.tk.FLAT
-        )
-        cb4.pack(anchor="w")
-
-    def _build_progress_card(self):
-        self.progress_frame = self.tk.Frame(self.main_content, bg=COLOR_ADOBE_BG)
-        self.progress_frame.pack(fill=self.tk.X, pady=(2, 0))
+        # 4. Progress Section
+        self.progress_frame = self.tk.Frame(self.container, bg=COLOR_BG)
+        self.progress_frame.pack(fill=self.tk.X, pady=(0, 16))
 
         self.lbl_status = self.tk.Label(
             self.progress_frame,
-            text="Ready to install Xdrop for Adobe Premiere Pro.",
-            font=("Segoe UI", 9),
-            fg=COLOR_ADOBE_TEXT_MUTED,
-            bg=COLOR_ADOBE_BG
+            text="Ready to install",
+            font=("Segoe UI", 8),
+            fg=COLOR_TEXT_DIM,
+            bg=COLOR_BG
         )
         self.lbl_status.pack(anchor="w", pady=(0, 4))
 
@@ -561,10 +493,10 @@ class PremiereGuiInstaller:
         style.theme_use("default")
         style.configure(
             "Adobe.Horizontal.TProgressbar",
-            background=COLOR_ADOBE_ACCENT,
-            troughcolor=COLOR_ADOBE_CARD,
+            background=COLOR_ACCENT,
+            troughcolor=COLOR_CARD,
             borderwidth=0,
-            thickness=6
+            thickness=4
         )
         self.progress_bar = self.ttk.Progressbar(
             self.progress_frame,
@@ -574,24 +506,18 @@ class PremiereGuiInstaller:
         self.progress_bar.pack(fill=self.tk.X)
         self.progress_bar["value"] = 0
 
-    def _build_action_bar(self):
-        action_frame = self.tk.Frame(self.root, bg=COLOR_ADOBE_BG, padx=24, pady=16)
-        action_frame.pack(fill=self.tk.X, side=self.tk.BOTTOM)
-
-        div = self.tk.Frame(action_frame, bg=COLOR_ADOBE_CARD_BORDER, height=1)
-        div.pack(fill=self.tk.X, pady=(0, 14))
-
-        row = self.tk.Frame(action_frame, bg=COLOR_ADOBE_BG)
-        row.pack(fill=self.tk.X)
+        # 5. Bottom Action Bar
+        self.action_bar = self.tk.Frame(self.container, bg=COLOR_BG)
+        self.action_bar.pack(fill=self.tk.X, side=self.tk.BOTTOM)
 
         self.btn_cancel = self.tk.Button(
-            row,
+            self.action_bar,
             text="Cancel",
             font=("Segoe UI", 9),
-            fg=COLOR_ADOBE_TEXT_MUTED,
-            bg=COLOR_ADOBE_CARD,
-            activeforeground=COLOR_ADOBE_TEXT,
-            activebackground=COLOR_ADOBE_CARD_BORDER,
+            fg=COLOR_TEXT_MUTED,
+            bg=COLOR_CARD,
+            activeforeground=COLOR_TEXT,
+            activebackground=COLOR_CARD_BORDER,
             relief=self.tk.FLAT,
             padx=16,
             pady=6,
@@ -601,13 +527,13 @@ class PremiereGuiInstaller:
         self.btn_cancel.pack(side=self.tk.LEFT)
 
         self.btn_install = self.tk.Button(
-            row,
-            text="  Install for Adobe Premiere Pro  ",
-            font=("Segoe UI", 10, "bold"),
+            self.action_bar,
+            text="  Install for Premiere Pro  ",
+            font=("Segoe UI", 9, "bold"),
             fg="#000000",
-            bg=COLOR_ADOBE_ACCENT,
+            bg=COLOR_ACCENT,
             activeforeground="#000000",
-            activebackground=COLOR_ADOBE_HOVER,
+            activebackground=COLOR_ACCENT_HOVER,
             relief=self.tk.FLAT,
             padx=20,
             pady=7,
@@ -616,16 +542,20 @@ class PremiereGuiInstaller:
         )
         self.btn_install.pack(side=self.tk.RIGHT)
 
-    def _on_location_mode_change(self):
-        is_custom = self.location_mode_var.get() == "custom"
-        self.txt_custom_path.config(state=self.tk.NORMAL if is_custom else self.tk.DISABLED)
+    def _format_path_short(self, path: Optional[Path]) -> str:
+        if not path:
+            return "Standard User Directory"
+        p_str = str(path)
+        if len(p_str) > 48:
+            return p_str[:22] + "..." + p_str[-22:]
+        return p_str
 
-    def _browse_custom_directory(self):
-        self.location_mode_var.set("custom")
-        self._on_location_mode_change()
+    def _choose_custom_folder(self):
         folder = self.filedialog.askdirectory(title="Select Adobe CEP Extensions Directory")
         if folder:
-            self.custom_path_var.set(folder)
+            self.target_dir = Path(folder)
+            self.is_custom_location = True
+            self.lbl_dest_path.config(text=self._format_path_short(self.target_dir))
 
     def _run_async_scan(self):
         try:
@@ -641,23 +571,20 @@ class PremiereGuiInstaller:
                 if self.discovered_adobe_apps:
                     names = [a.name for a in self.discovered_adobe_apps]
                     running = any(a.is_running for a in self.discovered_adobe_apps)
-                    status_str = " (Running)" if running else ""
-                    self.detect_badge.config(text=f"✓ Detected: {len(names)} Adobe App(s){status_str}", fg=COLOR_ADOBE_SUCCESS)
-                    details = "Detected: " + ", ".join(names)
+                    self.lbl_detect_dot.config(fg=COLOR_SUCCESS)
+                    self.lbl_detect_text.config(text=f"{len(names)} Adobe app(s) detected")
+                    self.lbl_detect_ver.config(text="Ready to install")
                     if running:
-                        details += "\n⚠️ One or more Adobe applications are running. Please restart them after installation to load the extension."
-                    self.detect_details.config(text=details)
+                        self.lbl_detect_warn.config(text="⚠️ Adobe apps are running. Please restart them after setup to load the extension.")
+                        self.lbl_detect_warn.pack(anchor="w", pady=(4, 0))
                 else:
-                    self.detect_badge.config(text="● Ready to Deploy", fg=COLOR_ADOBE_CYAN)
-                    self.detect_details.config(text="Adobe applications not detected in standard system locations. You can deploy to the standard user CEP folder or choose a custom folder.")
+                    self.lbl_detect_dot.config(fg=COLOR_CYAN)
+                    self.lbl_detect_text.config(text="Adobe apps not running")
+                    self.lbl_detect_ver.config(text="Standard paths ready")
 
             self.root.after(0, update_ui)
-        except Exception as e:
-            def err_ui():
-                if self.root.winfo_exists():
-                    self.detect_badge.config(text="Scan Notice", fg=COLOR_ADOBE_ACCENT)
-                    self.detect_details.config(text=str(e))
-            self.root.after(0, err_ui)
+        except Exception:
+            pass
 
     def _start_installation(self):
         if self.is_completed:
@@ -666,19 +593,11 @@ class PremiereGuiInstaller:
         if self.is_installing:
             return
 
-        custom_dir = None
-        if self.location_mode_var.get() == "custom":
-            c_str = self.custom_path_var.get().strip()
-            if not c_str:
-                self.messagebox.showwarning("Custom Path Missing", "Please select or enter a valid directory path.")
-                return
-            custom_dir = Path(c_str)
-
         self.is_installing = True
         self.btn_install.config(state=self.tk.DISABLED, text="Installing...")
         self.btn_cancel.config(state=self.tk.DISABLED)
 
-        threading.Thread(target=self._installation_thread, args=(custom_dir,), daemon=True).start()
+        threading.Thread(target=self._installation_thread, daemon=True).start()
 
     def _update_progress(self, percent: int, msg: str):
         def _apply():
@@ -687,39 +606,33 @@ class PremiereGuiInstaller:
                 self.lbl_status.config(text=msg)
         self.root.after(0, _apply)
 
-    def _installation_thread(self, custom_dir: Optional[Path]):
+    def _installation_thread(self):
         try:
-            self._update_progress(10, "Initializing Adobe Creative Cloud installer...")
+            custom_dir = self.target_dir if self.is_custom_location else None
+            self._update_progress(15, "Setting up background engine...")
+
             installer = PremiereExtensionInstaller(
                 discovered=self.discovered_adobe_apps,
                 custom_cep_dir=custom_dir,
-                log_callback=lambda m, lvl: self._update_progress(min(90, self.progress_bar["value"] + 5), m)
             )
 
-            # Step 1: Headless Engine
-            if self.install_engine_var.get():
-                self._update_progress(25, "Installing zero-trace background engine service...")
-                installer.install_desktop_service()
-                time.sleep(0.3)
+            # 1. Background Engine
+            installer.install_desktop_service()
+            self._update_progress(45, "Deploying CEP panel & configuring CSXS debug mode...")
 
-            # Step 2: CEP Panel & CSXS Registry
-            if self.install_cep_var.get():
-                self._update_progress(50, "Deploying CEP panel and configuring PlayerDebugMode...")
-                installer.install_adobe_creative_cloud()
-                time.sleep(0.3)
+            # 2. Deploy CEP Panel & CSXS Registry
+            installer.install_adobe_creative_cloud()
 
-            # Step 3: Custom Directory Deployment
+            # 3. Custom directory deployment if requested
             if custom_dir:
-                self._update_progress(75, f"Deploying to custom CEP directory: {custom_dir.name}...")
+                self._update_progress(80, "Configuring custom CEP directory...")
                 installer.deploy_to_custom_cep_dir(custom_dir)
-                time.sleep(0.3)
 
-            # Step 4: Universal sidecars
-            self._update_progress(95, "Configuring universal FCPXML timeline generation...")
+            # 4. Universal Timeline Sidecars
             installer.configure_fcpxml_drag_and_drop()
-            time.sleep(0.2)
+            self._update_progress(100, "✓ Installed successfully!")
 
-            self._update_progress(100, "✓ Adobe extensions successfully configured!")
+            time.sleep(0.3)
             self.root.after(0, self._render_completion_screen)
         except Exception as e:
             self._update_progress(100, f"Error: {e}")
@@ -731,60 +644,51 @@ class PremiereGuiInstaller:
 
     def _render_completion_screen(self):
         self.is_completed = True
-        self.btn_install.config(state=self.tk.NORMAL, text="  Finish & Close  ", bg=COLOR_ADOBE_SUCCESS)
+        self.btn_install.config(state=self.tk.NORMAL, text="Done", bg=COLOR_SUCCESS, fg="#ffffff")
         self.btn_cancel.pack_forget()
 
-        # Success Banner
-        box = self.tk.Frame(self.main_content, bg=COLOR_ADOBE_SUCCESS_BG, highlightbackground=COLOR_ADOBE_SUCCESS, highlightthickness=1, padx=14, pady=12)
-        box.pack(fill=self.tk.X, pady=(12, 0))
+        # Replace features card with success instructions
+        for child in self.container.winfo_children():
+            if child not in (self.progress_frame, self.action_bar):
+                child.destroy()
 
-        title = self.tk.Label(box, text="HOW TO LAUNCH XDROP IN ADOBE PREMIERE PRO:", font=("Segoe UI", 10, "bold"), fg=COLOR_ADOBE_SUCCESS, bg=COLOR_ADOBE_SUCCESS_BG)
-        title.pack(anchor="w")
-
-        info_text = (
-            "1. Open Premiere Pro / After Effects / Audition:\n"
-            "   Top Menu -> Window -> Extensions -> Xdrop\n"
-            "   (Dock the panel anywhere next to Project or Effect Controls)\n\n"
-            "2. Automatic Bin & Timeline Insertion:\n"
-            "   Organizes downloads into the canonical 000_Xdrop Assets bin.\n"
-            "   Auto-import places media directly on your timeline at the playhead.\n\n"
-            "3. Background Service: Online at http://127.0.0.1:8484 (0 CMD flashes)"
+        success_box = self.tk.Frame(
+            self.container,
+            bg=COLOR_SUCCESS_BG,
+            highlightbackground=COLOR_SUCCESS_BORDER,
+            highlightthickness=1,
+            padx=16,
+            pady=16
         )
-        lbl_info = self.tk.Label(box, text=info_text, font=("Segoe UI", 9), fg=COLOR_ADOBE_TEXT, bg=COLOR_ADOBE_SUCCESS_BG, justify=self.tk.LEFT)
-        lbl_info.pack(anchor="w", pady=(4, 0))
+        success_box.pack(fill=self.tk.BOTH, expand=True, pady=(8, 16))
 
-        # Launch buttons row
-        btn_row = self.tk.Frame(box, bg=COLOR_ADOBE_SUCCESS_BG)
-        btn_row.pack(fill=self.tk.X, pady=(8, 0))
+        lbl_check = self.tk.Label(success_box, text="✓  Adobe Extension Setup Complete", font=("Segoe UI", 12, "bold"), fg=COLOR_SUCCESS, bg=COLOR_SUCCESS_BG)
+        lbl_check.pack(anchor="w", pady=(0, 10))
+
+        guide = (
+            "How to launch Xdrop inside Premiere Pro, AE & Audition:\n\n"
+            "• Top Menu:\n"
+            "  Window → Extensions → Xdrop\n\n"
+            "• Dock the panel anywhere next to Project Bins or Timeline.\n\n"
+            "Background service is active on http://127.0.0.1:8484"
+        )
+        lbl_guide = self.tk.Label(success_box, text=guide, font=("Segoe UI", 9), fg=COLOR_TEXT, bg=COLOR_SUCCESS_BG, justify=self.tk.LEFT)
+        lbl_guide.pack(anchor="w", pady=(0, 14))
 
         premiere_app = next((a for a in self.discovered_adobe_apps if a.app_id == "premiere" and a.executable), None)
         if premiere_app and premiere_app.executable and premiere_app.executable.is_file():
             btn_launch = self.tk.Button(
-                btn_row,
+                success_box,
                 text="  Launch Premiere Pro  ",
                 font=("Segoe UI", 9, "bold"),
-                bg=COLOR_ADOBE_ACCENT,
+                bg=COLOR_ACCENT,
                 fg="#000000",
+                activebackground=COLOR_ACCENT_HOVER,
                 relief=self.tk.FLAT,
                 cursor="hand2",
                 command=lambda: subprocess.Popen([str(premiere_app.executable)], start_new_session=True)
             )
-            btn_launch.pack(side=self.tk.LEFT, padx=(0, 8))
-
-        # Button to open CEP extensions folder in File Explorer
-        cep_dir = self.default_paths.get("user_cep")
-        if cep_dir and cep_dir.is_dir():
-            btn_explore = self.tk.Button(
-                btn_row,
-                text=" Open Extensions Folder ",
-                font=("Segoe UI", 9),
-                bg=COLOR_ADOBE_CARD,
-                fg=COLOR_ADOBE_TEXT,
-                relief=self.tk.FLAT,
-                cursor="hand2",
-                command=lambda: os.startfile(str(cep_dir)) if sys.platform == "win32" else subprocess.Popen(["open", str(cep_dir)])
-            )
-            btn_explore.pack(side=self.tk.LEFT)
+            btn_launch.pack(side=self.tk.LEFT)
 
     def run(self):
         self.root.mainloop()
@@ -816,30 +720,15 @@ def print_premiere_guide(discovered: List[DiscoveredApp]):
     print(f"\n{BOLD}{GREEN}========================================================================{RESET}")
     print(f"{BOLD}{GREEN}          ADOBE EXTENSIONS SUCCESSFULLY CONFIGURED                      {RESET}")
     print(f"{BOLD}{GREEN}========================================================================{RESET}")
-
     print(f"\n{BOLD}How to Launch Xdrop inside Adobe Premiere Pro:{RESET}\n")
-
-    print(f"1. {BOLD}Open Extension Panel in Premiere Pro:{RESET}")
-    print(f"   {CYAN}Top Menu -> Window -> Extensions -> Xdrop{RESET}")
-    print(f"   * Dock the panel anywhere in your editing workspace.")
-    print(f"   * Automatically detects your active project and sequence.")
-
-    print(f"\n2. {BOLD}Automatic Bin & Timeline Insertion:{RESET}")
-    print(f"   * Downloads are organized into the canonical {CYAN}000_Xdrop Assets{RESET} bin.")
-    print(f"   * Auto-import drops the media directly at your playhead.")
-
-    print(f"\n3. {BOLD}Also Available in After Effects & Audition:{RESET}")
-    print(f"   * After Effects: {CYAN}Window -> Extensions -> Xdrop{RESET}")
-    print(f"   * Audition:      {CYAN}Window -> Extensions -> Xdrop{RESET}")
-
-    print(f"\n4. {BOLD}Background Service Status:{RESET}")
-    print(f"   Listening on {CYAN}http://127.0.0.1:8484{RESET} (auto-starts silently with Windows startup).\n")
+    print(f"1. {BOLD}Open Panel:{RESET} Top Menu -> Window -> Extensions -> Xdrop")
+    print(f"2. {BOLD}Automatic Bin & Timeline Insertion:{RESET} Downloads drop into 000_Xdrop Assets bin.")
+    print(f"3. {BOLD}Background Service:{RESET} Listening on {CYAN}http://127.0.0.1:8484{RESET}\n")
 
 
 def run_cli_installer(custom_dir: Optional[Path] = None):
     print_premiere_banner()
     print(f"System: {platform.system()} {platform.release()} ({platform.architecture()[0]})")
-    print(f"Python: {sys.version.split()[0]}")
     print(f"Location: {BASE_DIR}")
 
     log_header("Phase 1: Scanning for Adobe Creative Cloud Applications Across All Drives")
@@ -851,8 +740,6 @@ def run_cli_installer(custom_dir: Optional[Path] = None):
         for app in adobe_apps:
             running_tag = f" {GREEN}(Currently Running){RESET}" if app.is_running else ""
             log_success(f"Found: {BOLD}{app.name}{RESET} - v{app.version}{running_tag}")
-            if app.executable:
-                log_info(f"Executable: {DIM}{app.executable}{RESET}")
     else:
         log_info("Adobe applications not detected in standard locations (installing CEP extension anyway).")
 
@@ -878,7 +765,6 @@ def main():
 
     custom_path = Path(args.custom_dir).resolve() if args.custom_dir else None
 
-    # Determine whether to use GUI
     force_cli = args.cli or args.silent
     if not force_cli:
         try:
@@ -886,7 +772,6 @@ def main():
             app.run()
             return
         except Exception as gui_err:
-            # Fall back to CLI if Tkinter/Display fails
             print(f"[Notice] GUI could not be initialized ({gui_err}). Switching to CLI mode...")
 
     run_cli_installer(custom_dir=custom_path)
