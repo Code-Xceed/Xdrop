@@ -6,8 +6,8 @@
 > *Paste URL → Detect Platform → Inspect Quality → Download & Transcode → Instantly Drop into Timelines & Bins.*
 
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue.svg)]()
-[![Editors](https://img.shields.io/badge/editors-DaVinci%20Resolve%20%7C%20Premiere%20Pro%20%7C%20After%20Effects%20%7C%20Blender-purple.svg)]()
-[![Tests](https://img.shields.io/badge/tests-104%20passed-brightgreen.svg)]()
+[![Editors](https://img.shields.io/badge/editors-DaVinci%20Resolve%20%7C%20Premiere%20Pro%20%7C%20After%20Effects%20%7C%20Audition%20%7C%20Blender-purple.svg)]()
+[![Tests](https://img.shields.io/badge/tests-108%20passed-brightgreen.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-purple.svg)](LICENSE)
 
 ---
@@ -87,22 +87,27 @@ Xdrop/
 ├── XdropSetup.exe                  # Unified Multi-Host Windows Installer (GUI + Auto-Detection)
 ├── XdropInstaller-Resolve.exe      # Dedicated DaVinci Resolve Windows Installer
 ├── XdropInstaller-Premiere.exe     # Dedicated Adobe Creative Cloud Windows Installer
+├── setup.bat                       # Automated 1-Click Windows Setup (Python + Deps + Extensions)
+├── run.bat                         # 1-Click Windows Launcher
 ├── XdropSetup.command              # Unified Multi-Host macOS Double-Click Launcher
 ├── XdropSetup-Resolve.command      # Dedicated DaVinci Resolve macOS Launcher
 ├── XdropSetup-Adobe.command        # Dedicated Adobe Creative Cloud macOS Launcher
 ├── setup_mac.sh                    # macOS Terminal Setup Script
 ├── setup_linux.sh                  # Linux Terminal Setup Script
+├── run.sh                          # macOS / Linux Launcher Script
+├── version.json                    # Release version & update definition
+├── requirements.txt                # Python dependencies
 ├── LICENSE                         # MIT License
 ├── README.md                       # Project overview & guide
 └── src/                            # Clean open-source implementation
     ├── desktop-service/            # Headless Python backend engine & queue
-    ├── resolve-plugin/             # DaVinci Resolve Native Lua Script & Starter Bins
+    ├── resolve-plugin/             # Studio UI frontend (React/Vite) & Resolve scripts
     ├── premiere-plugin/            # Adobe CEP Panel & UXP Packages
     ├── resolve-workflow-integration# DaVinci Studio Workflow Integration
     ├── blender-addon/              # Blender Sequencer Add-on
     ├── browser-extension/          # Browser Companion Extension
     ├── tools/                      # Build & packaging scripts
-    ├── tests/                      # Automated test suite (88 passing tests)
+    ├── tests/                      # Automated test suite (108 passing tests)
     └── docs/                       # Technical documentation
 ```
 

@@ -1,0 +1,94 @@
+@echo off
+setlocal enabledelayedexpansion
+title Xdrop Setup & Installation
+cd /d "%~dp0"
+
+echo ========================================================================
+echo    Xdrop — Universal One-Click Automated Setup
+echo ========================================================================
+echo.
+
+set "PYTHON_BIN="
+
+if exist "%~dp0.venv\Scripts\python.exe" (
+    set "PYTHON_BIN=%~dp0.venv\Scripts\python.exe"
+    goto :FoundPython
+)
+
+if exist "C:\Program Files\Python314\python.exe" (
+    set "PYTHON_BIN=C:\Program Files\Python314\python.exe"
+    goto :FoundPython
+)
+
+for %%P in (
+    "%LOCALAPPDATA%\Programs\Python\Python314\python.exe"
+    "%LOCALAPPDATA%\Programs\Python\Python313\python.exe"
+    "%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
+    "%LOCALAPPDATA%\Programs\Python\Python311\python.exe"
+    "%LOCALAPPDATA%\Programs\Python\Python310\python.exe"
+    "%LOCALAPPDATA%\Programs\Python\Python39\python.exe"
+    "C:\Program Files\Python314\python.exe"
+    "C:\Program Files\Python313\python.exe"
+    "C:\Program Files\Python312\python.exe"
+    "C:\Program Files\Python311\python.exe"
+    "C:\Program Files\Python310\python.exe"
+    "C:\Program Files\Python39\python.exe"
+) do (
+    if exist %%P (
+        set "PYTHON_BIN=%%~P"
+        goto :FoundPython
+    )
+)
+
+python -c "import sys" >nul 2>nul
+if %ERRORLEVEL% EQU 0 (
+    set "PYTHON_BIN=python"
+    goto :FoundPython
+)
+
+py -c "import sys" >nul 2>nul
+if %ERRORLEVEL% EQU 0 (
+    set "PYTHON_BIN=py"
+    goto :FoundPython
+)
+
+echo [!] Python 3 was not detected on this system.
+echo [*] Attempting to install Python via Windows Package Manager (winget)...
+winget install Python.Python.3.11 --accept-source-agreements --accept-package-agreements
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo [X] Could not install Python automatically.
+    echo [*] Please install Python 3.9+ from https://www.python.org/downloads/
+    echo [*] Make sure to check "Add Python to PATH" during installation.
+    pause
+    exit /b 1
+)
+set "PYTHON_BIN=python"
+
+:FoundPython
+echo [+] Using Python: %PYTHON_BIN%
+echo.
+
+echo [*] Installing / validating required dependencies...
+"%PYTHON_BIN%" -m pip install --quiet --upgrade pip >nul 2>nul
+"%PYTHON_BIN%" -m pip install -r requirements.txt
+if %ERRORLEVEL% NEQ 0 (
+    echo [!] Warning during pip install. Proceeding with setup...
+)
+
+echo.
+echo [*] Running Xdrop Universal Setup...
+set "PYTHONPATH=%~dp0src\desktop-service;%PYTHONPATH%"
+"%PYTHON_BIN%" src\desktop-service\xdrop\setup.py
+
+if %ERRORLEVEL% EQU 0 (
+    echo.
+    echo ========================================================================
+    echo   [+] Setup completed successfully! You can now run 'run.bat'
+    echo ========================================================================
+) else (
+    echo.
+    echo [!] Setup exited with a warning or error code.
+)
+
+pause
