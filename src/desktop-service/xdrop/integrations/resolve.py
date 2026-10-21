@@ -339,7 +339,7 @@ def install_resolve_script(
         ok=True,
         message=(
             f"Installed {scope_note} at {target_file}. "
-            "Restart DaVinci Resolve, then use Workspace → Scripts → Utility → Xdrop."
+            "Restart DaVinci Resolve, then use Workspace -> Scripts -> Utility -> Xdrop."
         ),
         path=str(target_file),
         scope=scope,
