@@ -107,9 +107,10 @@ COLOR_SUCCESS_BORDER = "#1b4d32" # Green boundary
 COLOR_WARN = "#f59e0b"
 
 
-def load_app_icon_image(target_size: int = 34) -> Optional[object]:
+def load_app_icon_image(size: int = 32, target_size: Optional[int] = None) -> Optional[object]:
     """Safely loads a crisp, compact app icon for the header without heavy dependencies."""
     import tkinter as tk
+    effective_size = target_size or size
     candidates = [
         SCRIPT_DIR / "assets" / "logo-40.png",
         REPO_ROOT / "src" / "tools" / "assets" / "logo-40.png",
@@ -128,8 +129,8 @@ def load_app_icon_image(target_size: int = 34) -> Optional[object]:
             try:
                 photo = tk.PhotoImage(file=str(c))
                 w = photo.width()
-                if w > target_size * 1.4:
-                    factor = max(1, round(w / target_size))
+                if w > effective_size * 1.4:
+                    factor = max(1, round(w / effective_size))
                     return photo.subsample(factor, factor)
                 return photo
             except Exception:
@@ -772,6 +773,14 @@ def main():
             app.run()
             return
         except Exception as gui_err:
+            import traceback
+            traceback.print_exc()
+            if getattr(sys, "frozen", False):
+                try:
+                    import tkinter.messagebox as mb
+                    mb.showerror("Xdrop Installer Error", f"Could not launch installer GUI:\n{gui_err}")
+                except Exception:
+                    pass
             print(f"[Notice] GUI could not be initialized ({gui_err}). Switching to CLI mode...")
 
     run_cli_installer(custom_dir=custom_path)
