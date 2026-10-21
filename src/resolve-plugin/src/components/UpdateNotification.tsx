@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, ChevronDown, ChevronUp, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import { UpdateInfo, UpdateProgress } from '@xdrop/shared-types';
 
@@ -19,24 +19,43 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
 }) => {
   const [showNotes, setShowNotes] = useState(false);
 
-  if (!updateInfo || !updateInfo.updateAvailable || updateInfo.isDismissed) {
+  const isWorking =
+    isInstalling ||
+    (updateProgress !== null &&
+      ['downloading', 'extracting', 'installing'].includes(updateProgress.stage));
+
+  const isDone = updateProgress !== null && updateProgress.stage === 'completed';
+
+  // Auto-dismiss 3.5 seconds after update finishes
+  useEffect(() => {
+    if (isDone) {
+      const timer = setTimeout(() => {
+        onDismiss();
+      }, 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [isDone, onDismiss]);
+
+  // STRICT VISIBILITY RULES:
+  // 1. Never show if user dismissed it, unless actively working
+  if (updateInfo?.isDismissed && !isWorking) {
     return null;
   }
 
-  const isWorking =
-    isInstalling ||
-    (updateProgress &&
-      ['downloading', 'extracting', 'installing'].includes(updateProgress.stage));
+  // 2. Only show if an update is genuinely available, actively installing, or just completed
+  const hasUpdate = Boolean(updateInfo?.updateAvailable);
+  if (!hasUpdate && !isWorking && !isDone) {
+    return null;
+  }
 
-  const isDone = updateProgress && updateProgress.stage === 'completed';
   const percent = updateProgress?.percent ?? (isWorking ? 35 : 0);
   const statusMsg = updateProgress?.message || 'Installing update...';
 
   return (
     <div
       style={{
-        margin: '0 10px 6px 10px',
-        padding: '8px 10px',
+        margin: '0 12px 6px 12px',
+        padding: '6px 10px',
         borderRadius: 'var(--radius-sm)',
         backgroundColor: 'var(--bg-secondary)',
         border: '1px solid var(--border-strong)',
@@ -44,8 +63,9 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
         userSelect: 'none',
         display: 'flex',
         flexDirection: 'column',
-        gap: '6px',
+        gap: '4px',
         flexShrink: 0,
+        transition: 'all 150ms ease',
       }}
     >
       <div
@@ -56,14 +76,14 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
           gap: '8px',
         }}
       >
-        {/* Left: Indicator & Version */}
+        {/* Left: Status icon & version text */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
           {isDone ? (
-            <CheckCircle2 size={14} color="var(--success)" style={{ flexShrink: 0 }} />
+            <CheckCircle2 size={13} color="var(--success)" strokeWidth={2.2} style={{ flexShrink: 0 }} />
           ) : isWorking ? (
-            <Loader2 size={14} color="var(--text-primary)" className="spin" style={{ flexShrink: 0 }} />
+            <Loader2 size={13} color="var(--text-primary)" className="spin" style={{ flexShrink: 0 }} />
           ) : (
-            <Sparkles size={14} color="var(--success)" style={{ flexShrink: 0 }} />
+            <Sparkles size={13} color="var(--success)" strokeWidth={2} style={{ flexShrink: 0 }} />
           )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flexWrap: 'wrap' }}>
@@ -72,13 +92,14 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
                 fontSize: '11px',
                 fontWeight: 600,
                 color: 'var(--text-primary)',
+                letterSpacing: '-0.01em',
               }}
             >
               {isDone
                 ? 'Update Complete'
                 : isWorking
                 ? 'Updating Xdrop...'
-                : `Update Available (v${updateInfo.latestVersion})`}
+                : `Update Available (v${updateInfo?.latestVersion})`}
             </span>
 
             {!isWorking && !isDone && (
@@ -97,44 +118,49 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
         </div>
 
         {/* Right Actions */}
-        {!isWorking && !isDone && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
-            {updateInfo.changelog && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
+          {!isWorking && !isDone && (
+            <>
+              {updateInfo?.changelog && (
+                <button
+                  type="button"
+                  onClick={() => setShowNotes(!showNotes)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    fontSize: '10px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '2px',
+                    padding: '2px 4px',
+                  }}
+                  title="View what's new"
+                >
+                  {showNotes ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                  <span>Notes</span>
+                </button>
+              )}
+
               <button
                 type="button"
-                onClick={() => setShowNotes(!showNotes)}
+                className="btn btn-sm btn-primary"
+                onClick={onInstall}
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text-muted)',
-                  fontSize: '10.5px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '2px',
-                  padding: '2px 4px',
+                  padding: '2px 8px',
+                  height: '21px',
+                  fontSize: '10px',
+                  fontWeight: 600,
                 }}
-                title="View what's new"
               >
-                {showNotes ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-                <span>Notes</span>
+                Update Now
               </button>
-            )}
+            </>
+          )}
 
-            <button
-              type="button"
-              className="btn btn-sm btn-primary"
-              onClick={onInstall}
-              style={{
-                padding: '2px 8px',
-                height: '22px',
-                fontSize: '10.5px',
-                fontWeight: 600,
-              }}
-            >
-              Update Now
-            </button>
-
+          {/* Dismiss button is ALWAYS accessible when not actively downloading */}
+          {!isWorking && (
             <button
               type="button"
               onClick={onDismiss}
@@ -147,18 +173,19 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                borderRadius: 'var(--radius-xs)',
               }}
-              title="Dismiss notification"
+              title="Close update notification"
             >
-              <X size={12} />
+              <X size={12} strokeWidth={2} />
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Progress Bar when installing */}
       {isWorking && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '2px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '2px' }}>
           <div
             style={{
               height: '3px',
@@ -196,15 +223,15 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
       )}
 
       {/* Expandable Release Notes */}
-      {showNotes && updateInfo.changelog && !isWorking && (
+      {showNotes && updateInfo?.changelog && !isWorking && (
         <div
           style={{
-            marginTop: '4px',
+            marginTop: '3px',
             padding: '6px 8px',
             borderRadius: 'var(--radius-xs)',
             backgroundColor: 'var(--bg-primary)',
             border: '1px solid var(--border-subtle)',
-            fontSize: '10.5px',
+            fontSize: '10px',
             color: 'var(--text-secondary)',
             lineHeight: 1.4,
             maxHeight: '90px',

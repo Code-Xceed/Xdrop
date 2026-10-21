@@ -68,15 +68,22 @@ export const App: React.FC = () => {
       try {
         await dismissUpdate(updateInfo.latestVersion);
       } catch (_) {}
-      setUpdateInfo((prev) => (prev ? { ...prev, isDismissed: true } : null));
     }
+    setUpdateProgress(null);
+    setUpdateInfo((prev) => (prev ? { ...prev, isDismissed: true, updateAvailable: false } : null));
   };
 
   useEffect(() => {
     // Initial fetch
     refreshDownloads();
     checkForUpdates(false)
-      .then((info) => setUpdateInfo(info))
+      .then((info) => {
+        if (info && info.updateAvailable && !info.isDismissed) {
+          setUpdateInfo(info);
+        } else {
+          setUpdateInfo(null);
+        }
+      })
       .catch(() => {});
 
     // Connect WebSocket
@@ -88,10 +95,24 @@ export const App: React.FC = () => {
 
       if (type === 'INITIAL_STATE') {
         if (payload?.downloads) setDownloads(payload.downloads);
-        if (payload?.updateInfo) setUpdateInfo(payload.updateInfo);
-        if (payload?.updateStatus) setUpdateProgress(payload.updateStatus);
+        if (payload?.updateInfo) {
+          if (payload.updateInfo.updateAvailable && !payload.updateInfo.isDismissed) {
+            setUpdateInfo(payload.updateInfo);
+          } else {
+            setUpdateInfo(null);
+          }
+        }
+        if (payload?.updateStatus && ['downloading', 'extracting', 'installing'].includes(payload.updateStatus.stage)) {
+          setUpdateProgress(payload.updateStatus);
+        } else {
+          setUpdateProgress(null);
+        }
       } else if (type === 'UPDATE_AVAILABLE' || type === 'UPDATE_CHECK_RESULT') {
-        if (payload) setUpdateInfo(payload);
+        if (payload && payload.updateAvailable && !payload.isDismissed) {
+          setUpdateInfo(payload);
+        } else {
+          setUpdateInfo(null);
+        }
       } else if (type === 'UPDATE_PROGRESS') {
         if (payload) {
           setUpdateProgress(payload);
@@ -99,11 +120,15 @@ export const App: React.FC = () => {
             setIsInstallingUpdate(false);
             showToast(payload.message || 'Updated successfully!', 'success');
             setTimeout(() => {
-              window.location.reload();
-            }, 1500);
+              setUpdateProgress(null);
+              setUpdateInfo((prev) => (prev ? { ...prev, isDismissed: true, updateAvailable: false } : null));
+            }, 3000);
           } else if (payload.stage === 'failed') {
             setIsInstallingUpdate(false);
             showToast(payload.error || payload.message || 'Update failed.', 'error');
+            setTimeout(() => {
+              setUpdateProgress(null);
+            }, 4000);
           }
         }
       } else if (type === 'JOB_CREATED') {
