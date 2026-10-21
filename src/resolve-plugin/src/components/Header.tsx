@@ -1,12 +1,11 @@
 import React from 'react';
-import { RefreshCw, Sparkles, Film, Layers, Radio } from 'lucide-react';
+import { RefreshCw, Film, Layers, Radio, Sparkles } from 'lucide-react';
 import { useEditorContext } from '../context/EditorContext';
 import logoImg from '../assets/logo.png';
 
 export const Header: React.FC = () => {
   const {
     activeEditor,
-    activeEditorName,
     activeProjectName,
     activeSequenceOrTimeline,
     isEditorConnected,
@@ -18,23 +17,27 @@ export const Header: React.FC = () => {
     if (activeEditor === 'aftereffects') {
       return {
         label: 'After Effects',
+        shortLabel: 'AE',
         icon: <Sparkles size={11} strokeWidth={2.2} />,
       };
     }
     if (activeEditor === 'premiere') {
       return {
         label: 'Premiere Pro',
+        shortLabel: 'Premiere',
         icon: <Layers size={11} strokeWidth={2.2} />,
       };
     }
     if (activeEditor === 'audition') {
       return {
         label: 'Audition',
+        shortLabel: 'Audition',
         icon: <Radio size={11} strokeWidth={2.2} />,
       };
     }
     return {
       label: 'DaVinci Resolve',
+      shortLabel: 'Resolve',
       icon: <Film size={11} strokeWidth={2.2} />,
     };
   };
@@ -49,22 +52,22 @@ export const Header: React.FC = () => {
         justifyContent: 'space-between',
         backgroundColor: 'var(--bg-primary)',
         borderBottom: '1px solid var(--border-default)',
-        padding: '0 12px',
-        height: '38px',
+        padding: '0 10px',
+        height: '34px',
         userSelect: 'none',
         flexShrink: 0,
-        gap: '8px',
+        gap: '6px',
       }}
     >
       {/* Brand & Connected Editor */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flexShrink: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
           <img
             src={logoImg}
             alt="Xdrop"
             style={{
-              width: '18px',
-              height: '18px',
+              width: '16px',
+              height: '16px',
               objectFit: 'contain',
               flexShrink: 0,
             }}
@@ -81,25 +84,28 @@ export const Header: React.FC = () => {
           </span>
         </div>
 
-        {/* Studio Status Pill with subtle breathing indicator */}
+        {/* Minimal Connected Status Pill */}
         <div
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '5px',
-            padding: '2px 8px',
-            borderRadius: '12px',
+            gap: '4px',
+            padding: '2px 7px',
+            borderRadius: '10px',
             border: '1px solid var(--border-default)',
             backgroundColor: 'var(--bg-secondary)',
-            fontSize: '10px',
+            fontSize: '9.5px',
             fontWeight: 500,
             color: isEditorConnected ? 'var(--text-primary)' : 'var(--text-muted)',
-            transition: 'all 0.15s ease',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            flexShrink: 1,
+            minWidth: 0,
           }}
-          title={isEditorConnected ? `${activeEditorName} connected and ready` : `Waiting for ${activeEditorName} connection`}
+          title={isEditorConnected ? `${meta.label} connected and ready` : `Connecting to ${meta.label}...`}
         >
           <span
-            className={isEditorConnected ? 'pulse-dot' : ''}
             style={{
               width: '5px',
               height: '5px',
@@ -108,29 +114,26 @@ export const Header: React.FC = () => {
               flexShrink: 0,
             }}
           />
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ color: isEditorConnected ? 'var(--text-secondary)' : 'var(--text-muted)' }}>
-              {meta.icon}
-            </span>
-            <span>{meta.label}</span>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {meta.shortLabel}
           </span>
         </div>
       </div>
 
-      {/* Right Project / Sequence Context & Sync */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flexShrink: 0 }}>
+      {/* Right Sequence / Project context & Refresh */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
         {(activeProjectName || activeSequenceOrTimeline) && (
           <span
             style={{
               display: 'inline-block',
-              maxWidth: '160px',
+              maxWidth: '120px',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
               fontFamily: 'var(--font-mono)',
-              fontSize: '9.5px',
+              fontSize: '9px',
               color: 'var(--text-muted)',
-              padding: '2px 6px',
+              padding: '1px 5px',
               borderRadius: 'var(--radius-xs)',
               backgroundColor: 'var(--bg-secondary)',
               border: '1px solid var(--border-subtle)',
@@ -143,26 +146,27 @@ export const Header: React.FC = () => {
 
         <button
           type="button"
-          onClick={() => refreshEditorsStatus()}
+          onClick={() => { refreshEditorsStatus(); }}
           disabled={isRefreshing}
-          className="btn btn-sm btn-ghost"
           style={{
-            padding: '3px 6px',
-            height: '24px',
-            borderRadius: 'var(--radius-xs)',
             display: 'flex',
             alignItems: 'center',
-            gap: '4px',
-            fontSize: '10px',
-            color: 'var(--text-muted)',
+            justifyContent: 'center',
+            width: '24px',
+            height: '24px',
+            padding: 0,
+            borderRadius: '4px',
+            border: '1px solid transparent',
+            backgroundColor: 'transparent',
+            color: isRefreshing ? 'var(--text-primary)' : 'var(--text-muted)',
+            cursor: isRefreshing ? 'default' : 'pointer',
+            transition: 'all 120ms ease',
           }}
-          title="Refresh editor connection and project status"
+          title="Refresh editor connection"
         >
-          <RefreshCw
-            size={11}
-            strokeWidth={2}
-            className={isRefreshing ? 'spin' : ''}
-          />
+          <span className={isRefreshing ? 'spin' : ''} style={{ display: 'flex' }}>
+            <RefreshCw size={12} strokeWidth={2} />
+          </span>
         </button>
       </div>
     </header>

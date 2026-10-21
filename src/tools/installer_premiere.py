@@ -370,7 +370,7 @@ class PremiereGuiInstaller:
         self.root.configure(bg=COLOR_BG)
 
         # Scale window geometry to match monitor DPI perfectly
-        base_w, base_h = 540, 475
+        base_w, base_h = 480, 360
         win_w = int(round(base_w * self.scale))
         win_h = int(round(base_h * self.scale))
         self.root.geometry(f"{win_w}x{win_h}")
@@ -432,14 +432,14 @@ class PremiereGuiInstaller:
         self.root.geometry(f"{w}x{h}+{x}+{y}")
 
     def _build_ui(self):
-        pad_x = int(round(26 * self.scale))
-        pad_y = int(round(22 * self.scale))
+        pad_x = int(round(24 * self.scale))
+        pad_y = int(round(20 * self.scale))
         self.container = self.tk.Frame(self.root, bg=COLOR_BG, padx=pad_x, pady=pad_y)
         self.container.pack(fill=self.tk.BOTH, expand=True)
 
         # 1. Header Row (Crisp icon, brand, studio pill, subtitle)
         header = self.tk.Frame(self.container, bg=COLOR_BG)
-        header.pack(fill=self.tk.X, pady=(0, int(round(16 * self.scale))))
+        header.pack(fill=self.tk.X, pady=(0, int(round(14 * self.scale))))
 
         if self._logo_photo:
             lbl_logo = self.tk.Label(header, image=self._logo_photo, bg=COLOR_BG)
@@ -590,38 +590,9 @@ class PremiereGuiInstaller:
         btn_change.bind("<Enter>", lambda e: btn_change.config(fg=COLOR_TEXT_PRIMARY))
         btn_change.bind("<Leave>", lambda e: btn_change.config(fg=COLOR_TEXT_SECONDARY))
 
-        # Divider 2
-        div_2 = self.tk.Frame(self.studio_card, bg=COLOR_BORDER_SUBTLE, height=1)
-        div_2.pack(fill=self.tk.X, pady=int(round(12 * self.scale)))
-
-        # Section C: Deployment Summary
-        sec_c_lbl = self.tk.Label(
-            self.studio_card,
-            text="DEPLOYMENT SUMMARY",
-            font=("Segoe UI", 8, "bold"),
-            fg=COLOR_TEXT_MUTED,
-            bg=COLOR_SURFACE,
-        )
-        sec_c_lbl.pack(anchor="w")
-
-        comps = [
-            "• Native CEP extension panel (Window → Extensions → Xdrop)",
-            "• Local engine service (Port 8484, zero-flicker background engine)",
-            "• Adobe Creative Cloud PlayerDebugMode & CSXS sidecars",
-        ]
-        for c_text in comps:
-            row_c = self.tk.Label(
-                self.studio_card,
-                text=c_text,
-                font=("Segoe UI", 8),
-                fg=COLOR_TEXT_SECONDARY,
-                bg=COLOR_SURFACE,
-            )
-            row_c.pack(anchor="w", pady=(int(round(2 * self.scale)), 0))
-
         # 3. Progress Section
         self.progress_frame = self.tk.Frame(self.container, bg=COLOR_BG)
-        self.progress_frame.pack(fill=self.tk.X, pady=(0, int(round(16 * self.scale))))
+        self.progress_frame.pack(fill=self.tk.X, pady=(0, int(round(14 * self.scale))))
 
         self.lbl_status = self.tk.Label(
             self.progress_frame,

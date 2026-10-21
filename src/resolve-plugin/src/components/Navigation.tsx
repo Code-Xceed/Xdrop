@@ -36,7 +36,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   return (
     <nav
       style={{
-        padding: '6px 10px',
+        padding: '4px 10px',
         backgroundColor: 'var(--bg-void)',
         userSelect: 'none',
         flexShrink: 0,
@@ -47,7 +47,7 @@ export const Navigation: React.FC<NavigationProps> = ({
           display: 'flex',
           alignItems: 'center',
           backgroundColor: 'var(--bg-primary)',
-          borderRadius: '7px',
+          borderRadius: '6px',
           border: '1px solid var(--border-default)',
           padding: '2px',
           gap: '2px',
@@ -66,9 +66,9 @@ export const Navigation: React.FC<NavigationProps> = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '5px',
-                height: '27px',
+                height: '25px',
                 padding: '0 8px',
-                borderRadius: '5px',
+                borderRadius: '4px',
                 backgroundColor: isActive ? 'var(--bg-elevated)' : 'transparent',
                 border: isActive ? '1px solid var(--border-strong)' : '1px solid transparent',
                 color: isActive ? '#ffffff' : 'var(--text-muted)',
@@ -76,7 +76,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                 fontSize: '11px',
                 letterSpacing: '0.01em',
                 cursor: 'pointer',
-                boxShadow: isActive ? '0 1px 3px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08)' : 'none',
+                boxShadow: isActive ? '0 1px 2px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08)' : 'none',
                 transition: 'all 120ms var(--ease-out)',
                 whiteSpace: 'nowrap',
                 outline: 'none',
